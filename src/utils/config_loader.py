@@ -1,0 +1,51 @@
+"""Scenario config loader and validator — Step 4.1."""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+REQUIRED_TOP_KEYS = {"scenario", "world", "robot", "metrics", "success_criteria", "scoring", "output"}
+
+
+class ConfigError(ValueError):
+    pass
+
+
+def load_scenario(path: str | Path) -> dict:
+    """Parse and validate a scenario YAML file."""
+    path = Path(path)
+    if not path.exists():
+        raise ConfigError(f"Scenario file not found: {path}")
+
+    with open(path) as f:
+        config = yaml.safe_load(f)
+
+    missing = REQUIRED_TOP_KEYS - set(config)
+    if missing:
+        raise ConfigError(f"Scenario config missing keys: {missing}")
+
+    _validate_scenario(config["scenario"])
+    _validate_world(config["world"])
+    _validate_robot(config["robot"])
+
+    return config
+
+
+def _validate_scenario(s: dict) -> None:
+    for key in ("name", "timeout_seconds", "random_seed"):
+        if key not in s:
+            raise ConfigError(f"scenario.{key} is required")
+    if s["timeout_seconds"] <= 0:
+        raise ConfigError("scenario.timeout_seconds must be positive")
+
+
+def _validate_world(w: dict) -> None:
+    if "template" not in w:
+        raise ConfigError("world.template is required")
+
+
+def _validate_robot(r: dict) -> None:
+    if "platform" not in r:
+        raise ConfigError("robot.platform is required")

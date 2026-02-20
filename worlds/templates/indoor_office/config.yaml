@@ -1,0 +1,56 @@
+# Indoor office world template configuration
+template: "indoor_office"
+description: "Multi-room office with corridors, doors, and furniture"
+
+dimensions:
+  width: 20.0   # meters (x)
+  depth: 15.0   # meters (y)
+
+ground_truth_map:
+  pgm: "worlds/templates/indoor_office/ground_truth_map.pgm"
+  yaml: "worlds/templates/indoor_office/ground_truth_map.yaml"
+
+# Valid zones for random object placement (bounding boxes, world frame)
+placement_zones:
+  - id: "office_a"
+    x_min: 1.0
+    x_max: 8.0
+    y_min: 1.0
+    y_max: 6.0
+  - id: "office_b"
+    x_min: 10.0
+    x_max: 18.0
+    y_min: 1.0
+    y_max: 6.0
+  - id: "corridor"
+    x_min: 1.0
+    x_max: 18.0
+    y_min: 7.0
+    y_max: 9.0
+  - id: "meeting_room"
+    x_min: 5.0
+    x_max: 14.0
+    y_min: 10.0
+    y_max: 14.0
+
+# Minimum clearance from walls / other objects
+placement_clearance: 0.5  # meters
+
+variants:
+  - id: "low_clutter"
+    extra_objects: 5
+  - id: "medium_clutter"
+    extra_objects: 15
+  - id: "high_clutter"
+    extra_objects: 30
+
+lighting_presets:
+  normal:
+    ambient: [0.4, 0.4, 0.4, 1.0]
+    diffuse: [0.8, 0.8, 0.8, 1.0]
+  dim:
+    ambient: [0.15, 0.15, 0.15, 1.0]
+    diffuse: [0.3, 0.3, 0.3, 1.0]
+  bright:
+    ambient: [0.6, 0.6, 0.6, 1.0]
+    diffuse: [1.0, 1.0, 1.0, 1.0]

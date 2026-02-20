@@ -1,0 +1,8 @@
+# Core deps (ROS 2 packages are system-installed, not listed here)
+pyyaml>=6.0
+numpy>=1.24
+scikit-image>=0.21   # Bresenham raycasting for coverage metrics
+opencv-python>=4.8   # PGM map loading
+
+# Dev / test
+pytest>=7.4

@@ -1,0 +1,43 @@
+# Explorable regions for indoor_office template.
+# Used by coverage metrics node as a cross-check alongside the PGM map.
+# Regions are rectangular, in world frame coordinates.
+
+template: "indoor_office"
+total_explorable_area_m2: 210.0  # approximate; computed from PGM is authoritative
+
+regions:
+  - id: "office_a"
+    label: "Office A"
+    x_min: 0.5
+    x_max: 8.5
+    y_min: 0.5
+    y_max: 6.5
+
+  - id: "office_b"
+    label: "Office B"
+    x_min: 9.5
+    x_max: 18.5
+    y_min: 0.5
+    y_max: 6.5
+
+  - id: "main_corridor"
+    label: "Main Corridor"
+    x_min: 0.5
+    x_max: 18.5
+    y_min: 6.5
+    y_max: 9.5
+
+  - id: "meeting_room"
+    label: "Meeting Room"
+    x_min: 4.5
+    x_max: 14.5
+    y_min: 9.5
+    y_max: 14.5
+
+# Ground truth map spec (mirrors the .yaml sidecar for the .pgm file)
+# The PGM file is authoritative; this is for documentation.
+map:
+  resolution: 0.5   # meters per pixel
+  origin: [0.0, 0.0, 0.0]
+  free_threshold: 0.65
+  occupied_threshold: 0.20

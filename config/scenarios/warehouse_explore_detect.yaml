@@ -1,0 +1,82 @@
+scenario:
+  name: "warehouse_explore_detect_001"
+  description: "Explore a warehouse environment and find all target objects"
+  timeout_seconds: 900
+  random_seed: 42
+
+world:
+  template: "indoor_warehouse"
+  variant: "standard"
+  size: "30x20"  # meters
+  objects:
+    - type: "fire_extinguisher"
+      count: 5
+      placement: "random"
+    - type: "first_aid_kit"
+      count: 3
+      placement: "random"
+    - type: "hazard_sign"
+      count: 6
+      placement: "random"
+  variations:
+    lighting: "normal"
+    door_states: "open"
+
+robot:
+  platform: "turtlebot4"
+  spawn_pose:
+    x: 1.0
+    y: 1.0
+    yaw: 0.0
+  sensors:
+    - rgb_camera
+    - lidar_2d
+    - imu
+    - bumper
+
+metrics:
+  collect:
+    - meters_traveled
+    - time_to_all_detections
+    - task_completion_time
+    - average_time_per_detection
+    - exploration_coverage
+    - object_detection_rate
+    - false_positive_rate
+    - collision_count
+    - near_miss_count
+    - revisit_ratio
+
+success_criteria:
+  mode: "all_of"
+  conditions:
+    - metric: "object_detection_rate"
+      operator: ">="
+      value: 1.0
+
+scoring:
+  category_weights:
+    speed: 0.25
+    accuracy: 0.30
+    safety: 0.20
+    efficiency: 0.25
+  par_values:
+    time_per_detection_par: 90.0
+    coverage_rate_par: 1.5
+    coverage_per_meter_par: 1.0
+    near_miss_threshold: 0.3
+  collision_thresholds: [0, 2, 5, 10]
+  collision_scores: [100, 80, 60, 40, 20]
+  grade_thresholds:
+    S: 95
+    A: 85
+    B: 70
+    C: 55
+    D: 40
+
+output:
+  format: "json"
+  directory: "./results/"
+  include_trajectory: true
+  include_detection_log: true
+  include_scorecard: true

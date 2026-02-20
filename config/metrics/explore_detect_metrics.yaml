@@ -1,0 +1,54 @@
+# Metric definitions for the explore-and-detect use case.
+# Each entry names a metric module and its configuration.
+
+metrics:
+  meters_traveled:
+    module: "metrics.meters_traveled"
+    class: "MetersTraveled"
+    config:
+      odom_topic: "/odom"
+      min_delta: 0.01  # meters — ignore sub-centimeter jitter
+
+  collision_count:
+    module: "metrics.collision_count"
+    class: "CollisionCount"
+    config:
+      bumper_topic: "/bumper_contact"
+      debounce_seconds: 0.5
+
+  near_miss_count:
+    module: "metrics.near_miss_tracker"
+    class: "NearMissTracker"
+    config:
+      scan_topic: "/scan"
+      pose_topic: "/model/turtlebot4/pose"
+      threshold_meters: 0.3
+      debounce_seconds: 1.0
+
+  exploration_coverage:
+    module: "metrics.exploration_coverage"
+    class: "ExplorationCoverage"
+    config:
+      scan_topic: "/scan"
+      pose_topic: "/model/turtlebot4/pose"
+      grid_resolution: 0.5  # meters per cell
+      publish_grid: true     # publish nav_msgs/OccupancyGrid for RViz
+
+  object_detection_rate:
+    module: "metrics.detection_metrics"
+    class: "DetectionMetrics"
+    config:
+      detections_topic: "/detections"
+      pose_topic: "/model/turtlebot4/pose"
+
+  revisit_ratio:
+    module: "metrics.revisit_ratio"
+    class: "RevisitRatio"
+    config:
+      pose_topic: "/model/turtlebot4/pose"
+      grid_resolution: 0.5
+
+  time_metrics:
+    module: "metrics.time_metrics"
+    class: "TimeMetrics"
+    config: {}

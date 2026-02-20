@@ -1,0 +1,42 @@
+# Indoor warehouse world template configuration
+template: "indoor_warehouse"
+description: "Open warehouse with shelving aisles, loading area, and side rooms"
+
+dimensions:
+  width: 30.0   # meters (x)
+  depth: 20.0   # meters (y)
+
+ground_truth_map:
+  pgm: "worlds/templates/indoor_warehouse/ground_truth_map.pgm"
+  yaml: "worlds/templates/indoor_warehouse/ground_truth_map.yaml"
+
+placement_zones:
+  - id: "aisle_a"
+    x_min: 1.0
+    x_max: 8.0
+    y_min: 2.0
+    y_max: 18.0
+  - id: "aisle_b"
+    x_min: 11.0
+    x_max: 18.0
+    y_min: 2.0
+    y_max: 18.0
+  - id: "loading_area"
+    x_min: 20.0
+    x_max: 28.0
+    y_min: 2.0
+    y_max: 18.0
+
+placement_clearance: 0.5
+
+variants:
+  - id: "standard"
+    extra_objects: 10
+
+lighting_presets:
+  normal:
+    ambient: [0.4, 0.4, 0.4, 1.0]
+    diffuse: [0.8, 0.8, 0.8, 1.0]
+  dim:
+    ambient: [0.1, 0.1, 0.1, 1.0]
+    diffuse: [0.2, 0.2, 0.2, 1.0]

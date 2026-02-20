@@ -1,5 +1,22 @@
 .claude/*
 
+# ROS 2
+install/
+build/
+log/
+*.pyc
+.colcon_install_layout
+
+# Gazebo
+~/.gz/
+/tmp/arst_worlds/
+*.sdf.generated
+
+# Results (keep structure, ignore output)
+results/*.json
+results/*.csv
+!results/.gitkeep
+
 __pycache__/
 *.py[codz]
 *$py.class
