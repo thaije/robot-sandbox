@@ -21,7 +21,7 @@ metrics:
     class: "NearMissTracker"
     config:
       scan_topic: "/scan"
-      pose_topic: "/model/turtlebot4/pose"
+      pose_topic: "/sim_ground_truth_pose"
       threshold_meters: 0.3
       debounce_seconds: 1.0
 
@@ -30,7 +30,7 @@ metrics:
     class: "ExplorationCoverage"
     config:
       scan_topic: "/scan"
-      pose_topic: "/model/turtlebot4/pose"
+      pose_topic: "/sim_ground_truth_pose"
       grid_resolution: 0.5  # meters per cell
       publish_grid: true     # publish nav_msgs/OccupancyGrid for RViz
 
@@ -39,13 +39,13 @@ metrics:
     class: "DetectionMetrics"
     config:
       detections_topic: "/detections"
-      pose_topic: "/model/turtlebot4/pose"
+      pose_topic: "/sim_ground_truth_pose"
 
   revisit_ratio:
     module: "metrics.revisit_ratio"
     class: "RevisitRatio"
     config:
-      pose_topic: "/model/turtlebot4/pose"
+      pose_topic: "/sim_ground_truth_pose"
       grid_resolution: 0.5
 
   time_metrics:

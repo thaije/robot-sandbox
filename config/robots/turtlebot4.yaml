@@ -1,5 +1,5 @@
 # Turtlebot 4 robot configuration
-# Topic names verified against: turtlebot4_simulator (jazzy branch)
+# Topic names verified by: ros2 topic list with live turtlebot4_gz.launch.py (jazzy branch)
 
 platform: "turtlebot4"
 
@@ -22,13 +22,17 @@ sensors:
     topic: "/imu"
     msg_type: "sensor_msgs/Imu"
     frame_id: "imu_link"
+    # NOTE: /imu is NOT published by default in turtlebot4_gz_bringup.
+    # Requires adding a ros_gz_bridge for the IMU sensor topic (Step 2.3).
   bumper:
-    topic: "/bumper_contact"       # verify on first launch (Step 2.1)
-    msg_type: "gazebo_msgs/ContactsState"
+    topic: "/bumper_contact"
+    msg_type: "ros_gz_interfaces/msg/Contacts"  # confirmed from create3_ros_gz_bridge.launch.py
 
 control:
   cmd_vel_topic: "/cmd_vel"
-  msg_type: "geometry_msgs/Twist"
+  msg_type: "geometry_msgs/TwistStamped"  # bridge expects TwistStamped, not Twist
+  cmd_vel_unstamped_topic: "/cmd_vel_unstamped"  # plain Twist alternative (also available)
+  teleop_flag: "--ros-args -p stamped:=true"  # required for teleop_twist_keyboard
   max_linear_speed: 0.31   # m/s (Create 3 spec)
   max_angular_speed: 1.90  # rad/s
 
@@ -37,7 +41,8 @@ odometry:
   msg_type: "nav_msgs/Odometry"
 
 ground_truth:
-  pose_topic: "/model/turtlebot4/pose"   # from ros_gz_bridge
+  pose_topic: "/sim_ground_truth_pose"  # verified: ros2 topic list (jazzy TB4 sim)
+  dock_pose_topic: "/sim_ground_truth_dock_pose"
   msg_type: "tf2_msgs/TFMessage"
 
 detection:
