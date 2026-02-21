@@ -8,18 +8,55 @@ from metrics.base_metric import BaseMetric
 
 
 class MetersTraveled(BaseMetric):
-    """Accumulates Euclidean distance from consecutive odometry readings."""
+    """Accumulates Euclidean distance from consecutive odometry readings.
+
+    Parameters
+    ----------
+    odom_topic:
+        ROS 2 topic publishing ``nav_msgs/Odometry``.
+        For DerpBot use ``/derpbot_0/odom``.
+    min_delta:
+        Minimum position change (metres) that counts as movement.
+        Filters stationary noise.
+    node:
+        An ``rclpy.node.Node`` instance.  Must be provided before calling
+        ``start()``.  Kept as ``Any`` to avoid a hard rclpy import at module
+        load time (allows use in unit tests without a ROS 2 installation).
+    """
 
     name = "meters_traveled"
 
-    def __init__(self, odom_topic: str = "/odom", min_delta: float = 0.01) -> None:
+    def __init__(
+        self,
+        odom_topic: str = "/odom",
+        min_delta: float = 0.01,
+        node: Any = None,
+    ) -> None:
         self._odom_topic = odom_topic
         self._min_delta = min_delta
+        self._node = node
         self._total: float = 0.0
         self._last_pos: tuple[float, float] | None = None
+        self._sub: Any = None
 
     def start(self) -> None:
-        raise NotImplementedError  # TODO: subscribe to self._odom_topic
+        """Create a ROS 2 subscription to the odometry topic.
+
+        Requires a ``rclpy.node.Node`` to have been passed at construction.
+        """
+        if self._node is None:
+            raise RuntimeError(
+                "MetersTraveled.start() requires a ROS 2 node. "
+                "Pass node=<rclpy.node.Node> to __init__."
+            )
+        from nav_msgs.msg import Odometry  # noqa: PLC0415 (lazy ROS import)
+
+        self._sub = self._node.create_subscription(
+            Odometry,
+            self._odom_topic,
+            self._on_odom,
+            10,
+        )
 
     def _on_odom(self, msg: Any) -> None:
         x = msg.pose.pose.position.x

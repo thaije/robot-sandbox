@@ -590,6 +590,48 @@ For future multi-robot scenarios, individual robot scores and a team score can c
 
 ---
 
+## 5.5 Implementation Status (as of 2026-02-21)
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 0.1–0.7 | Research + Foundation | ✅ Complete |
+| 1.1 | Indoor office world (20×15 m, 4 rooms) | ✅ Complete |
+| 1.2 | Ground-truth map (PGM + YAML) | ✅ Complete |
+| 1.3 | Target object models (fire_extinguisher, first_aid_kit, hazard_sign) | ✅ Complete |
+| 1.4 | Object placement engine (`object_placer.py`) | ✅ Complete |
+| 1.5 | World generator (`world_generator.py`) | ✅ Complete |
+| 1.6 | Environment variations (lighting, door states) | ⬜ Not started |
+| 1.7 | Warehouse template | ⬜ Config file only |
+| 2.1–2.5 | Robot integration (DerpBot spawn/teleop/odom/TF) | ✅ Complete |
+| 3.1 | Metrics plugin architecture (`base_metric.py`) | ✅ Complete |
+| 3.2 | Meters traveled (`meters_traveled.py`) | ✅ Complete — ROS sub wired |
+| 3.3 | Collision count (`collision_count.py`) | ✅ Complete — ROS sub wired |
+| 3.4 | Object detection tracking | ⬜ Needs sensors on DerpBot first |
+| 3.5 | Detection-based metrics | ⬜ Not started |
+| 3.6 | Exploration coverage | ⬜ Stub — needs LiDAR sensor |
+| 3.7 | Revisit ratio | ⬜ Not started |
+| 3.8 | Success/failure evaluator (`evaluator.py`) | ✅ Complete |
+| 3.9 | Metrics reporter (`reporter.py`) | ✅ Complete |
+| 3.10 | Near-miss detection | ⬜ Not started |
+| 3.11 | Composite scoring engine (`scoring.py`) | ✅ Complete |
+| 3.12 | Scorecard display | ✅ Complete (in `reporter.py`) |
+| 3.13 | Calibrate par values | ⬜ After metrics work |
+| 4.1 | Scenario config loader (`config_loader.py`) | ✅ Complete |
+| 4.2 | Simulation launcher (`launcher.py`) | ✅ Complete |
+| 4.3 | Scenario lifecycle manager (`runner.py`) | ✅ Complete |
+| 4.4 | CLI entry point (`__main__.py`) | ✅ Complete |
+| 4.5 | Scenario reset | ⬜ Stub |
+| 4.6 | Batch execution | ⬜ Not started |
+| 4.7 | End-to-end integration test | ⬜ Not started |
+| 5.x | Documentation | ⬜ Not started |
+
+**Immediate gaps before first end-to-end run:**
+- Add a LiDAR sensor to DerpBot URDF (needed for exploration_coverage metric and for the `/scan`-based health check to be meaningful)
+- Contact/bumper sensor on DerpBot URDF + bridge (for collision_count to fire)
+- Calibrate par values (Step 3.13) after first manual teleoperation run
+
+---
+
 ## 6. Step-by-Step Implementation Plan
 
 The plan is organized into phases. Each phase has numbered steps. Steps marked with 🔍 are research tasks where investigation is needed before implementation. Steps marked with 🤖 indicate tasks where Claude can be asked to help identify the best approach.

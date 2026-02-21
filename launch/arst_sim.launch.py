@@ -45,6 +45,15 @@ ARGUMENTS = [
         description="World template name — must match a sub-directory of worlds/templates/",
     ),
     DeclareLaunchArgument(
+        "world_sdf",
+        default_value="",
+        description=(
+            "Full path to a world SDF file.  When non-empty, overrides the "
+            "'world' template name lookup.  Use this to launch a generated world "
+            "written by WorldGenerator without modifying the templates directory."
+        ),
+    ),
+    DeclareLaunchArgument(
         "headless",
         default_value="false",
         choices=["true", "false"],
@@ -67,16 +76,23 @@ ARGUMENTS = [
 def _make_actions(context, *args, **kwargs):
     """OpaqueFunction: resolve LaunchConfiguration values and build actions."""
     world_name = LaunchConfiguration("world").perform(context)
+    world_sdf_override = LaunchConfiguration("world_sdf").perform(context)
     headless = LaunchConfiguration("headless").perform(context).lower() == "true"
     verbose = LaunchConfiguration("verbose").perform(context)
 
     # ── World SDF ─────────────────────────────────────────────────────────────
-    world_sdf = REPO_ROOT / "worlds" / "templates" / world_name / "world.sdf"
-    if not world_sdf.exists():
-        available = [d.name for d in (REPO_ROOT / "worlds" / "templates").iterdir() if d.is_dir()]
-        raise FileNotFoundError(
-            f"World SDF not found: {world_sdf}\nAvailable worlds: {available}"
-        )
+    if world_sdf_override:
+        # Runner-generated SDF (from WorldGenerator) takes priority
+        world_sdf = Path(world_sdf_override)
+        if not world_sdf.exists():
+            raise FileNotFoundError(f"World SDF not found: {world_sdf}")
+    else:
+        world_sdf = REPO_ROOT / "worlds" / "templates" / world_name / "world.sdf"
+        if not world_sdf.exists():
+            available = [d.name for d in (REPO_ROOT / "worlds" / "templates").iterdir() if d.is_dir()]
+            raise FileNotFoundError(
+                f"World SDF not found: {world_sdf}\nAvailable worlds: {available}"
+            )
 
     # ── GZ_SIM_RESOURCE_PATH — add our model library ──────────────────────────
     gz_resource_path = SetEnvironmentVariable(
