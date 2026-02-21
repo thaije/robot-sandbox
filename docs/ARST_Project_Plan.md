@@ -9,14 +9,14 @@ Build a modular, extensible simulation environment for testing autonomous robots
 ### 1.2 Project Goals
 
 1. **Simulation Environment:** Create a configurable digital sandbox where robotic scenarios can be defined, executed, reset, and evaluated programmatically. The environment must support multiple world templates, configurable metrics, and headless operation.
-2. **Robot Integration:** Integrate a Turtlebot 4 as the first robot platform, with full sensor and actuator access, controllable via ROS 2 topics and services.
+2. **Robot Integration:** Integrate DerpBot (a minimal two-wheeled differential drive robot) as the first platform, controllable via ROS 2 topics.  Sensors (LiDAR, camera) are added in later steps once the simulation pipeline is stable.
 3. **First Use Case — Explore & Detect:** Implement the scenario "autonomously explore an unknown indoor environment and detect all target objects of specified types," with configurable success/failure criteria and comprehensive metrics logging.
 
 ### 1.3 Scope Boundaries
 
 **In scope for Phase 1:**
-- Simulation environment with Gazebo + ROS 2
-- Turtlebot 4 model with sensors (RGB camera, LiDAR, IMU, contact sensors)
+- Simulation environment with Gazebo + ROS 2 (persistent simulator + spawn/despawn API)
+- DerpBot: minimal two-wheeled differential drive robot (no sensors in baseline; sensors added incrementally)
 - Indoor world templates (office-like, warehouse-like) with object placement variation
 - Metrics framework with configurable success/failure criteria
 - Headless (CLI-driven) operation
@@ -76,20 +76,20 @@ Requirements are categorized using MoSCoW prioritization: Must Have (M), Should 
 
 | ID | Requirement | Priority | Notes |
 |----|------------|----------|-------|
-| ROB-01 | Turtlebot 4 model in simulation with accurate physical properties | M | Use official or community URDF |
-| ROB-02 | RGB camera sensor with configurable resolution and FoV | M | |
-| ROB-03 | LiDAR sensor (2D or 3D, matching Turtlebot 4 specs: RPLIDAR A1 2D) | M | |
-| ROB-04 | IMU sensor | M | |
-| ROB-05 | Contact / bumper sensors | M | |
-| ROB-06 | Infrared / depth camera | S | Turtlebot 4 has OAK-D stereo camera |
-| ROB-07 | Motor / joint control via ROS 2 cmd_vel and standard interfaces | M | |
-| ROB-08 | Sensor data accessible via standard ROS 2 topics | M | |
-| ROB-09 | Teleoperation capability (keyboard, joystick, or ROS 2 teleop) | M | For testing before autonomy exists |
-| ROB-10 | Architecture supports adding new robot platforms without restructuring | M | Abstract robot interface |
-| ROB-11 | Spot robot model integration | N | Future phase |
-| ROB-12 | Quadcopter drone model integration | N | Future phase |
-| ROB-13 | Humanoid robot model integration | N | Future phase |
-| ROB-14 | Multi-robot spawning in same scenario | N | Future phase |
+| ROB-01 | DerpBot: minimal two-wheeled differential drive robot in simulation | M | Custom URDF in robots/derpbot/; no external packages required |
+| ROB-02 | RGB camera sensor | S | Added in a later step once baseline is stable |
+| ROB-03 | LiDAR sensor (2D) | S | Added in a later step |
+| ROB-04 | IMU sensor | N | Added when needed |
+| ROB-05 | Contact / bumper sensors | S | Added when needed |
+| ROB-06 | Motor / joint control via ROS 2 cmd_vel and standard interfaces | M | Provided by gz-sim-diff-drive-system plugin |
+| ROB-07 | Sensor data accessible via standard ROS 2 topics | M | Via ros_gz_bridge; topics namespaced per robot instance |
+| ROB-08 | Teleoperation capability (keyboard) | M | teleop_twist_keyboard with /<name>/cmd_vel |
+| ROB-09 | Persistent simulator: Gazebo runs continuously; robots are spawned/despawned without restart | M | arst_sim.launch.py (sim only) + spawn_robot.launch.py |
+| ROB-10 | Architecture supports adding new robot platforms without restructuring | M | Abstract RobotInterface; add robot type = new sub-directory |
+| ROB-11 | Turtlebot 4 integration | N | Future phase; requires turtlebot4_simulator package |
+| ROB-12 | Spot robot model integration | N | Future phase |
+| ROB-13 | Quadcopter drone model integration | N | Future phase |
+| ROB-14 | Multi-robot spawning in same scenario | N | Supported by spawn_robot.launch.py with unique name: parameter |
 
 ### 2.3 Metrics and Evaluation Requirements
 
@@ -211,16 +211,13 @@ world:
     door_states: "random"  # open, closed, random
 
 robot:
-  platform: "turtlebot4"
+  platform: "derpbot"
   spawn_pose:
     x: 1.0
     y: 1.0
+    z: 0.0
     yaw: 0.0
-  sensors:
-    - rgb_camera
-    - lidar_2d
-    - imu
-    - bumper
+  sensors: []  # no sensors in Phase 1 baseline
 
 metrics:
   collect:
@@ -295,11 +292,11 @@ arst/
 │   └── generators/                 # Scripts for world variation generation
 │       └── place_objects.py
 ├── robots/
-│   ├── turtlebot4/
+│   ├── derpbot/
 │   │   ├── urdf/
-│   │   ├── meshes/
-│   │   ├── config/
-│   │   └── launch/
+│   │   │   └── derpbot.urdf        # Two-wheel diff-drive URDF (no sensors)
+│   │   ├── __init__.py
+│   │   └── derpbot.py              # Concrete RobotInterface implementation
 │   └── robot_interface.py          # Abstract robot interface
 ├── src/
 │   ├── scenario_runner/            # Main CLI application
@@ -350,8 +347,8 @@ arst/
 
 | Component | Technology | Version | Rationale |
 |-----------|-----------|---------|-----------|
-| Robot middleware | ROS 2 Jazzy | Jazzy Jalisco (LTS) | LTS release, EOL May 2029; native to Ubuntu 24.04; required for Harmonic TB4 packages |
-| Simulator | Gazebo Harmonic | Harmonic (LTS) | Paired with Jazzy; EOL Sept 2028; Python plugins, Simulation Reset API, gz-usd Isaac Sim tooling; only supported path for turtlebot4_simulator |
+| Robot middleware | ROS 2 Jazzy | Jazzy Jalisco (LTS) | LTS release, EOL May 2029; native to Ubuntu 24.04 |
+| Simulator | Gazebo Harmonic | Harmonic (LTS) | Paired with Jazzy; EOL Sept 2028; Python plugins, Simulation Reset API, gz-usd Isaac Sim tooling |
 | Programming language | Python 3.10+ | 3.10 | ROS 2 Humble default, good for rapid prototyping |
 | Secondary language | C++ 17 | For performance-critical plugins if needed |
 | Configuration | YAML | Standard in ROS ecosystem |
@@ -363,9 +360,8 @@ arst/
 | Package | Purpose |
 |---------|---------|
 | `ros_gz_bridge` | Gazebo-ROS 2 message bridging |
-| `ros_gz_sim` | Gazebo simulation launch integration |
-| `turtlebot4_simulator` (jazzy branch) | Official Turtlebot 4 Gazebo Harmonic simulation package |
-| `turtlebot4_description` | Turtlebot 4 URDF and meshes |
+| `ros_gz_sim` | Gazebo simulation launch + spawn service (`create` executable) |
+| `robot_state_publisher` | Publishes TF tree from URDF + joint states |
 | `teleop_twist_keyboard` | Keyboard teleoperation |
 | `nav2` (future) | Navigation stack for autonomous movement |
 | `slam_toolbox` (future) | SLAM for mapping |
@@ -389,7 +385,7 @@ Several technology choices require investigation before committing. These are fl
 
 ### 5.1 Use Case: Explore and Detect
 
-**Description:** A Turtlebot 4 is placed in an unknown indoor environment. The task is to explore the entire environment and detect all target objects of specified types. In Phase 1, the robot is teleoperated (no autonomy). The simulation framework records all metrics and evaluates success/failure.
+**Description:** A DerpBot is placed in an unknown indoor environment. The task is to explore the entire environment and detect all target objects of specified types. In Phase 1, the robot is teleoperated (no autonomy), and sensors (LiDAR/camera) are added incrementally. The simulation framework records all metrics and evaluates success/failure.
 
 **Actors:**
 - Human operator (via teleoperation interface)
@@ -651,14 +647,14 @@ The goal of this phase is to resolve open technology questions and set up the de
 #### Step 0.6: Install Core Dependencies
 - Install Ubuntu 24.04 LTS; install ROS 2 Jazzy following official guide
 - Install Gazebo Harmonic following official guide (`ros-jazzy-ros-gz*` packages)
-- Install `ros_gz_bridge` and `ros_gz_sim` packages
-- Install `turtlebot4_simulator` (jazzy branch) and `turtlebot4_description`
+- Install `ros_gz_bridge`, `ros_gz_sim`, `robot_state_publisher` packages
 - Install `teleop_twist_keyboard`
 - Install NVIDIA Container Toolkit (for future multi-instance GPU isolation)
-- Verify installation: `ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py`, teleoperate robot
-- Test headless mode: `DISPLAY= gz sim -s -r --headless-rendering <world.sdf>`
-- Add user to `render` group for EGL headless rendering (`sudo usermod -aG render $USER`)
-- **Deliverable:** Working ROS 2 Jazzy + Gazebo Harmonic + Turtlebot 4 installation. Robot launches and responds to teleop commands in both GUI and headless modes.
+- Add user to `render` group for EGL headless rendering: `sudo usermod -aG render $USER`
+- Verify base install: `gz sim -r --headless-rendering <world.sdf>` loads without error
+- Verify DerpBot spawn: `ros2 launch launch/arst_sim.launch.py` + `ros2 launch launch/spawn_robot.launch.py`
+- Teleoperate: `ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel`
+- **Deliverable:** Working ROS 2 Jazzy + Gazebo Harmonic + DerpBot. Robot spawns, moves, publishes odom in both GUI and headless modes.
 
 #### Step 0.7: Initialize Project Repository
 - Create Git repository with directory structure from Section 3.4
@@ -732,44 +728,44 @@ The goal of this phase is to build the world generation pipeline: load a templat
 
 ### Phase 2: Robot Integration (Weeks 4-6, overlaps with Phase 1)
 
-The goal of this phase is to get the Turtlebot 4 fully functional in the simulation with all required sensors accessible.
+The goal of this phase is to get DerpBot fully operational in the simulation:
+persistent Gazebo + spawn/despawn + teleoperation.
 
-#### Step 2.1: Verify Turtlebot 4 Sensor Topics
-- Launch Turtlebot 4 in simulation
-- Inventory all published ROS 2 topics
-- Verify each required sensor is publishing:
-  - RGB camera: `/camera/image_raw` (or similar)
-  - LiDAR: `/scan`
-  - IMU: `/imu`
-  - Bumper/contact: check available topics
-- Document topic names, message types, and default rates
-- **Deliverable:** Sensor topic reference document
+#### Step 2.1: Verify DerpBot Spawns and Moves
+- Launch persistent sim: `ros2 launch launch/arst_sim.launch.py`
+- Spawn DerpBot: `ros2 launch launch/spawn_robot.launch.py`
+- Verify topics are publishing: `/derpbot_0/cmd_vel`, `/derpbot_0/odom`, `/tf`
+- Test teleoperation: `ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel`
+- Verify robot moves, TF tree is correct (`ros2 run tf2_tools view_frames`)
+- **Deliverable:** DerpBot spawns, moves on cmd_vel, publishes odom and TF
 
-#### Step 2.2: Verify Robot Control Interface
-- Test `cmd_vel` control: publish velocity commands, verify robot moves in simulation
-- Test teleoperation with `teleop_twist_keyboard`
-- Document control interface (topics, message types, limits)
-- **Deliverable:** Verified teleoperation working; control interface documented
+#### Step 2.2: Verify Spawn/Despawn Cycle
+- Spawn robot: `ros2 launch launch/spawn_robot.launch.py`
+- Despawn robot: `scripts/despawn_robot.sh`
+- Respawn at a different pose
+- Verify Gazebo remains running throughout and no state leaks
+- **Deliverable:** Clean spawn/despawn cycle confirmed
 
-#### Step 2.3: Configure Sensor Parameters
-- If needed, adjust camera resolution, FoV, and publishing rate via Gazebo SDF sensor tags or ROS parameters
-- If needed, adjust LiDAR range, resolution, and rate
-- Ensure IMU publishes at suitable rate
-- Create a robot configuration YAML that specifies these parameters
-- **Deliverable:** `config/robots/turtlebot4.yaml` with sensor configurations
+#### Step 2.3: Create DerpBot Config File
+- Document confirmed topic names, message types, and speed limits in `config/robots/derpbot.yaml`
+- **Deliverable:** `config/robots/derpbot.yaml` (already created; update with verified values)
 
-#### Step 2.4: Define Robot Interface Abstraction
-- Design an abstract robot interface that describes: model files (URDF/SDF paths), sensor topics, control topics, spawn configuration
-- Implement for Turtlebot 4 as the first concrete instance
-- Document how to add a new robot platform
-- **Deliverable:** `robots/robot_interface.py` + `robots/turtlebot4/` implementation
-- **Design note:** This abstraction must be lightweight — it's primarily a configuration schema, not a heavyweight framework
+#### Step 2.4: Robot Interface Abstraction (already done)
+- `robots/robot_interface.py` — abstract base class
+- `robots/derpbot/derpbot.py` — DerpBot concrete implementation
+- Adding a new robot = new sub-directory + subclass
+- **Deliverable:** Completed in Phase 1 prep
 
-#### Step 2.5: Test Robot in Generated Worlds
-- Spawn Turtlebot 4 in the Phase 1 generated worlds (both templates)
-- Teleoperate through the environment
-- Verify: sensors produce reasonable data, robot physics are stable, no clipping through objects
-- **Deliverable:** Confirmed robot works correctly in generated worlds
+#### Step 2.5: Test DerpBot in Generated Worlds
+- Spawn DerpBot in both world templates (office, warehouse)
+- Teleoperate through environment
+- Verify: robot physics stable, no clipping through walls
+- **Deliverable:** Confirmed DerpBot works correctly in generated worlds
+
+#### Step 2.6: Add Sensors (deferred — not in baseline)
+- Add LiDAR (2D scan) to DerpBot URDF when coverage metrics are implemented
+- Add RGB/depth camera when object detection is implemented
+- Follow the same spawn/bridge pattern: one bridge argument per sensor topic
 
 ---
 
@@ -1010,7 +1006,7 @@ These are documented here for planning purposes. Each would be its own project p
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
-| Turtlebot 4 simulator package not compatible with chosen Gazebo version | Low | High | Resolved: jazzy branch of `turtlebot4_simulator` officially targets Gazebo Harmonic + ROS 2 Jazzy. Fall back to Turtlebot 3 if needed (very well supported). |
+| DerpBot URDF → SDF conversion produces unexpected physics (inertia, collision) | Low | Medium | Use `check_urdf` and inspect SDF via `gz model --list` after spawn. Tune inertia values if robot tips over or spins in place. |
 | Headless Gazebo has undocumented issues or limitations | Low | High | Test headless operation early (Step 0.6); Gazebo Fortress/Harmonic both officially support headless |
 | GPU insufficient for simulator + metrics collection | Low | Medium | RTX 2070 Super is adequate for Gazebo; monitor GPU usage early; disable unnecessary rendering in headless mode |
 | SDF to USD conversion is lossy or manual | Low | Low | Resolved by strategy: parallel operation, not migration. Gazebo remains primary testbed. Robot descriptions authored in URDF (consumed by both simulators). No SDF→USD automation dependency in project plan. Revisit when Newton/Simulation Interfaces tooling matures (~1–2 years). |

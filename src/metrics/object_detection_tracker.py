@@ -22,7 +22,7 @@ class ObjectDetectionTracker(BaseMetric):
     def __init__(
         self,
         detections_topic: str = "/detections",
-        pose_topic: str = "/model/turtlebot4/pose",
+        pose_topic: str = "/model/derpbot_0/pose",
         class_map: dict[int, str] | None = None,
     ) -> None:
         self._detections_topic = detections_topic

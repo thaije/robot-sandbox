@@ -3,7 +3,7 @@
 <package format="3">
   <name>arst</name>
   <version>0.1.0</version>
-  <description>Autonomous Robotics Simulation Testbed — Phase 1: Turtlebot 4 indoor exploration with metrics and composite scoring.</description>
+  <description>Autonomous Robotics Simulation Testbed — Phase 1: DerpBot indoor exploration with metrics and composite scoring.</description>
   <maintainer email="placeholder@example.com">Tjalling</maintainer>
   <license>TODO</license>
 
@@ -13,17 +13,15 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>vision_msgs</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
 
   <!-- Gazebo / ROS 2 bridge -->
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
 
-  <!-- Turtlebot 4 -->
-  <exec_depend>turtlebot4_gz_bringup</exec_depend>
-  <exec_depend>turtlebot4_description</exec_depend>
+  <!-- Teleoperation -->
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <test_depend>pytest</test_depend>

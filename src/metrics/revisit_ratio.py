@@ -18,7 +18,7 @@ class RevisitRatio(BaseMetric):
 
     name = "revisit_ratio"
 
-    def __init__(self, pose_topic: str = "/model/turtlebot4/pose", grid_resolution: float = 0.5) -> None:
+    def __init__(self, pose_topic: str = "/model/derpbot_0/pose", grid_resolution: float = 0.5) -> None:
         self._pose_topic = pose_topic
         self._resolution = grid_resolution
         self._cell_visits: Counter = Counter()

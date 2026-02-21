@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 """
-ARST simulation launcher.
+ARST simulation launcher — starts Gazebo with a world.  No robot is spawned.
 
-Replaces turtlebot4_gz_bringup/sim.launch.py for the Gazebo component so that
-GZ_SIM_RESOURCE_PATH can include our custom world templates and model library.
-The robot-spawn / bridge / turtlebot4_node components are still delegated to
-turtlebot4_gz_bringup/turtlebot4_spawn.launch.py.
-
-Root cause of the plain turtlebot4_gz_bringup delegation not working:
-  sim.launch.py unconditionally overwrites GZ_SIM_RESOURCE_PATH with its own
-  fixed list, discarding any paths we prepend.  We replicate its logic here
-  while adding our extra paths, then call gz_sim.launch.py directly.
+Run this once to get a persistent simulation.  Then use spawn_robot.launch.py
+to add/remove robots without restarting Gazebo.
 
 Usage:
+    # GUI mode (default):
     ros2 launch launch/arst_sim.launch.py
-    ros2 launch launch/arst_sim.launch.py world:=indoor_office model:=lite
+
+    # Headless (no display required, for servers / CI):
+    ros2 launch launch/arst_sim.launch.py headless:=true
+
+    # Different world:
+    ros2 launch launch/arst_sim.launch.py world:=indoor_warehouse
+
+    # Headless + specific world:
+    ros2 launch launch/arst_sim.launch.py world:=indoor_office headless:=true
 """
 
 import os
 from pathlib import Path
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -29,7 +31,7 @@ from launch.actions import (
     SetEnvironmentVariable,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 # ── Repo paths ────────────────────────────────────────────────────────────────
@@ -40,13 +42,13 @@ ARGUMENTS = [
     DeclareLaunchArgument(
         "world",
         default_value="indoor_office",
-        description="World name — must match a sub-directory of worlds/templates/",
+        description="World template name — must match a sub-directory of worlds/templates/",
     ),
     DeclareLaunchArgument(
-        "model",
-        default_value="lite",
-        choices=["standard", "lite"],
-        description="Turtlebot4 model variant",
+        "headless",
+        default_value="false",
+        choices=["true", "false"],
+        description="Run Gazebo server-only (no GUI).  Uses EGL offscreen rendering.",
     ),
     DeclareLaunchArgument(
         "use_sim_time",
@@ -54,96 +56,79 @@ ARGUMENTS = [
         choices=["true", "false"],
         description="Use simulation clock",
     ),
+    DeclareLaunchArgument(
+        "verbose",
+        default_value="3",
+        description="Gazebo verbosity level (0-4)",
+    ),
 ]
 
 
 def _make_actions(context, *args, **kwargs):
     """OpaqueFunction: resolve LaunchConfiguration values and build actions."""
     world_name = LaunchConfiguration("world").perform(context)
-    model_name = LaunchConfiguration("model").perform(context)
+    headless = LaunchConfiguration("headless").perform(context).lower() == "true"
+    verbose = LaunchConfiguration("verbose").perform(context)
 
-    # ── Package paths (mirrors what sim.launch.py computes) ──────────────────
-    pkg_tb4_gz_bringup = get_package_share_directory("turtlebot4_gz_bringup")
-    pkg_tb4_gz_gui = get_package_share_directory("turtlebot4_gz_gui_plugins")
-    pkg_tb4_desc = get_package_share_directory("turtlebot4_description")
-    pkg_create_gz_bringup = get_package_share_directory("irobot_create_gz_bringup")
-    pkg_create_gz_plugins = get_package_share_directory("irobot_create_gz_plugins")
-    pkg_create_desc = get_package_share_directory("irobot_create_description")
-    pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
-
-    # ── World SDF: absolute path passed directly to gz sim ───────────────────
-    # sim.launch.py would search by name in GZ_SIM_RESOURCE_PATH.
-    # We pass the full path instead, avoiding resource-path ordering issues.
-    world_sdf = str(REPO_ROOT / "worlds" / "templates" / world_name / "world.sdf")
-    if not Path(world_sdf).exists():
+    # ── World SDF ─────────────────────────────────────────────────────────────
+    world_sdf = REPO_ROOT / "worlds" / "templates" / world_name / "world.sdf"
+    if not world_sdf.exists():
+        available = [d.name for d in (REPO_ROOT / "worlds" / "templates").iterdir() if d.is_dir()]
         raise FileNotFoundError(
-            f"World SDF not found: {world_sdf}\n"
-            f"Available worlds: {[d.name for d in (REPO_ROOT / 'worlds' / 'templates').iterdir() if d.is_dir()]}"
+            f"World SDF not found: {world_sdf}\nAvailable worlds: {available}"
         )
 
-    # ── GZ_SIM_RESOURCE_PATH ─────────────────────────────────────────────────
-    # Combine upstream paths (robot models, textures) + our model library.
+    # ── GZ_SIM_RESOURCE_PATH — add our model library ──────────────────────────
     gz_resource_path = SetEnvironmentVariable(
         name="GZ_SIM_RESOURCE_PATH",
         value=":".join(filter(None, [
-            os.path.join(pkg_tb4_gz_bringup, "worlds"),
-            os.path.join(pkg_create_gz_bringup, "worlds"),
-            str(Path(pkg_tb4_desc).parent),
-            str(Path(pkg_create_desc).parent),
-            MODELS_DIR,                                   # our target objects
-            os.environ.get("GZ_SIM_RESOURCE_PATH", ""),  # preserve any user-set paths
+            MODELS_DIR,
+            os.environ.get("GZ_SIM_RESOURCE_PATH", ""),
         ])),
     )
 
-    # ── GZ_GUI_PLUGIN_PATH (same as sim.launch.py) ───────────────────────────
-    gz_gui_plugin_path = SetEnvironmentVariable(
-        name="GZ_GUI_PLUGIN_PATH",
-        value=":".join([
-            os.path.join(pkg_tb4_gz_gui, "lib"),
-            os.path.join(pkg_create_gz_plugins, "lib"),
-        ]),
+    # ── GZ_RENDERING_PLUGIN_PATH — pin to Ogre2 (EGL-capable) ─────────────────
+    # Without this, gz-sim-sensors-system may load the system Ogre 1.9 package
+    # (which requires X11) instead of the vendored Ogre2 (which supports EGL).
+    # This causes a crash in headless mode and is a latent risk in GUI mode.
+    gz_vendor_prefix = get_package_prefix("gz_rendering_vendor")
+    gz_rendering_plugins_dir = os.path.join(
+        gz_vendor_prefix, "opt", "gz_rendering_vendor",
+        "lib", "gz-rendering-8", "engine-plugins",
+    )
+    gz_rendering_plugin_path = SetEnvironmentVariable(
+        name="GZ_RENDERING_PLUGIN_PATH",
+        value=gz_rendering_plugins_dir,
     )
 
-    # ── Gazebo (gz_sim.launch.py) ─────────────────────────────────────────────
+    # ── Gazebo ────────────────────────────────────────────────────────────────
+    pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
     gz_sim_launch = os.path.join(pkg_ros_gz_sim, "launch", "gz_sim.launch.py")
-    gui_config = os.path.join(pkg_tb4_gz_bringup, "gui", model_name, "gui.config")
+
+    if headless:
+        # -s  = server only (no GUI client)
+        # -r  = run immediately (don't wait for play button)
+        # --headless-rendering = use EGL offscreen; required for sensors without display
+        gz_args = f"-s -r --headless-rendering -v {verbose} {world_sdf}"
+    else:
+        gz_args = f"-r -v {verbose} {world_sdf}"
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(gz_sim_launch),
-        launch_arguments=[
-            ("gz_args", f"{world_sdf} -r -v 4 --gui-config {gui_config}"),
-        ],
+        launch_arguments=[("gz_args", gz_args)],
     )
 
-    # ── Clock bridge ─────────────────────────────────────────────────────────
+    # ── Clock bridge — synchronise ROS 2 sim time with Gazebo ────────────────
     clock_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
         name="clock_bridge",
         output="screen",
         arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
+        parameters=[{"use_sim_time": True}],
     )
 
-    # ── Robot spawn + bridges + turtlebot4_node ───────────────────────────────
-    spawn_launch = os.path.join(pkg_tb4_gz_bringup, "launch", "turtlebot4_spawn.launch.py")
-    robot_spawn = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(spawn_launch),
-        launch_arguments=[
-            ("model", model_name),
-            ("x", "1.0"),
-            ("y", "1.0"),
-            ("z", "0.0"),
-            ("yaw", "0.0"),
-        ],
-    )
-
-    return [
-        gz_resource_path,
-        gz_gui_plugin_path,
-        gazebo,
-        clock_bridge,
-        robot_spawn,
-    ]
+    return [gz_resource_path, gz_rendering_plugin_path, gazebo, clock_bridge]
 
 
 def generate_launch_description():

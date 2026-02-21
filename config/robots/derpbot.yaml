@@ -1,0 +1,44 @@
+# DerpBot robot configuration
+# Simple two-wheeled differential drive robot — ARST Phase 1 baseline.
+# No sensors in this revision; LiDAR / camera added in a later step.
+
+platform: "derpbot"
+
+model:
+  urdf: "robots/derpbot/urdf/derpbot.urdf"
+
+dimensions:
+  body_length: 0.30   # m
+  body_width:  0.20   # m
+  body_height: 0.10   # m
+  wheel_radius: 0.05  # m
+  wheel_separation: 0.23  # m (centre-to-centre)
+
+control:
+  cmd_vel_topic: "/derpbot_0/cmd_vel"   # namespace matches spawn name
+  msg_type: "geometry_msgs/Twist"
+  max_linear_speed: 0.5    # m/s
+  max_angular_speed: 2.0   # rad/s
+
+odometry:
+  topic: "/derpbot_0/odom"
+  msg_type: "nav_msgs/Odometry"
+
+joint_states:
+  topic: "/derpbot_0/joint_states"
+  msg_type: "sensor_msgs/JointState"
+
+# Ground-truth pose via ros_gz_bridge (for metrics, not the robot)
+ground_truth:
+  pose_topic: "/model/derpbot_0/pose"
+  msg_type: "geometry_msgs/Pose"
+
+sensors: {}  # no sensors yet
+
+spawn:
+  default_name: "derpbot_0"
+  default_pose:
+    x: 1.0
+    y: 1.0
+    z: 0.0    # base_footprint at ground; wheels rest on floor
+    yaw: 0.0

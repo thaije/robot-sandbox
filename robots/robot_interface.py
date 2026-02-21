@@ -1,5 +1,5 @@
 """
-Abstract robot interface — Step 2.4.
+Abstract robot interface.
 
 Adding a new robot platform = subclass this + provide model files.
 The interface is intentionally lightweight: it's a configuration schema,
@@ -8,7 +8,7 @@ not a runtime framework.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -33,12 +33,12 @@ class RobotInterface(ABC):
     @property
     @abstractmethod
     def platform_name(self) -> str:
-        """Unique identifier, e.g. 'turtlebot4'."""
+        """Unique identifier, e.g. 'derpbot'."""
 
     @property
     @abstractmethod
     def urdf_path(self) -> Path:
-        """Path to the robot's URDF / xacro file."""
+        """Path to the robot's URDF file."""
 
     @property
     @abstractmethod
@@ -58,17 +58,7 @@ class RobotInterface(ABC):
     @property
     @abstractmethod
     def sensors(self) -> dict[str, SensorConfig]:
-        """Dict of sensor name → SensorConfig."""
-
-    @property
-    @abstractmethod
-    def detection_topic(self) -> str:
-        """Unified detections topic (vision_msgs/Detection2DArray)."""
-
-    @property
-    @abstractmethod
-    def class_map(self) -> dict[int, str]:
-        """Mapping from gz-sim-label-system integer ID → class name."""
+        """Dict of sensor name → SensorConfig. Empty dict = no sensors."""
 
     def default_spawn_pose(self) -> SpawnPose:
         return SpawnPose()

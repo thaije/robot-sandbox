@@ -26,7 +26,7 @@ class ExplorationCoverage(BaseMetric):
     def __init__(
         self,
         scan_topic: str = "/scan",
-        pose_topic: str = "/model/turtlebot4/pose",
+        pose_topic: str = "/model/derpbot_0/pose",
         gt_map_yaml: str | None = None,
         grid_resolution: float = 0.5,
         publish_grid: bool = True,
