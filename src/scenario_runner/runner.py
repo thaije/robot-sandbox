@@ -95,8 +95,12 @@ class ScenarioRunner:
         # ── 3. Start ROS 2 metrics collection ─────────────────────────────────
         # rclpy is imported lazily to keep this module importable without ROS 2.
         import rclpy  # noqa: PLC0415
+        from rclpy.parameter import Parameter  # noqa: PLC0415
         rclpy.init()
-        node    = rclpy.create_node("arst_metrics")
+        node = rclpy.create_node(
+            "arst_metrics",
+            parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
+        )
         metrics = self._build_metrics(node, robot_name)
 
         for m in metrics.values():
@@ -106,6 +110,8 @@ class ScenarioRunner:
             target=rclpy.spin, args=(node,), daemon=True,
         )
         spin_thread.start()
+        # Give DDS time to discover the odom/bumper publishers before the run starts.
+        time.sleep(2.0)
         log.info("Metrics collection started: %s", list(metrics))
 
         # ── 4. Run until success criteria met or timeout ───────────────────────
