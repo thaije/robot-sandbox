@@ -19,7 +19,9 @@
     right_wheel     — at (0, -0.115, 0) relative to base_link
     caster_wheel    — at (0.13, 0, -0.03) relative to base_link → z=0.02 world
 
-  Sensors: contact/bumper on base_link.  LiDAR / camera added later.
+  Sensors: contact/bumper on base_link (detects all sides).  LiDAR / camera added later.
+
+  Visual: yellow strip on front face (+x) marks forward direction.
 
   Gazebo plugins (Harmonic):
     gz-sim-diff-drive-system        — velocity control + odometry
@@ -29,7 +31,15 @@
 
   <!-- ═══════════════════════════ BASE STRUCTURE ════════════════════════════ -->
 
-  <link name="base_footprint"/>
+  <!-- Minimal inertial prevents gz sdf from lumping base_footprint+base_link
+       into one link and renaming the collision.  Without this, the contact
+       sensor can't find its collision by name after the rename. -->
+  <link name="base_footprint">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+    </inertial>
+  </link>
 
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
@@ -45,6 +55,16 @@
       </geometry>
       <material name="derpbot_blue">
         <color rgba="0.20 0.40 0.90 1.0"/>
+      </material>
+    </visual>
+    <!-- Yellow strip on front face (+x = forward) so you can read the robot's heading -->
+    <visual name="front_indicator">
+      <origin xyz="0.151 0 0.05" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.005 0.20 0.10"/>
+      </geometry>
+      <material name="indicator_yellow">
+        <color rgba="1.0 0.85 0.0 1.0"/>
       </material>
     </visual>
     <collision name="base_link_collision">
@@ -199,17 +219,26 @@
   </gazebo>
 
   <!-- ══════════════════════════ BUMPER SENSOR ══════════════════════════════ -->
-  <!-- Contact sensor on base_link.  Publishes ros_gz_interfaces/Contacts to
+  <!-- Contact sensor.  Publishes ros_gz_interfaces/Contacts to
        /ROBOT_NAME/bumper_contact (ROBOT_NAME substituted at spawn time).
-       Requires gz-sim-contact-system in the world (already present).       -->
+       Requires gz-sim-contact-system in the world (already present).
 
-  <gazebo reference="base_link">
+       IMPORTANT: gz sdf -p lumps the base_footprint→base_link fixed joint,
+       merging base_link into base_footprint and renaming the collision from
+       "base_link_collision" to the mangled name below.  The sensor's
+       <collision> must match this exact post-lumping ECS entity name, or the
+       contact system cannot find the collision and never initializes the
+       gz transport publisher (symptom: "no publishers" on the topic).
+
+       To regenerate this name:  gz sdf -p robots/derpbot/urdf/derpbot.urdf | grep collision  -->
+
+  <gazebo reference="base_footprint">
     <sensor name="bumper" type="contact">
       <always_on>true</always_on>
       <update_rate>10</update_rate>
       <topic>/ROBOT_NAME/bumper_contact</topic>
       <contact>
-        <collision>base_link_collision</collision>
+        <collision>base_footprint_fixed_joint_lump__base_link_collision_collision</collision>
       </contact>
     </sensor>
   </gazebo>

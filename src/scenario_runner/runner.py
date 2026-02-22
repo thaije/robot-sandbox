@@ -114,46 +114,54 @@ class ScenarioRunner:
         time.sleep(2.0)
         log.info("Metrics collection started: %s", list(metrics))
 
-        # ── 4. Run until success criteria met or timeout ───────────────────────
-        start_time = time.monotonic()
-        outcome    = self._run_until_done(timeout, metrics, start_time)
-        elapsed    = time.monotonic() - start_time
-        log.info("Scenario ended: outcome=%s  elapsed=%.1fs", outcome, elapsed)
-
-        # ── 5. Collect final metric snapshot ──────────────────────────────────
-        raw = self._collect_metrics(metrics)
-        raw["task_completion_time"] = round(elapsed, 2)
-
-        # ── 6. Evaluate success criteria ───────────────────────────────────────
-        success, descriptions = evaluate_criteria(self._cfg["success_criteria"], raw)
-        for desc in descriptions:
-            log.info("Criterion: %s", desc)
-
-        if outcome == "timeout":
-            status = "TIMEOUT"
-        elif success:
-            status = "SUCCESS"
-        else:
-            status = "FAILURE"
-
-        # ── 7. Score + display scorecard ──────────────────────────────────────
-        engine    = ScoringEngine(self._cfg["scoring"])
-        scorecard = engine.compute(raw, self._cfg)
-        scorecard.status          = status
-        scorecard.elapsed_seconds = elapsed
-
-        print(render_scorecard(scorecard))
-
-        result_path = write_results(scorecard, self._output_dir)
-        log.info("Results written to: %s", result_path)
-
-        # ── 8. Cleanup ─────────────────────────────────────────────────────────
-        node.destroy_node()
+        raw: dict[str, Any] = {}
+        outcome = "interrupted"
+        elapsed = 0.0
         try:
-            rclpy.shutdown()
-        except Exception:
-            pass
-        self._launcher.shutdown()
+            # ── 4. Run until success criteria met or timeout ───────────────────
+            start_time = time.monotonic()
+            outcome    = self._run_until_done(timeout, metrics, start_time)
+            elapsed    = time.monotonic() - start_time
+            log.info("Scenario ended: outcome=%s  elapsed=%.1fs", outcome, elapsed)
+
+            # ── 5. Collect final metric snapshot ──────────────────────────────
+            raw = self._collect_metrics(metrics)
+            raw["task_completion_time"] = round(elapsed, 2)
+
+            # ── 6. Evaluate success criteria ──────────────────────────────────
+            success, descriptions = evaluate_criteria(self._cfg["success_criteria"], raw)
+            for desc in descriptions:
+                log.info("Criterion: %s", desc)
+
+            if outcome == "timeout":
+                status = "TIMEOUT"
+            elif success:
+                status = "SUCCESS"
+            else:
+                status = "FAILURE"
+
+            # ── 7. Score + display scorecard ──────────────────────────────────
+            engine    = ScoringEngine(self._cfg["scoring"])
+            scorecard = engine.compute(raw, self._cfg)
+            scorecard.status          = status
+            scorecard.elapsed_seconds = elapsed
+
+            print(render_scorecard(scorecard))
+
+            result_path = write_results(scorecard, self._output_dir)
+            log.info("Results written to: %s", result_path)
+
+        except KeyboardInterrupt:
+            log.info("Run interrupted by user (Ctrl-C) — shutting down cleanly.")
+
+        finally:
+            # ── 8. Cleanup — always runs even on Ctrl-C ────────────────────────
+            node.destroy_node()
+            try:
+                rclpy.shutdown()
+            except Exception:
+                pass
+            self._launcher.shutdown()
 
         return raw
 

@@ -39,7 +39,9 @@ The script handles `python3.12` and `PYTHONPATH` automatically. Full lifecycle:
 
 ### DerpBot robot
 
-Two-wheeled diff-drive with a contact/bumper sensor on `base_link`. URDF at `robots/derpbot/urdf/derpbot.urdf`. Uses `ROBOT_NAME` placeholder substituted at spawn time so topic names are per-instance (`/derpbot_0/cmd_vel` etc.). TF frames are unprefixed (`odom → base_footprint → base_link`). LiDAR and camera to be added in later steps.
+Two-wheeled diff-drive with a contact/bumper sensor referenced from `base_footprint` (post-lumping). URDF at `robots/derpbot/urdf/derpbot.urdf`. Uses `ROBOT_NAME` placeholder substituted at spawn time so topic names are per-instance (`/derpbot_0/cmd_vel` etc.). TF frames are unprefixed (`odom → base_footprint → base_link`). LiDAR and camera to be added in later steps.
+
+Yellow strip on the front face (+x) marks the forward direction. Contact sensor fires on collisions from any side (the body collision covers the full chassis box).
 
 ### Implementation status of key modules
 
@@ -109,19 +111,69 @@ Two-wheeled diff-drive with a contact/bumper sensor on `base_link`. URDF at `rob
 - **Orphaned `gz sim` processes (round 2)** — After SIGTERM, `ros2 launch` exits quickly; subsequent `os.getpgid(proc.pid)` then raises `ProcessLookupError`, skipping SIGKILL and leaving `gz sim` alive. Fixed: pgids are captured *before* sending any signal and reused for SIGKILL. Verified zero lingering processes.
 - **`meters_traveled` explosion (216,344 m)** — consequence of ghost models; consecutive odom messages from robots at different world positions created huge apparent movement. Fixed by the above.
 
-## Open issue — metrics show 0 during automated runs (investigate next session)
+## Fixed (2026-02) — metrics now update during automated runs
 
-In automated scenario runs (`run_scenario.sh`), `meters_traveled` and `revisit_ratio` report 0.0 / 1.0 (single cell) even when the robot is moving.
+**Root cause:** `use_sim_time` mismatch. The bridge runs with `use_sim_time=true`, stamping odom
+messages with Gazebo sim time. The rclpy metrics node was created without `use_sim_time`, so
+messages appeared to be in the future and were silently dropped.
 
-**Confirmed working independently:**
-- `ros2 topic echo /derpbot_0/odom` showed odom updating correctly during movement (x=11.77→15.24 over 3s at 0.5 m/s).
-- User confirmed teleop (`ros2 run teleop_twist_keyboard ...`) moves the robot correctly.
-- The `ros2 topic pub` pipeline works when publishing from a shell with ROS sourced.
+**Fix applied** in `src/scenario_runner/runner.py`:
+```python
+node = rclpy.create_node(
+    "arst_metrics",
+    parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
+)
+```
+Also added `time.sleep(2.0)` after spin thread start for DDS discovery.
 
-**Suspected causes** (investigate in order):
-1. **`use_sim_time` mismatch** — the bridge is started with `use_sim_time=true`, but the rclpy metrics node is created without it (`rclpy.create_node("arst_metrics")`). Odom messages carry a sim-time stamp; if the node uses wall time, messages may appear to be in the future and get silently dropped. **Fix to try:** pass `parameter_overrides=[Parameter('use_sim_time', True)]` to `rclpy.create_node()` in `runner.py`.
-2. **DDS discovery race** — the rclpy metrics subscriptions are created right after `rclpy.init()`, but the odom bridge may not have been discovered yet. Adding a short `time.sleep(1.0)` after creating subscriptions (before starting the spin thread) might help. A better fix: wait for the first odom message with a timeout.
-3. **Spin thread race** — unlikely since the spin thread is started before the 10-second scenario loop, but worth checking if `rclpy.spin` is actually running.
+**Verified:** `meters_traveled: 20.401` for a 40s run at 0.5 m/s (was 0.0 before fix).
+
+---
+
+## Fixed (2026-02) — collision_count always 0 / contact sensor "No publishers"
+
+**Symptom:** `collision_count: 0` in every scorecard even after repeated wall collisions.
+`gz topic -t /derpbot_0/bumper_contact --info` showed "No publishers" — the sensor entity
+existed in the ECS but never initialized its gz transport publisher.
+
+**Root cause:** URDF→SDF fixed-joint lumping. `gz sdf -p` merges `base_footprint` and
+`base_link` (the fixed joint between them is lumped), renaming the body collision from
+`base_link_collision` to `base_footprint_fixed_joint_lump__base_link_collision_collision`.
+The contact sensor's `<contact><collision>` still referenced `base_link_collision` (the
+pre-lumping name). Gazebo's contact system could not find the collision entity, so it
+silently skipped publisher initialization.
+
+Note: adding a tiny inertial (`mass=0.001`) to `base_footprint` does NOT prevent lumping —
+`gz sdf -p` ignores it and lumps anyway.
+
+**Fix applied** in `robots/derpbot/urdf/derpbot.urdf`:
+```xml
+<!-- Before (wrong — pre-lumping name): -->
+<gazebo reference="base_link">
+  <sensor name="bumper" type="contact">
+    <contact>
+      <collision>base_link_collision</collision>
+    </contact>
+  </sensor>
+</gazebo>
+
+<!-- After (correct — post-lumping name): -->
+<gazebo reference="base_footprint">
+  <sensor name="bumper" type="contact">
+    <contact>
+      <collision>base_footprint_fixed_joint_lump__base_link_collision_collision</collision>
+    </contact>
+  </sensor>
+</gazebo>
+```
+
+**How to re-derive the correct name** if the URDF changes:
+```bash
+gz sdf -p robots/derpbot/urdf/derpbot.urdf | grep "collision name="
+```
+The body collision will always be the one on `base_footprint` with the `lump__` prefix.
+
+**Status:** Fix applied, awaiting user verification (next test run).
 
 ---
 
