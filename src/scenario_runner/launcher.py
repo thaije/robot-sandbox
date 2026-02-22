@@ -14,6 +14,8 @@ Design notes
 """
 from __future__ import annotations
 
+import os
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -34,6 +36,8 @@ class SimulationLauncher:
     def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._processes: list[subprocess.Popen] = []
+        self._robot_name: str | None = None
+        self._world_name: str | None = None
 
     def launch(
         self,
@@ -65,9 +69,13 @@ class SimulationLauncher:
         robot_timeout:
             Seconds to wait for ``/<robot_name>/odom`` before raising.
         """
+        self._robot_name = robot_name
+        self._world_name = world_name
+
         self._launch_gazebo(world_sdf)
         self._wait_for_gazebo(timeout=gazebo_timeout)
 
+        self._despawn_if_exists(robot_name, world_name)
         self._launch_robot(robot_platform, robot_name, world_name, spawn_pose)
         self._wait_for_robot(robot_name, timeout=robot_timeout)
 
@@ -85,6 +93,7 @@ class SimulationLauncher:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            start_new_session=True,  # own process group → gz sim killed with parent
         )
         self._processes.append(proc)
         return proc
@@ -112,9 +121,34 @@ class SimulationLauncher:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            start_new_session=True,  # own process group → bridges killed with parent
         )
         self._processes.append(proc)
         return proc
+
+    def _despawn_if_exists(self, robot_name: str, world_name: str) -> None:
+        """Remove a robot model from Gazebo if it already exists.
+
+        Best-effort: ignores failures (model may not exist on first run).
+        Called before spawning to prevent ghost models accumulating across runs.
+        """
+        result = subprocess.run(
+            [
+                "gz", "service",
+                "-s", f"/world/{world_name}/remove",
+                "--reqtype", "gz.msgs.Entity",
+                "--reptype", "gz.msgs.Boolean",
+                "--timeout", "3000",
+                "--req", f'name: "{robot_name}" type: MODEL',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            import logging
+            logging.getLogger(__name__).info(
+                "Pre-spawn: removed existing model %r from world %r.", robot_name, world_name
+            )
 
     # ── Private: readiness checks ──────────────────────────────────────────────
 
@@ -145,12 +179,30 @@ class SimulationLauncher:
     # ── Shutdown ───────────────────────────────────────────────────────────────
 
     def shutdown(self) -> None:
-        """Terminate all child processes in reverse launch order."""
+        """Despawn the robot from Gazebo then kill all child process groups."""
+        if self._robot_name and self._world_name:
+            self._despawn_if_exists(self._robot_name, self._world_name)
+
+        # Each process was launched with start_new_session=True, so it has its
+        # own process group (pgid == proc.pid).  Killing the group ensures gz sim
+        # and ros_gz_bridge grandchildren are also terminated.
         for proc in reversed(self._processes):
-            proc.terminate()
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            except ProcessLookupError:
+                pass  # already gone
+
+        time.sleep(2.0)  # give gz sim time to shut down cleanly
+
+        for proc in reversed(self._processes):
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # already gone
+
         for proc in self._processes:
             try:
-                proc.wait(timeout=5.0)
+                proc.wait(timeout=3.0)
             except subprocess.TimeoutExpired:
-                proc.kill()
+                pass
         self._processes.clear()

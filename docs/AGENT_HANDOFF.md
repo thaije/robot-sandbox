@@ -20,15 +20,22 @@ Autonomous Robotics Simulation Testbed (ARST). Gazebo Harmonic + ROS 2 Jazzy sim
 - **Ground-truth map** — `worlds/templates/indoor_office/ground_truth_map.pgm` + `.yaml` (0.5 m resolution)
 - **Object models** — `fire_extinguisher` (class 1), `first_aid_kit` (class 2), `hazard_sign` (class 3) — all SDF with label plugins
 
-### What's implemented (code complete, not yet run end-to-end)
+### Full scenario pipeline (verified running, 2026-02)
 
-- **Full scenario pipeline** — `python -m scenario_runner --scenario config/scenarios/office_explore_detect.yaml` will:
-  1. Generate a world SDF (WorldGenerator)
-  2. Launch Gazebo with the generated SDF (SimulationLauncher → `ros2 launch` subprocess)
-  3. Spawn DerpBot at the configured pose
-  4. Collect `meters_traveled` and `collision_count` metrics via rclpy subscriptions
-  5. Poll success criteria every 2 s until met or timeout
-  6. Evaluate, score all four categories (Speed/Accuracy/Safety/Efficiency), print ASCII scorecard, write JSON results
+Run via:
+```bash
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless [--timeout N] [--gui]
+```
+
+The script handles `python3.12` and `PYTHONPATH` automatically. Full lifecycle:
+1. Generate world SDF (WorldGenerator)
+2. Launch Gazebo with the generated SDF (SimulationLauncher → `ros2 launch` subprocess)
+3. Despawn any stale robot model with the same name (prevents ghost accumulation)
+4. Spawn DerpBot at the configured pose
+5. Collect `meters_traveled` and `collision_count` metrics via rclpy subscriptions
+6. Poll success criteria every 2 s until met or timeout
+7. Evaluate, score all four categories (Speed/Accuracy/Safety/Efficiency), print ASCII scorecard, write JSON results
+8. Despawn robot from Gazebo; kill entire Gazebo + bridge process tree (no orphans)
 
 ### DerpBot robot
 
@@ -88,31 +95,23 @@ Simple two-wheeled diff-drive, no sensors (Phase 1 baseline). URDF at `robots/de
 | 4 | 4.4 CLI entry point | ✅ Done |
 | 4 | 4.5 Scenario reset | ⬜ Stub |
 | 4 | 4.6 Batch execution | ⬜ Not started |
-| 4 | 4.7 End-to-end integration test | ⬜ Not started |
+| 4 | 4.7 End-to-end integration test | ✅ Done |
 | 5 | Documentation | ⬜ Not started |
+
+---
+
+## Known issues fixed (2026-02)
+
+- **`python3` wrong interpreter** — `python3` resolves to a text-generation-webui venv (Python 3.11). ROS 2 Jazzy's `rclpy` C extension requires Python 3.12. `run_scenario.sh` uses `python3.12` explicitly.
+- **Ghost robot models accumulating** — `SimulationLauncher.shutdown()` was killing the `ros2 launch` process but not removing the Gazebo model. After 3 runs, 3 `derpbot_0` instances were all publishing on `/derpbot_0/odom`. Fixed: `_despawn_if_exists()` called at both pre-spawn and shutdown.
+- **Orphaned `gz sim` / bridge processes** — `proc.terminate()` on the `ros2 launch` parent did not kill the `gz sim` grandchild. Fixed: both launch subprocesses use `start_new_session=True`; `shutdown()` uses `os.killpg()` to kill the entire process group. Verified zero lingering processes after run.
+- **`meters_traveled` explosion (216,344 m)** — consequence of ghost models; consecutive odom messages from robots at different world positions created huge apparent movement. Fixed by the above.
 
 ---
 
 ## Recommended next steps (in order)
 
-### 1. First end-to-end run (Step 4.7)
-
-The full pipeline is now code-complete. Try it:
-
-```bash
-cd /home/plip/Projects/robot-sandbox
-# Source ROS 2 + source the workspace if needed
-python -m scenario_runner --scenario config/scenarios/office_explore_detect.yaml --headless
-```
-
-Expected flow: generates SDF → launches Gazebo → spawns DerpBot → collects meters_traveled → times out at 600 s (no autonomy yet) → prints scorecard → writes `results/office_explore_detect_001.json`.
-
-Likely first issues to fix:
-- Python path: `src/` must be on `PYTHONPATH`. Check if `setup.py` / `pyproject.toml` is already configured or add `export PYTHONPATH=$PYTHONPATH:/home/plip/Projects/robot-sandbox/src`
-- ROS 2 environment not sourced: `source /opt/ros/jazzy/setup.bash`
-- `arst_sim.launch.py` — verify the `world_sdf` arg is correctly passed through to `gz_args`
-
-### 2. Add LiDAR sensor to DerpBot (unlock coverage + revisit metrics)
+### 1. Add LiDAR sensor to DerpBot (unlock coverage + revisit metrics)
 
 Add a 2D scan link + Gazebo sensor element to `robots/derpbot/urdf/derpbot.urdf`, and a bridge argument in `spawn_robot.launch.py`:
 ```
@@ -125,7 +124,7 @@ Then implement `src/metrics/exploration_coverage.py` (currently a full stub):
 - Grid-based raycasting with `skimage.draw.line()`, 0.5 m resolution
 - See `docs/ARST_Project_Plan.md` §5.2 for the full algorithm spec
 
-### 3. Add bumper/contact sensor to DerpBot (unlock collision_count)
+### 2. Add bumper/contact sensor to DerpBot (unlock collision_count)
 
 Add a contact sensor to the DerpBot URDF and a bridge:
 ```
@@ -134,7 +133,7 @@ Add a contact sensor to the DerpBot URDF and a bridge:
 ```
 `CollisionCount` is already wired — it just needs the topic to produce messages.
 
-### 4. Calibrate par values (Step 3.13)
+### 3. Calibrate par values (Step 3.13)
 
 After the first manual teleoperation run with meters_traveled and coverage working:
 1. Record typical values: meters traveled, coverage %, time taken

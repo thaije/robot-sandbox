@@ -15,6 +15,9 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md)
 - ROS 2 Jazzy (`source /opt/ros/jazzy/setup.bash`)
 - Gazebo Harmonic (`ros-jazzy-ros-gz*` packages)
 - `robot_state_publisher`, `ros_gz_bridge`, `ros_gz_sim`, `teleop_twist_keyboard`
+- **Python 3.12** — ROS 2 Jazzy's `rclpy` C extension is compiled for Python 3.12.
+  Use `python3.12` explicitly; `python3` may resolve to a different interpreter if
+  a virtual environment (e.g. conda, another project venv) is active in the shell.
 
 ---
 
@@ -176,6 +179,31 @@ tests/                       # pytest unit tests
 docs/
   ARST_Project_Plan.md       # full project plan
 ```
+
+## Running a scenario (automated)
+
+The scenario runner handles the full lifecycle automatically: generates world SDF,
+starts Gazebo, spawns the robot, collects metrics, evaluates criteria, prints a
+scorecard, writes JSON results, then **cleans up** — the robot is despawned and
+Gazebo is shut down completely.
+
+```bash
+# Headless (default — no display required):
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless
+
+# With Gazebo GUI:
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --gui
+
+# Short timeout for quick smoke tests (seconds):
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 10
+```
+
+> **Note:** the script must be run from the repo root. It sources ROS 2 automatically
+> and sets `PYTHONPATH`; no need to `source /opt/ros/jazzy/setup.bash` beforehand.
+
+Results are written to `results/<scenario_name>.json`.
+
+---
 
 ## Running tests
 
