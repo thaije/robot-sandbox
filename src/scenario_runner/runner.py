@@ -161,6 +161,7 @@ class ScenarioRunner:
         """
         from metrics.meters_traveled import MetersTraveled  # noqa: PLC0415
         from metrics.collision_count import CollisionCount   # noqa: PLC0415
+        from metrics.revisit_ratio import RevisitRatio       # noqa: PLC0415
 
         _registry: dict[str, Any] = {
             "meters_traveled": lambda: MetersTraveled(
@@ -168,7 +169,11 @@ class ScenarioRunner:
                 node=node,
             ),
             "collision_count": lambda: CollisionCount(
-                bumper_topic="/bumper_contact",
+                bumper_topic=f"/{robot_name}/bumper_contact",
+                node=node,
+            ),
+            "revisit_ratio": lambda: RevisitRatio(
+                odom_topic=f"/{robot_name}/odom",
                 node=node,
             ),
         }

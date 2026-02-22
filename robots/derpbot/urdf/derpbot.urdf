@@ -19,7 +19,7 @@
     right_wheel     — at (0, -0.115, 0) relative to base_link
     caster_wheel    — at (0.13, 0, -0.03) relative to base_link → z=0.02 world
 
-  Sensors: none (Phase 1 baseline).  LiDAR / camera added later.
+  Sensors: contact/bumper on base_link.  LiDAR / camera added later.
 
   Gazebo plugins (Harmonic):
     gz-sim-diff-drive-system        — velocity control + odometry
@@ -47,7 +47,7 @@
         <color rgba="0.20 0.40 0.90 1.0"/>
       </material>
     </visual>
-    <collision>
+    <collision name="base_link_collision">
       <origin xyz="0 0 0.05" rpy="0 0 0"/>
       <geometry>
         <box size="0.30 0.20 0.10"/>
@@ -196,6 +196,22 @@
             name="gz::sim::systems::JointStatePublisher">
       <topic>/ROBOT_NAME/joint_states</topic>
     </plugin>
+  </gazebo>
+
+  <!-- ══════════════════════════ BUMPER SENSOR ══════════════════════════════ -->
+  <!-- Contact sensor on base_link.  Publishes ros_gz_interfaces/Contacts to
+       /ROBOT_NAME/bumper_contact (ROBOT_NAME substituted at spawn time).
+       Requires gz-sim-contact-system in the world (already present).       -->
+
+  <gazebo reference="base_link">
+    <sensor name="bumper" type="contact">
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <topic>/ROBOT_NAME/bumper_contact</topic>
+      <contact>
+        <collision>base_link_collision</collision>
+      </contact>
+    </sensor>
   </gazebo>
 
   <!-- Frictionless caster so it doesn't resist turning -->

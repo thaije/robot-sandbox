@@ -32,29 +32,30 @@ The script handles `python3.12` and `PYTHONPATH` automatically. Full lifecycle:
 2. Launch Gazebo with the generated SDF (SimulationLauncher → `ros2 launch` subprocess)
 3. Despawn any stale robot model with the same name (prevents ghost accumulation)
 4. Spawn DerpBot at the configured pose
-5. Collect `meters_traveled` and `collision_count` metrics via rclpy subscriptions
+5. Collect `meters_traveled`, `collision_count`, and `revisit_ratio` metrics via rclpy subscriptions
 6. Poll success criteria every 2 s until met or timeout
 7. Evaluate, score all four categories (Speed/Accuracy/Safety/Efficiency), print ASCII scorecard, write JSON results
 8. Despawn robot from Gazebo; kill entire Gazebo + bridge process tree (no orphans)
 
 ### DerpBot robot
 
-Simple two-wheeled diff-drive, no sensors (Phase 1 baseline). URDF at `robots/derpbot/urdf/derpbot.urdf`. Uses `ROBOT_NAME` placeholder substituted at spawn time so topic names are per-instance (`/derpbot_0/cmd_vel` etc.). TF frames are unprefixed (`odom → base_footprint → base_link`).
+Two-wheeled diff-drive with a contact/bumper sensor on `base_link`. URDF at `robots/derpbot/urdf/derpbot.urdf`. Uses `ROBOT_NAME` placeholder substituted at spawn time so topic names are per-instance (`/derpbot_0/cmd_vel` etc.). TF frames are unprefixed (`odom → base_footprint → base_link`). LiDAR and camera to be added in later steps.
 
 ### Implementation status of key modules
 
 | File | Status | Notes |
 |------|--------|-------|
 | `src/metrics/base_metric.py` | COMPLETE | Abstract base; plugin interface |
-| `src/metrics/meters_traveled.py` | COMPLETE | ROS sub wired in `start()`; pass `node=` at init |
-| `src/metrics/collision_count.py` | COMPLETE | ROS sub wired in `start()`; pass `node=` at init |
-| `src/metrics/exploration_coverage.py` | STUB | All methods raise NotImplementedError |
+| `src/metrics/meters_traveled.py` | COMPLETE | Odom subscription; registered in runner |
+| `src/metrics/collision_count.py` | COMPLETE | Contacts subscription on `/{robot}/bumper_contact`; registered in runner |
+| `src/metrics/revisit_ratio.py` | COMPLETE | Odom subscription; registered in runner |
+| `src/metrics/exploration_coverage.py` | STUB | All methods raise NotImplementedError — needs LiDAR |
+| `src/metrics/detection_metrics.py` | STUB | Logic written but not wired; needs camera sensor |
 | `src/metrics/evaluator.py` | COMPLETE | Success/failure evaluation fully works |
 | `src/metrics/scoring.py` | COMPLETE | All four category scorers + overall + Scorecard |
 | `src/metrics/reporter.py` | COMPLETE | ASCII scorecard + JSON output work |
-| `src/metrics/detection_metrics.py` | exists | check before using |
-| `src/scenario_runner/launcher.py` | COMPLETE | launch(), Gazebo/robot processes, readiness checks |
-| `src/scenario_runner/runner.py` | COMPLETE | run(), _build_metrics(), _collect_metrics(), _run_until_done() |
+| `src/scenario_runner/launcher.py` | COMPLETE | launch(), shutdown() kills full process groups (pgid fix) |
+| `src/scenario_runner/runner.py` | COMPLETE | run(), _build_metrics() registers meters_traveled, collision_count, revisit_ratio |
 | `src/scenario_runner/__main__.py` | COMPLETE | CLI entry point; argparse wired to runner |
 | `src/world_manager/object_placer.py` | COMPLETE | Random placement with collision avoidance |
 | `src/world_manager/world_generator.py` | COMPLETE | generate(), lighting + object injection |
@@ -78,11 +79,11 @@ Simple two-wheeled diff-drive, no sensors (Phase 1 baseline). URDF at `robots/de
 | 2 | 2.1–2.5 Robot integration | ✅ Done (DerpBot replaces TB4) |
 | 3 | 3.1 Metrics plugin arch | ✅ Done |
 | 3 | 3.2 Meters traveled | ✅ Done |
-| 3 | 3.3 Collision count | ✅ Done |
-| 3 | 3.4 Object detection tracking | ⬜ Not started (needs sensors on DerpBot) |
-| 3 | 3.5 Detection metrics | ⬜ Not started |
+| 3 | 3.3 Collision count | ✅ Done — bumper sensor on DerpBot, bridge live |
+| 3 | 3.4 Object detection tracking | ⬜ Not started (needs bounding box camera on DerpBot) |
+| 3 | 3.5 Detection metrics | ⬜ Stub wired, not registered (needs camera) |
 | 3 | 3.6 Exploration coverage | ⬜ Stub (needs LiDAR sensor on DerpBot) |
-| 3 | 3.7 Revisit ratio | ⬜ Not started |
+| 3 | 3.7 Revisit ratio | ✅ Done — uses odom, registered in runner |
 | 3 | 3.8 Success/failure evaluator | ✅ Done |
 | 3 | 3.9 Metrics reporter | ✅ Done |
 | 3 | 3.10 Near-miss detection | ⬜ Not started |
@@ -104,34 +105,67 @@ Simple two-wheeled diff-drive, no sensors (Phase 1 baseline). URDF at `robots/de
 
 - **`python3` wrong interpreter** — `python3` resolves to a text-generation-webui venv (Python 3.11). ROS 2 Jazzy's `rclpy` C extension requires Python 3.12. `run_scenario.sh` uses `python3.12` explicitly.
 - **Ghost robot models accumulating** — `SimulationLauncher.shutdown()` was killing the `ros2 launch` process but not removing the Gazebo model. After 3 runs, 3 `derpbot_0` instances were all publishing on `/derpbot_0/odom`. Fixed: `_despawn_if_exists()` called at both pre-spawn and shutdown.
-- **Orphaned `gz sim` / bridge processes** — `proc.terminate()` on the `ros2 launch` parent did not kill the `gz sim` grandchild. Fixed: both launch subprocesses use `start_new_session=True`; `shutdown()` uses `os.killpg()` to kill the entire process group. Verified zero lingering processes after run.
+- **Orphaned `gz sim` / bridge processes (round 1)** — `proc.terminate()` on the `ros2 launch` parent did not kill the `gz sim` grandchild. Fixed: both launch subprocesses use `start_new_session=True`; `shutdown()` uses `os.killpg()` to kill the entire process group.
+- **Orphaned `gz sim` processes (round 2)** — After SIGTERM, `ros2 launch` exits quickly; subsequent `os.getpgid(proc.pid)` then raises `ProcessLookupError`, skipping SIGKILL and leaving `gz sim` alive. Fixed: pgids are captured *before* sending any signal and reused for SIGKILL. Verified zero lingering processes.
 - **`meters_traveled` explosion (216,344 m)** — consequence of ghost models; consecutive odom messages from robots at different world positions created huge apparent movement. Fixed by the above.
+
+## Open issue — metrics show 0 during automated runs (investigate next session)
+
+In automated scenario runs (`run_scenario.sh`), `meters_traveled` and `revisit_ratio` report 0.0 / 1.0 (single cell) even when the robot is moving.
+
+**Confirmed working independently:**
+- `ros2 topic echo /derpbot_0/odom` showed odom updating correctly during movement (x=11.77→15.24 over 3s at 0.5 m/s).
+- User confirmed teleop (`ros2 run teleop_twist_keyboard ...`) moves the robot correctly.
+- The `ros2 topic pub` pipeline works when publishing from a shell with ROS sourced.
+
+**Suspected causes** (investigate in order):
+1. **`use_sim_time` mismatch** — the bridge is started with `use_sim_time=true`, but the rclpy metrics node is created without it (`rclpy.create_node("arst_metrics")`). Odom messages carry a sim-time stamp; if the node uses wall time, messages may appear to be in the future and get silently dropped. **Fix to try:** pass `parameter_overrides=[Parameter('use_sim_time', True)]` to `rclpy.create_node()` in `runner.py`.
+2. **DDS discovery race** — the rclpy metrics subscriptions are created right after `rclpy.init()`, but the odom bridge may not have been discovered yet. Adding a short `time.sleep(1.0)` after creating subscriptions (before starting the spin thread) might help. A better fix: wait for the first odom message with a timeout.
+3. **Spin thread race** — unlikely since the spin thread is started before the 10-second scenario loop, but worth checking if `rclpy.spin` is actually running.
 
 ---
 
 ## Recommended next steps (in order)
 
-### 1. Add LiDAR sensor to DerpBot (unlock coverage + revisit metrics)
+### 1. Add bounding box camera to DerpBot (unlock detection metrics + scenario SUCCESS)
 
-Add a 2D scan link + Gazebo sensor element to `robots/derpbot/urdf/derpbot.urdf`, and a bridge argument in `spawn_robot.launch.py`:
+This is the highest-priority step: without it `object_detection_rate` is always `[MISSING]` and the scenario can never reach SUCCESS.
+
+Add a `boundingbox_camera` sensor to `robots/derpbot/urdf/derpbot.urdf` — a Gazebo rendering sensor that outputs `vision_msgs/Detection2DArray` (handles occlusion; objects behind walls are NOT detected). This is a ground-truth oracle in Phase 1; swap for real perception later with a single topic remap.
+
+Steps:
+1. Add camera link + Gazebo sensor element to URDF:
+   ```xml
+   <gazebo reference="camera_link">
+     <sensor name="bbox_camera" type="boundingbox_camera">
+       <topic>/ROBOT_NAME/detections</topic>
+       <update_rate>10</update_rate>
+       <camera>...</camera>
+     </sensor>
+   </gazebo>
+   ```
+2. Add bridge in `spawn_robot.launch.py`:
+   ```
+   /{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V
+   ```
+3. Implement `src/metrics/object_detection_tracker.py` (file does not exist yet) — tracks first-detection timestamp per object class ID.
+4. Wire `DetectionMetrics` + `ObjectDetectionTracker` into `runner._build_metrics()`.
+5. Set `total_targets` from the scenario config (`world.objects` count).
+
+### 2. Add 2D LiDAR to DerpBot (unlock exploration_coverage)
+
+Add a LiDAR link + `gpu_lidar` sensor element to URDF, bridge `/derpbot_0/scan`, and add a ground-truth pose bridge (requires `PosePublisher` plugin in URDF):
 ```
 /{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan
+/model/{robot_name}/pose@geometry_msgs/msg/Pose[gz.msgs.Pose
 ```
 
 Then implement `src/metrics/exploration_coverage.py` (currently a full stub):
-- Subscribe to `/derpbot_0/scan` (LaserScan) and `/model/derpbot_0/pose` (ground-truth)
-- Bridge the pose: add `/{robot_name}/gz_pose@geometry_msgs/msg/Pose[gz.msgs.Pose` to bridge args
-- Grid-based raycasting with `skimage.draw.line()`, 0.5 m resolution
-- See `docs/ARST_Project_Plan.md` §5.2 for the full algorithm spec
+- Subscribe to scan + ground-truth pose
+- Grid-based raycasting with `skimage.draw.line()` onto the PGM ground-truth map (0.5 m resolution)
+- See `docs/ARST_Project_Plan.md` §5.2 for full algorithm spec
 
-### 2. Add bumper/contact sensor to DerpBot (unlock collision_count)
-
-Add a contact sensor to the DerpBot URDF and a bridge:
-```
-/world/indoor_office/model/derpbot_0/link/<link>/sensor/<sensor>/contact
-@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts
-```
-`CollisionCount` is already wired — it just needs the topic to produce messages.
+Note: `revisit_ratio` is already live (uses odom). Once LiDAR pose bridge is added, `revisit_ratio` could optionally be upgraded to use ground-truth pose — not required.
 
 ### 3. Calibrate par values (Step 3.13)
 

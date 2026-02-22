@@ -154,6 +154,8 @@ def _make_actions(context, *args, **kwargs):
             f"/{robot_name}/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
             # Joint states: Gazebo → ROS 2
             f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
+            # Bumper contact: Gazebo → ROS 2  (feeds CollisionCount metric)
+            f"/{robot_name}/bumper_contact@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
         ],
         remappings=[
             # Merge robot's TF stream into the global /tf topic

@@ -186,19 +186,32 @@ class SimulationLauncher:
         # Each process was launched with start_new_session=True, so it has its
         # own process group (pgid == proc.pid).  Killing the group ensures gz sim
         # and ros_gz_bridge grandchildren are also terminated.
+        #
+        # pgids are captured BEFORE sending any signal: after SIGTERM the parent
+        # ros2-launch process exits quickly, making getpgid() raise ProcessLookupError
+        # on the SIGKILL pass and leaving gz sim alive.
+        pgids = []
         for proc in reversed(self._processes):
             try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                pgids.append(os.getpgid(proc.pid))
             except ProcessLookupError:
-                pass  # already gone
+                pgids.append(None)
+
+        for pgid in pgids:
+            if pgid is not None:
+                try:
+                    os.killpg(pgid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
 
         time.sleep(2.0)  # give gz sim time to shut down cleanly
 
-        for proc in reversed(self._processes):
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except ProcessLookupError:
-                pass  # already gone
+        for pgid in pgids:
+            if pgid is not None:
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass  # already gone — SIGTERM was enough
 
         for proc in self._processes:
             try:
