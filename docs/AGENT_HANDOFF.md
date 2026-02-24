@@ -93,7 +93,7 @@ ScenarioRunner.run()
 **Key design decisions:**
 - `ROBOT_NAME` placeholder in URDF replaced at SDF generation time → unique topics per instance
 - Robots embedded in world SDF (not dynamically spawned) — required for contact sensors
-- `spawn_robot.launch.py` still works for manual dev use with `spawn:=false` (bridges only)
+- `spawn_robot.launch.py` with `spawn:=false` starts RSP + bridges only (used by automated runs; robot already in world SDF). True dynamic spawn works for teleop/odom/TF but contact sensor won't fire.
 - `boundingbox_camera` for ground-truth detection — handles occlusion, outputs `vision_msgs/Detection2DArray` (same as YOLO → easy swap later)
 - Coverage: raycasting at 0.5m res using `skimage.draw.line()` + Gazebo ground-truth pose (zero drift, SLAM-decoupled)
 - TF frames unprefixed (`odom → base_footprint → base_link`) — fine for single robot

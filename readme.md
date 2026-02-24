@@ -18,22 +18,19 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md) · Agent sta
 
 Handles full lifecycle: generates world SDF (with robot embedded), starts Gazebo, collects metrics, prints scorecard, cleans up. Results → `results/<scenario_name>.json`.
 
-## Manual simulation
+## Interactive dev session (GUI + teleoperation)
 
 ```bash
-# Start Gazebo
-ros2 launch launch/arst_sim.launch.py [headless:=true]
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --gui
+```
 
-# Spawn robot (manual/dev use only — automated runs embed robot in world SDF)
-ros2 launch launch/spawn_robot.launch.py [name:=derpbot_0] [x:=1.0] [y:=1.0] [yaw:=0.0]
-
-# Teleoperate
+Then in a separate terminal:
+```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
-
-# Despawn
-scripts/despawn_robot.sh [name] [world]
 ```
+
+> Dynamic spawn via `spawn_robot.launch.py` also works but contact sensors won't fire (gz-sim 8.10.0 bug). Use `run_scenario.sh --gui` for full fidelity.
 
 ## Tests
 

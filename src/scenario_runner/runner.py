@@ -93,6 +93,9 @@ class ScenarioRunner:
         # rclpy is imported lazily to keep this module importable without ROS 2.
         import rclpy  # noqa: PLC0415
         from rclpy.parameter import Parameter  # noqa: PLC0415
+        # BATCH MODE NOTE (Step 4.6): rclpy.init() must only be called once per
+        # process. Move init/shutdown to the batch runner's top-level context
+        # rather than calling ScenarioRunner.run() twice in the same process.
         rclpy.init()
         node = rclpy.create_node(
             "arst_metrics",
@@ -220,6 +223,8 @@ class ScenarioRunner:
         # Numeric values are summed (or averaged for ratio metrics).
         # List values (e.g. collision_events) are concatenated.
         # Non-numeric / non-list values are passed through as-is.
+        # NEW RATIO METRICS NOTE: add any new ratio/percentage metric names here
+        # so they are averaged (not summed) across robots in multi-robot runs.
         _avg_metrics = {"revisit_ratio"}
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}

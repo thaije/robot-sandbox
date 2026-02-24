@@ -25,6 +25,10 @@ from typing import Any
 from world_manager.template_loader import TemplateLoader
 from world_manager.object_placer import ObjectPlacer, PlacedObject
 
+# Project root resolved relative to this file: src/world_manager/ → src/ → repo root.
+# Used as the default so WorldGenerator() works regardless of the caller's CWD.
+_DEFAULT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 
 class WorldGenerator:
     """
@@ -51,7 +55,7 @@ class WorldGenerator:
             running from a directory other than the project root.
         """
         self._output_dir = Path(output_dir)
-        self._root = Path(project_root) if project_root else Path.cwd()
+        self._root = Path(project_root) if project_root else _DEFAULT_ROOT
         self._loader = TemplateLoader(self._root / "worlds" / "templates")
 
     def generate(self, scenario_config: dict) -> Path:
