@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import copy
 import io
+import subprocess
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
@@ -107,6 +109,10 @@ class WorldGenerator:
         # Inject placed objects before </world>
         self._inject_objects(world_elem, placements)
 
+        # Embed robots — convert each URDF to SDF and add as <model>
+        robots_cfg = scenario_config.get("robots", [])
+        self._embed_robots(world_elem, robots_cfg)
+
         # ── Write output ───────────────────────────────────────────────────────
         self._output_dir.mkdir(parents=True, exist_ok=True)
         scenario_name = scenario_config["scenario"]["name"]
@@ -161,6 +167,74 @@ class WorldGenerator:
             idx = counters.get(mt, 0)
             counters[mt] = idx + 1
             world_elem.append(self._load_model_element(mt, idx, obj))
+
+    def _embed_robots(
+        self,
+        world_elem: ET.Element,
+        robots_cfg: list[dict],
+    ) -> None:
+        """Convert each robot URDF to SDF via ``gz sdf -p`` and embed in world.
+
+        Robots are embedded at world-generation time (not dynamically spawned)
+        so that gz-sim-contact-system's EachNew<ContactSensor> fires at startup.
+        This is required because gz-sim 8.10.0 has a bug where EachNew never
+        fires for models added via the UserCommands create service.
+        """
+        for robot in robots_cfg:
+            platform = robot["platform"]
+            name = robot.get("name", f"{platform}_0")
+            pose_cfg = robot.get("spawn_pose", {})
+
+            urdf_path = self._root / "robots" / platform / "urdf" / f"{platform}.urdf"
+            if not urdf_path.exists():
+                raise FileNotFoundError(
+                    f"Robot URDF not found: {urdf_path}\n"
+                    f"Expected layout: robots/{platform}/urdf/{platform}.urdf"
+                )
+
+            urdf_text = urdf_path.read_text().replace("ROBOT_NAME", name)
+
+            # Write URDF to temp file, convert to SDF via gz sdf -p
+            with tempfile.NamedTemporaryFile(
+                suffix=".urdf", mode="w", delete=False
+            ) as tmp:
+                tmp.write(urdf_text)
+                tmp_path = Path(tmp.name)
+
+            try:
+                result = subprocess.run(
+                    ["gz", "sdf", "-p", str(tmp_path)],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+            finally:
+                tmp_path.unlink(missing_ok=True)
+
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"gz sdf -p failed for robot '{platform}':\n{result.stderr}"
+                )
+
+            sdf_root = ET.fromstring(result.stdout)
+            model_elem = sdf_root.find("model")
+            if model_elem is None:
+                raise ValueError(
+                    f"No <model> element in gz sdf -p output for '{platform}'"
+                )
+
+            model_elem = copy.deepcopy(model_elem)
+            model_elem.set("name", name)
+
+            x   = pose_cfg.get("x",   1.0)
+            y   = pose_cfg.get("y",   1.0)
+            z   = pose_cfg.get("z",   0.0)
+            yaw = pose_cfg.get("yaw", 0.0)
+            pose_elem = ET.Element("pose")
+            pose_elem.text = f"{x:.4f} {y:.4f} {z:.4f} 0 0 {yaw:.4f}"
+            model_elem.insert(0, pose_elem)
+
+            world_elem.append(model_elem)
 
     def _load_model_element(
         self, model_type: str, idx: int, obj: PlacedObject

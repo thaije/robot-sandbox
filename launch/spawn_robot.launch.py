@@ -44,6 +44,16 @@ ARGUMENTS = [
         description="Robot type — must match a sub-directory of robots/",
     ),
     DeclareLaunchArgument(
+        "spawn",
+        default_value="true",
+        choices=["true", "false"],
+        description=(
+            "Whether to spawn the robot model into Gazebo. "
+            "Set to 'false' when the robot is already embedded in the world SDF "
+            "(pre-loaded scenario mode — required for contact sensors to work)."
+        ),
+    ),
+    DeclareLaunchArgument(
         "name",
         default_value="derpbot_0",
         description="Unique Gazebo model name for this robot instance",
@@ -82,6 +92,7 @@ def _make_actions(context, *args, **kwargs):
     yaw  = LaunchConfiguration("yaw").perform(context)
     use_sim_time_str = LaunchConfiguration("use_sim_time").perform(context)
     use_sim_time = use_sim_time_str.lower() == "true"
+    do_spawn = LaunchConfiguration("spawn").perform(context).lower() == "true"
 
     # ── Load URDF — substitute ROBOT_NAME placeholder ────────────────────────
     # The URDF uses the literal string ROBOT_NAME in Gazebo topic names so that
@@ -165,7 +176,10 @@ def _make_actions(context, *args, **kwargs):
         output="screen",
     )
 
-    return [spawn, rsp, bridge]
+    actions = [rsp, bridge]
+    if do_spawn:
+        actions.insert(0, spawn)
+    return actions
 
 
 def generate_launch_description():

@@ -36,20 +36,20 @@ class SimulationLauncher:
     def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._processes: list[subprocess.Popen] = []
-        self._robot_name: str | None = None
-        self._world_name: str | None = None
 
     def launch(
         self,
         world_sdf: Path,
         world_name: str,
-        robot_platform: str,
-        spawn_pose: dict,
-        robot_name: str = "derpbot_0",
+        robots_cfg: list[dict],
         gazebo_timeout: float = 90.0,
         robot_timeout: float = 30.0,
     ) -> None:
-        """Launch Gazebo and robot nodes. Blocks until both are ready.
+        """Launch Gazebo and robot bridge nodes. Blocks until all are ready.
+
+        Robots are expected to be embedded in *world_sdf* at generation time
+        (via WorldGenerator._embed_robots).  This launcher only starts RSP and
+        ros_gz_bridge for each robot — it does NOT spawn models into Gazebo.
 
         Parameters
         ----------
@@ -57,27 +57,25 @@ class SimulationLauncher:
             Absolute path to the generated world SDF (from WorldGenerator).
         world_name:
             Gazebo world name matching ``<world name="...">`` in the SDF.
-            Used by spawn_robot.launch.py to target the correct world service.
-        robot_platform:
-            Robot type directory name under ``robots/`` (e.g. ``"derpbot"``).
-        spawn_pose:
-            Dict with optional keys ``x``, ``y``, ``z``, ``yaw`` (metres/rad).
-        robot_name:
-            Unique Gazebo model name for this instance.
+        robots_cfg:
+            List of robot dicts from ``scenario_config["robots"]``.
+            Each dict must have ``platform`` and optionally ``name``.
         gazebo_timeout:
             Seconds to wait for ``/clock`` before raising TimeoutError.
         robot_timeout:
-            Seconds to wait for ``/<robot_name>/odom`` before raising.
+            Seconds to wait for each ``/<robot_name>/odom`` before raising.
         """
-        self._robot_name = robot_name
-        self._world_name = world_name
-
         self._launch_gazebo(world_sdf)
         self._wait_for_gazebo(timeout=gazebo_timeout)
 
-        self._despawn_if_exists(robot_name, world_name)
-        self._launch_robot(robot_platform, robot_name, world_name, spawn_pose)
-        self._wait_for_robot(robot_name, timeout=robot_timeout)
+        robot_names = []
+        for robot in robots_cfg:
+            platform = robot["platform"]
+            name = robot.get("name", f"{platform}_0")
+            robot_names.append(name)
+            self._launch_robot_bridges(platform, name, world_name)
+
+        self._wait_for_robots(robot_names, timeout=robot_timeout)
 
     # ── Private: launch ────────────────────────────────────────────────────────
 
@@ -98,24 +96,24 @@ class SimulationLauncher:
         self._processes.append(proc)
         return proc
 
-    def _launch_robot(
+    def _launch_robot_bridges(
         self,
         platform: str,
         robot_name: str,
         world_name: str,
-        spawn_pose: dict,
     ) -> subprocess.Popen:
-        """Spawn the robot and start its ROS 2 bridges."""
+        """Start RSP + ros_gz_bridge for a robot that is already in the world SDF.
+
+        Passes ``spawn:=false`` so spawn_robot.launch.py skips the
+        ros_gz_sim create node — the model is already embedded in the world.
+        """
         cmd = [
             "ros2", "launch",
             str(_LAUNCH_DIR / "spawn_robot.launch.py"),
             f"robot:={platform}",
             f"name:={robot_name}",
             f"world:={world_name}",
-            f"x:={spawn_pose.get('x', 1.0)}",
-            f"y:={spawn_pose.get('y', 1.0)}",
-            f"z:={spawn_pose.get('z', 0.0)}",
-            f"yaw:={spawn_pose.get('yaw', 0.0)}",
+            "spawn:=false",
         ]
         proc = subprocess.Popen(
             cmd,
@@ -125,30 +123,6 @@ class SimulationLauncher:
         )
         self._processes.append(proc)
         return proc
-
-    def _despawn_if_exists(self, robot_name: str, world_name: str) -> None:
-        """Remove a robot model from Gazebo if it already exists.
-
-        Best-effort: ignores failures (model may not exist on first run).
-        Called before spawning to prevent ghost models accumulating across runs.
-        """
-        result = subprocess.run(
-            [
-                "gz", "service",
-                "-s", f"/world/{world_name}/remove",
-                "--reqtype", "gz.msgs.Entity",
-                "--reptype", "gz.msgs.Boolean",
-                "--timeout", "3000",
-                "--req", f'name: "{robot_name}" type: MODEL',
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            import logging
-            logging.getLogger(__name__).info(
-                "Pre-spawn: removed existing model %r from world %r.", robot_name, world_name
-            )
 
     # ── Private: readiness checks ──────────────────────────────────────────────
 
@@ -160,29 +134,24 @@ class SimulationLauncher:
                 "Check that ros_gz_bridge and Gazebo started successfully."
             )
 
-    def _wait_for_robot(self, robot_name: str, timeout: float = 30.0) -> None:
-        """Odom topic appearing means the robot is spawned and bridge is live."""
-        topic = f"/{robot_name}/odom"
-        if not wait_for_topic(topic, timeout=timeout):
-            raise TimeoutError(
-                f"Robot topic {topic!r} not available after {timeout}s. "
-                "Check that spawn_robot.launch.py completed."
-            )
-
-    def _wait_until_ready(self, timeout: float = 60.0) -> None:
-        """Wait for key topics to appear. (Legacy — use targeted checks above.)"""
-        required = ["/clock", "/odom", "/cmd_vel"]
-        for topic in required:
+    def _wait_for_robots(self, robot_names: list[str], timeout: float = 30.0) -> None:
+        """Wait for odom topic of every robot in *robot_names*."""
+        for name in robot_names:
+            topic = f"/{name}/odom"
             if not wait_for_topic(topic, timeout=timeout):
-                raise TimeoutError(f"Topic {topic!r} not available after {timeout}s")
+                raise TimeoutError(
+                    f"Robot topic {topic!r} not available after {timeout}s. "
+                    "Check that spawn_robot.launch.py bridges started."
+                )
 
     # ── Shutdown ───────────────────────────────────────────────────────────────
 
     def shutdown(self) -> None:
-        """Despawn the robot from Gazebo then kill all child process groups."""
-        if self._robot_name and self._world_name:
-            self._despawn_if_exists(self._robot_name, self._world_name)
+        """Kill all child process groups (Gazebo + bridge processes).
 
+        Robots are embedded in the world SDF and are destroyed with Gazebo —
+        no explicit despawn step is needed.
+        """
         # Each process was launched with start_new_session=True, so it has its
         # own process group (pgid == proc.pid).  Killing the group ensures gz sim
         # and ros_gz_bridge grandchildren are also terminated.

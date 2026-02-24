@@ -67,30 +67,27 @@ class ScenarioRunner:
             Flat dict of all collected metric values (same as raw_metrics in
             the Scorecard).  Useful for programmatic inspection after the run.
         """
-        scenario  = self._cfg["scenario"]
-        world_cfg = self._cfg["world"]
-        robot_cfg = self._cfg["robot"]
+        scenario   = self._cfg["scenario"]
+        world_cfg  = self._cfg["world"]
+        robots_cfg = self._cfg["robots"]
 
-        robot_platform = robot_cfg["platform"]
-        robot_name     = f"{robot_platform}_0"
-        timeout        = float(scenario["timeout_seconds"])
+        timeout = float(scenario["timeout_seconds"])
 
-        # ── 1. Generate world SDF ──────────────────────────────────────────────
+        # ── 1. Generate world SDF (robots embedded inside) ────────────────────
         log.info("Generating world SDF …")
         gen       = WorldGenerator(project_root=_REPO_ROOT)
         world_sdf = gen.generate(self._cfg)
         log.info("Generated world: %s", world_sdf)
 
-        # ── 2. Launch Gazebo + robot ───────────────────────────────────────────
+        # ── 2. Launch Gazebo + robot bridges (no spawn — model in world SDF) ──
         log.info("Launching simulation …")
         self._launcher.launch(
             world_sdf=world_sdf,
             world_name=world_cfg["template"],
-            robot_platform=robot_platform,
-            spawn_pose=robot_cfg.get("spawn_pose", {}),
-            robot_name=robot_name,
+            robots_cfg=robots_cfg,
         )
-        log.info("Simulation ready — robot %r spawned.", robot_name)
+        robot_names = [r.get("name", f"{r['platform']}_0") for r in robots_cfg]
+        log.info("Simulation ready — robots: %s", robot_names)
 
         # ── 3. Start ROS 2 metrics collection ─────────────────────────────────
         # rclpy is imported lazily to keep this module importable without ROS 2.
@@ -101,7 +98,7 @@ class ScenarioRunner:
             "arst_metrics",
             parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
         )
-        metrics = self._build_metrics(node, robot_name)
+        metrics = self._build_metrics(node, robots_cfg)
 
         for m in metrics.values():
             m.start()
@@ -167,8 +164,11 @@ class ScenarioRunner:
 
     # ── Private helpers ────────────────────────────────────────────────────────
 
-    def _build_metrics(self, node: Any, robot_name: str) -> dict[str, Any]:
-        """Instantiate metrics for every name listed in scenario metrics.collect.
+    def _build_metrics(self, node: Any, robots_cfg: list[dict]) -> dict[str, Any]:
+        """Instantiate metrics for every robot × every listed metric name.
+
+        Keys in the returned dict use the format ``"{metric_name}__{robot_name}"``
+        so that ``_collect_metrics`` can aggregate across robots.
 
         Only metrics with concrete implementations are created; unknown names
         are logged and skipped so the runner doesn't crash on stubs.
@@ -177,37 +177,73 @@ class ScenarioRunner:
         from metrics.collision_count import CollisionCount   # noqa: PLC0415
         from metrics.revisit_ratio import RevisitRatio       # noqa: PLC0415
 
-        _registry: dict[str, Any] = {
-            "meters_traveled": lambda: MetersTraveled(
-                odom_topic=f"/{robot_name}/odom",
-                node=node,
-            ),
-            "collision_count": lambda: CollisionCount(
-                bumper_topic=f"/{robot_name}/bumper_contact",
-                node=node,
-            ),
-            "revisit_ratio": lambda: RevisitRatio(
-                odom_topic=f"/{robot_name}/odom",
-                node=node,
-            ),
-        }
+        def _factory(metric_name: str, robot_name: str) -> Any:
+            if metric_name == "meters_traveled":
+                return MetersTraveled(odom_topic=f"/{robot_name}/odom", node=node)
+            if metric_name == "collision_count":
+                return CollisionCount(bumper_topic=f"/{robot_name}/bumper_contact", node=node)
+            if metric_name == "revisit_ratio":
+                return RevisitRatio(odom_topic=f"/{robot_name}/odom", node=node)
+            return None
 
+        _implemented = {"meters_traveled", "collision_count", "revisit_ratio"}
         requested = self._cfg.get("metrics", {}).get("collect", [])
         built: dict[str, Any] = {}
-        for name in requested:
-            if name in _registry:
-                built[name] = _registry[name]()
-                log.debug("Metric registered: %s", name)
-            else:
-                log.debug("Metric %r not yet implemented — skipping.", name)
+
+        for robot in robots_cfg:
+            robot_name = robot.get("name", f"{robot['platform']}_0")
+            for metric_name in requested:
+                if metric_name not in _implemented:
+                    log.debug("Metric %r not yet implemented — skipping.", metric_name)
+                    continue
+                key = f"{metric_name}__{robot_name}"
+                built[key] = _factory(metric_name, robot_name)
+                log.debug("Metric registered: %s", key)
 
         return built
 
     def _collect_metrics(self, metrics: dict[str, Any]) -> dict[str, Any]:
-        """Flatten all metric get_result() dicts into a single dict."""
+        """Collect per-robot results and compute aggregated values.
+
+        For a single robot the result is identical to the previous flat format.
+        For multiple robots, sum-aggregates are used for count/distance metrics
+        and averages for ratio metrics; per-robot breakdowns are included as
+        ``"{metric}__{robot_name}"`` entries.
+        """
+        # Gather per-robot results: {robot_name: {metric_name: value}}
+        per_robot: dict[str, dict] = {}
+        for key, m in metrics.items():
+            metric_name, robot_name = key.split("__", 1)
+            per_robot.setdefault(robot_name, {}).update(m.get_result())
+
+        # Aggregate across robots.
+        # Numeric values are summed (or averaged for ratio metrics).
+        # List values (e.g. collision_events) are concatenated.
+        # Non-numeric / non-list values are passed through as-is.
+        _avg_metrics = {"revisit_ratio"}
+        sums: dict[str, float] = {}
+        lists: dict[str, list] = {}
+        counts: dict[str, int] = {}
+        for robot_results in per_robot.values():
+            for mname, value in robot_results.items():
+                if isinstance(value, list):
+                    lists.setdefault(mname, []).extend(value)
+                elif isinstance(value, (int, float)):
+                    sums[mname] = sums.get(mname, 0.0) + value
+                    counts[mname] = counts.get(mname, 0) + 1
+
         combined: dict[str, Any] = {}
-        for m in metrics.values():
-            combined.update(m.get_result())
+        for mname, total in sums.items():
+            n = counts[mname]
+            combined[mname] = total / n if mname in _avg_metrics else total
+        combined.update(lists)
+
+        # Per-robot breakdown for multi-robot runs
+        if len(per_robot) > 1:
+            for robot_name, robot_results in per_robot.items():
+                for mname, value in robot_results.items():
+                    combined[f"{mname}__{robot_name}"] = value
+
         return combined
 
     def _run_until_done(

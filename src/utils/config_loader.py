@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-REQUIRED_TOP_KEYS = {"scenario", "world", "robot", "metrics", "success_criteria", "scoring", "output"}
+REQUIRED_TOP_KEYS = {"scenario", "world", "robots", "metrics", "success_criteria", "scoring", "output"}
 
 
 class ConfigError(ValueError):
@@ -28,7 +28,7 @@ def load_scenario(path: str | Path) -> dict:
 
     _validate_scenario(config["scenario"])
     _validate_world(config["world"])
-    _validate_robot(config["robot"])
+    _validate_robots(config["robots"])
 
     return config
 
@@ -46,6 +46,9 @@ def _validate_world(w: dict) -> None:
         raise ConfigError("world.template is required")
 
 
-def _validate_robot(r: dict) -> None:
-    if "platform" not in r:
-        raise ConfigError("robot.platform is required")
+def _validate_robots(robots: list) -> None:
+    if not isinstance(robots, list) or len(robots) == 0:
+        raise ConfigError("robots must be a non-empty list")
+    for i, r in enumerate(robots):
+        if "platform" not in r:
+            raise ConfigError(f"robots[{i}].platform is required")

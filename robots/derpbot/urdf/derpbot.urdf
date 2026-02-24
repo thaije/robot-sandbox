@@ -239,6 +239,7 @@
       <topic>/ROBOT_NAME/bumper_contact</topic>
       <contact>
         <collision>base_footprint_fixed_joint_lump__base_link_collision_collision</collision>
+        <topic>/ROBOT_NAME/bumper_contact</topic>
       </contact>
     </sensor>
   </gazebo>

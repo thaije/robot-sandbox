@@ -22,14 +22,14 @@ world:
     lighting: "normal"       # normal | dim | bright
     door_states: "random"    # open | closed | random
 
-robot:
-  platform: "derpbot"
-  spawn_pose:
-    x: 1.0
-    y: 1.0
-    z: 0.0
-    yaw: 0.0
-  sensors: []  # no sensors in Phase 1 baseline
+robots:
+  - platform: "derpbot"
+    name: "derpbot_0"
+    spawn_pose:
+      x: 1.0
+      y: 1.0
+      z: 0.0
+      yaw: 0.0
 
 metrics:
   collect:
