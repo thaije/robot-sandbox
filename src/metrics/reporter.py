@@ -65,6 +65,15 @@ def render_scorecard(sc: Scorecard) -> str:
                 sub = _format_event(item)
                 sub_line = f"║      {sub}"
                 lines.append(sub_line + " " * (w - 2 - len(sub_line) + 2) + "║")
+        elif isinstance(v, dict):
+            header = f"║    {k}:"
+            lines.append(header + " " * (w - 2 - len(header) + 2) + "║")
+            for dk, dv in v.items():
+                if isinstance(dv, dict) and "detected" in dv and "total" in dv:
+                    sub_line = f"║      {dk}: {dv['detected']}/{dv['total']}"
+                else:
+                    sub_line = f"║      {dk}: {dv}"
+                lines.append(sub_line + " " * (w - 2 - len(sub_line) + 2) + "║")
         else:
             line = f"║    {k}: {v}"
             lines.append(line + " " * (w - 2 - len(line) + 2) + "║")

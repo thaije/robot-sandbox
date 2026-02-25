@@ -54,10 +54,15 @@ success_criteria:
 
 scoring:
   category_weights:
-    speed: 0.25
-    accuracy: 0.30
+    speed: 0.20
+    accuracy: 0.25
     safety: 0.20
-    efficiency: 0.25
+    efficiency: 0.20
+    effectiveness: 0.15
+  effectiveness_weights:
+    fire_extinguisher: 40
+    first_aid_kit: 40
+    hazard_sign: 20
   par_values:
     time_per_detection_par: 60.0     # seconds per object
     coverage_rate_par: 2.0           # percent per second

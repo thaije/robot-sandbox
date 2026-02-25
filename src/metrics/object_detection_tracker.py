@@ -28,7 +28,7 @@ LABEL_NAMES: dict[str, str] = {
 
 
 class ObjectDetectionTracker:
-    """Track first-detection events per object class.
+    """Track first-detection events per object label.
 
     Parameters
     ----------
@@ -38,11 +38,22 @@ class ObjectDetectionTracker:
         An ``rclpy.node.Node`` instance.  Must be provided before calling
         ``start()``.  Kept as ``Any`` to avoid a hard rclpy import at module
         load time.
+    label_map:
+        Optional dict mapping string label IDs to ``{"type": str, "instance": int}``
+        dicts, as produced by ``WorldGenerator.label_map``.  When provided,
+        each detected label is resolved to a human-readable name like
+        ``"fire_extinguisher #1"``.  Falls back to ``LABEL_NAMES`` if absent.
     """
 
-    def __init__(self, detections_topic: str, node: Any) -> None:
+    def __init__(
+        self,
+        detections_topic: str,
+        node: Any,
+        label_map: dict[str, dict] | None = None,
+    ) -> None:
         self._topic = detections_topic
         self._node = node
+        self._label_map = label_map or {}
         self._start_time: float = 0.0
         self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
@@ -69,17 +80,27 @@ class ObjectDetectionTracker:
                     self._first_detections[class_id] = elapsed
 
     def get_events(self) -> list[dict]:
-        """Return first-detection events, one entry per detected class.
+        """Return first-detection events, one entry per detected instance.
 
         Each event: ``{"class_id": str, "class_name": str, "timestamp": float}``
+
+        When a ``label_map`` was provided, ``class_name`` is resolved to
+        ``"<type> #<1-based-instance>"`` (e.g. ``"fire_extinguisher #2"``).
+        Falls back to ``LABEL_NAMES`` for type-level labels.
         """
+        def _resolve(cid: str) -> str:
+            if cid in self._label_map:
+                entry = self._label_map[cid]
+                return f"{entry['type']} #{entry['instance'] + 1}"
+            return LABEL_NAMES.get(cid, f"label_{cid}")
+
         return [
             {
                 "class_id": cid,
-                "class_name": LABEL_NAMES.get(cid, f"label_{cid}"),
+                "class_name": _resolve(cid),
                 "timestamp": round(ts, 2),
             }
-            for cid, ts in sorted(self._first_detections.items())
+            for cid, ts in sorted(self._first_detections.items(), key=lambda x: int(x[0]))
         ]
 
     def reset(self) -> None:

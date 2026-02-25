@@ -73,6 +73,7 @@ class WorldGenerator:
         Path
             Absolute path to the written ``.sdf`` file.
         """
+        self.label_map: dict[str, dict] = {}   # populated by _inject_objects
         world_cfg = scenario_config["world"]
         template_name = world_cfg["template"]
         seed = scenario_config["scenario"]["random_seed"]
@@ -164,13 +165,23 @@ class WorldGenerator:
         world_elem: ET.Element,
         placements: list[PlacedObject],
     ) -> None:
-        """Append one ``<model>`` element per placed object to *world_elem*."""
+        """Append one ``<model>`` element per placed object to *world_elem*.
+
+        Assigns a unique integer label (1..N, placement order) to each
+        instance by overriding the gz-sim-label-system plugin element.
+        Populates ``self.label_map`` with the label → {type, instance} mapping
+        so the metrics layer can resolve detected labels back to object types.
+        """
         counters: dict[str, int] = {}
+        label_counter = 1
+        self.label_map: dict[str, dict] = {}
         for obj in placements:
             mt = obj.model_type
             idx = counters.get(mt, 0)
             counters[mt] = idx + 1
-            world_elem.append(self._load_model_element(mt, idx, obj))
+            self.label_map[str(label_counter)] = {"type": mt, "instance": idx}
+            world_elem.append(self._load_model_element(mt, idx, obj, label_counter))
+            label_counter += 1
 
     def _embed_robots(
         self,
@@ -241,9 +252,15 @@ class WorldGenerator:
             world_elem.append(model_elem)
 
     def _load_model_element(
-        self, model_type: str, idx: int, obj: PlacedObject
+        self, model_type: str, idx: int, obj: PlacedObject, instance_label: int = 0
     ) -> ET.Element:
-        """Parse a model SDF and return a renamed, repositioned ``<model>``."""
+        """Parse a model SDF and return a renamed, repositioned ``<model>``.
+
+        If *instance_label* > 0, overrides the gz-sim-label-system ``<label>``
+        element so each placed instance has a unique integer label.  This
+        enables the bounding-box camera to distinguish individual instances
+        (e.g. fire_extinguisher #1 vs #2) rather than just object types.
+        """
         model_path = self._root / self.MODELS_DIR / model_type / "model.sdf"
         if not model_path.exists():
             raise FileNotFoundError(
@@ -260,6 +277,15 @@ class WorldGenerator:
 
         # Unique name so multiple instances of the same type don't conflict
         model.set("name", f"{model_type}_{idx}")
+
+        # Override per-instance label for unique detection tracking
+        if instance_label > 0:
+            for plugin in model.iter("plugin"):
+                if plugin.get("filename") == "gz-sim-label-system":
+                    lbl = plugin.find("label")
+                    if lbl is not None:
+                        lbl.text = str(instance_label)
+                    break
 
         # Insert pose at position 0 (before <static> etc.) so it takes effect
         pose = ET.Element("pose")

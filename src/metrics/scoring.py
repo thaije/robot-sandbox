@@ -88,12 +88,15 @@ class ScoringEngine:
         accuracy   = self._accuracy_score(metrics)
         safety     = self._safety_score(metrics, self._cfg)
         efficiency = self._efficiency_score(metrics, par)
+        eff_weights = self._cfg.get("effectiveness_weights", {})
+        effectiveness = self._effectiveness_score(metrics, eff_weights)
 
         cats = [
-            CategoryScore("speed",      speed,      *self._grade(speed),      weights.get("speed",      0.25)),
-            CategoryScore("accuracy",   accuracy,   *self._grade(accuracy),   weights.get("accuracy",   0.30)),
-            CategoryScore("safety",     safety,     *self._grade(safety),     weights.get("safety",     0.20)),
-            CategoryScore("efficiency", efficiency, *self._grade(efficiency), weights.get("efficiency", 0.25)),
+            CategoryScore("speed",         speed,         *self._grade(speed),         weights.get("speed",         0.25)),
+            CategoryScore("accuracy",       accuracy,      *self._grade(accuracy),      weights.get("accuracy",      0.30)),
+            CategoryScore("safety",         safety,        *self._grade(safety),        weights.get("safety",        0.20)),
+            CategoryScore("efficiency",     efficiency,    *self._grade(efficiency),    weights.get("efficiency",    0.25)),
+            CategoryScore("effectiveness",  effectiveness, *self._grade(effectiveness), weights.get("effectiveness", 0.0)),
         ]
 
         total_w = sum(c.weight for c in cats) or 1.0
@@ -207,6 +210,36 @@ class ScoringEngine:
         completeness_score = min(100.0, coverage)
 
         return round(0.35 * revisit_score + 0.35 * cpm_score + 0.30 * completeness_score, 2)
+
+    def _effectiveness_score(self, metrics: dict, eff_weights: dict) -> float:
+        """How effectively did the robot detect the highest-priority objects?
+
+        Uses ``detection_by_type`` (a dict of ``{type: {detected, total}}``)
+        and per-type weights from ``scoring.effectiveness_weights`` in the
+        scenario YAML (e.g. ``fire_extinguisher: 40``).
+
+        score = Σ (type_weight / total_weight) × (detected / total) × 100
+
+        If no weights are configured or no detection data is available, the
+        score falls back to the raw ``object_detection_rate × 100``.
+        """
+        by_type: dict = metrics.get("detection_by_type", {})
+
+        if not eff_weights or not by_type:
+            # Fallback to overall detection rate
+            det_rate = float(metrics.get("object_detection_rate", 0.0))
+            return round(det_rate * 100, 2)
+
+        total_weight = sum(float(w) for w in eff_weights.values()) or 1.0
+        score = 0.0
+        for obj_type, w in eff_weights.items():
+            entry = by_type.get(obj_type, {})
+            detected = int(entry.get("detected", 0))
+            total    = int(entry.get("total", 0))
+            frac = detected / total if total > 0 else 0.0
+            score += (float(w) / total_weight) * frac * 100
+
+        return round(score, 2)
 
     @staticmethod
     def _grade(score: float) -> tuple[str, str]:

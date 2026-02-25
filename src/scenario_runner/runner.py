@@ -77,7 +77,8 @@ class ScenarioRunner:
         log.info("Generating world SDF …")
         gen       = WorldGenerator(project_root=_REPO_ROOT)
         world_sdf = gen.generate(self._cfg)
-        log.info("Generated world: %s", world_sdf)
+        label_map = gen.label_map   # {str_label: {"type": str, "instance": int}}
+        log.info("Generated world: %s  (%d labelled objects)", world_sdf, len(label_map))
 
         # ── 2. Launch Gazebo + robot bridges (no spawn — model in world SDF) ──
         log.info("Launching simulation …")
@@ -101,7 +102,7 @@ class ScenarioRunner:
             "arst_metrics",
             parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
         )
-        metrics = self._build_metrics(node, robots_cfg)
+        metrics = self._build_metrics(node, robots_cfg, label_map)
 
         for m in metrics.values():
             m.start()
@@ -133,8 +134,8 @@ class ScenarioRunner:
             for desc in descriptions:
                 log.info("Criterion: %s", desc)
 
-            if outcome == "timeout":
-                status = "TIMEOUT"
+            if outcome == "time_limit":
+                status = "TIME_LIMIT"
             elif success:
                 status = "SUCCESS"
             else:
@@ -167,7 +168,7 @@ class ScenarioRunner:
 
     # ── Private helpers ────────────────────────────────────────────────────────
 
-    def _build_metrics(self, node: Any, robots_cfg: list[dict]) -> dict[str, Any]:
+    def _build_metrics(self, node: Any, robots_cfg: list[dict], label_map: dict | None = None) -> dict[str, Any]:
         """Instantiate metrics for every robot × every listed metric name.
 
         Keys in the returned dict use the format ``"{metric_name}__{robot_name}"``
@@ -202,9 +203,15 @@ class ScenarioRunner:
         requested = set(self._cfg.get("metrics", {}).get("collect", []))
         needs_detection = bool(requested & _DETECTION_METRIC_NAMES)
 
-        # Count unique object types for detection-rate denominator.
-        world_objects = self._cfg.get("world", {}).get("objects", [])
-        total_targets = len(world_objects)
+        # Total labelled instances is the detection denominator.
+        # label_map has one entry per placed instance (e.g. 9 for 3+2+4 objects).
+        # Fall back to the number of unique object types if label_map not available.
+        label_map = label_map or {}
+        if label_map:
+            total_targets = len(label_map)
+        else:
+            world_objects = self._cfg.get("world", {}).get("objects", [])
+            total_targets = len(world_objects)
 
         built: dict[str, Any] = {}
 
@@ -233,6 +240,7 @@ class ScenarioRunner:
                     detections_topic=f"/{robot_name}/detections",
                     node=node,
                     total_targets=total_targets,
+                    label_map=label_map,
                 )
                 log.debug("Metric registered: %s", key)
 
@@ -266,11 +274,16 @@ class ScenarioRunner:
         }
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}
+        dicts: dict[str, dict] = {}
         counts: dict[str, int] = {}
         for robot_results in per_robot.values():
             for mname, value in robot_results.items():
                 if isinstance(value, list):
                     lists.setdefault(mname, []).extend(value)
+                elif isinstance(value, dict):
+                    # For dict metrics (e.g. detection_by_type), last-write wins
+                    # (they are identical across robots since the world is shared).
+                    dicts[mname] = value
                 elif isinstance(value, (int, float)):
                     sums[mname] = sums.get(mname, 0.0) + value
                     counts[mname] = counts.get(mname, 0) + 1
@@ -280,6 +293,7 @@ class ScenarioRunner:
             n = counts[mname]
             combined[mname] = total / n if mname in _avg_metrics else total
         combined.update(lists)
+        combined.update(dicts)
 
         # Per-robot breakdown for multi-robot runs
         if len(per_robot) > 1:
@@ -300,7 +314,8 @@ class ScenarioRunner:
         Returns
         -------
         str
-            ``"success"`` if all criteria passed, ``"timeout"`` otherwise.
+            ``"success"`` if all criteria passed, ``"time_limit"`` when the
+            max run time is reached (not a failure — just end of allocated time).
         """
         deadline = start_time + timeout
         while time.monotonic() < deadline:
@@ -309,4 +324,4 @@ class ScenarioRunner:
             if passed:
                 return "success"
             time.sleep(_POLL_INTERVAL)
-        return "timeout"
+        return "time_limit"
