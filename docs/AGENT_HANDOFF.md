@@ -7,12 +7,15 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 ## What works (verified)
 
 - **Full scenario pipeline**: `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless`
-  - WorldGenerator embeds robots in world SDF; SimulationLauncher starts bridges only (no dynamic spawn)
-  - Live metrics: `meters_traveled`, `collision_count` (bumper contact), `revisit_ratio`
+  - WorldGenerator assigns unique per-instance labels (1..N); exposes `label_map` to metrics
+  - Live metrics: `meters_traveled`, `collision_count` (rising-edge, not debounce), `revisit_ratio`, detection metrics
+  - Scorecard: Speed / Accuracy / Safety / Efficiency / **Effectiveness** (per-type weights)
+  - Ends on `SUCCESS` (all instances found) or `TIME_LIMIT` (600 s)
   - Scorecard printed + JSON written to `results/`
 - **Manual sim**: persistent Gazebo + `spawn_robot.launch.py` + teleoperation
+- **Inspection**: `scripts/robot_inspect.py` — snapshot, status, detections, drive (use ≤ 2 s drive calls)
 - **World**: indoor_office (20×15 m, 4 rooms, furniture, randomised object placement)
-- **Objects**: fire_extinguisher (class 1), first_aid_kit (class 2), hazard_sign (class 3)
+- **Objects**: fire_extinguisher (×3), first_aid_kit (×2), hazard_sign (×4) — 9 instances total with unique labels
 
 ## Implementation status
 
@@ -21,8 +24,8 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 | `src/metrics/{base_metric,evaluator,reporter,scoring}.py` | ✅ |
 | `src/metrics/{meters_traveled,collision_count,revisit_ratio}.py` | ✅ |
 | `src/metrics/exploration_coverage.py` | ⬜ Stub — needs LiDAR |
-| `src/metrics/detection_metrics.py` | ✅ |
-| `src/metrics/object_detection_tracker.py` | ✅ |
+| `src/metrics/detection_metrics.py` | ✅ instance-level tracking + detection_by_type |
+| `src/metrics/object_detection_tracker.py` | ✅ label_map → "fire_extinguisher #2" display |
 | `src/scenario_runner/{launcher,runner,__main__}.py` | ✅ |
 | `src/world_manager/{world_generator,object_placer,template_loader}.py` | ✅ |
 | `src/utils/{config_loader,ros_helpers,logging_setup}.py` | ✅ |
@@ -30,6 +33,18 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 ---
 
 ## Next steps (priority order)
+
+### 0. ~~robot_inspect.py~~ ✅ DONE
+
+`scripts/robot_inspect.py` — one-shot inspection/control for automated sessions.
+
+```bash
+source /opt/ros/jazzy/setup.bash && export PYTHONPATH=src:$PYTHONPATH
+python3.12 scripts/robot_inspect.py status          # pose + sim stamp
+python3.12 scripts/robot_inspect.py snapshot        # save camera frame → /tmp/robot_snapshot.png
+python3.12 scripts/robot_inspect.py detections      # bbox detections in current frame
+python3.12 scripts/robot_inspect.py drive 0.3 0 2   # vx wz duration_s (keep ≤ 2 s per call)
+```
 
 ### 1. ~~Add bounding box camera to DerpBot~~ ✅ DONE
 
@@ -98,6 +113,7 @@ launch/
   spawn_robot.launch.py         # RSP + bridges; spawn:=false for automated runs
 scripts/
   run_scenario.sh
+  robot_inspect.py      # status / snapshot / detections / drive
   despawn_robot.sh
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet
 config/

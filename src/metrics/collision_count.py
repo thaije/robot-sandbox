@@ -21,9 +21,6 @@ class CollisionCount(BaseMetric):
 
         Until a bumper sensor is added to DerpBot, this metric will remain
         silent (no messages on the topic → zero collisions recorded).
-    debounce_seconds:
-        Minimum time between counted events; suppresses rapid repeated contacts
-        from a single collision.
     node:
         An ``rclpy.node.Node`` instance.  Must be provided before calling
         ``start()``.  Kept as ``Any`` to avoid a hard rclpy import at module
@@ -35,14 +32,13 @@ class CollisionCount(BaseMetric):
     def __init__(
         self,
         bumper_topic: str = "/bumper_contact",
-        debounce_seconds: float = 2.0,
         node: Any = None,
     ) -> None:
         self._bumper_topic = bumper_topic
-        self._debounce = debounce_seconds
         self._node = node
         self._count: int = 0
-        self._last_event_time: float = 0.0
+        self._start_time: float = 0.0
+        self._in_contact: bool = False   # rising-edge tracker
         self._events: list[dict] = []
         self._sub: Any = None
 
@@ -60,6 +56,7 @@ class CollisionCount(BaseMetric):
             )
         from ros_gz_interfaces.msg import Contacts  # noqa: PLC0415
 
+        self._start_time = time.monotonic()
         self._sub = self._node.create_subscription(
             Contacts,
             self._bumper_topic,
@@ -68,15 +65,18 @@ class CollisionCount(BaseMetric):
         )
 
     def _on_contact(self, msg: Any) -> None:
-        # ros_gz_interfaces/Contacts has a `contacts` list; ignore empty messages
-        # that Gazebo may publish when no collision is occurring.
-        if hasattr(msg, "contacts") and len(msg.contacts) == 0:
-            return
-        now = time.monotonic()
-        if now - self._last_event_time > self._debounce:
+        # Rising-edge detection: count a new collision only when contact starts.
+        # Gazebo publishes at a fixed rate both during contact (non-empty contacts
+        # list) and when idle (empty contacts list).  Tracking _in_contact avoids
+        # counting repeated messages from the same sustained physical contact.
+        has_contacts = hasattr(msg, "contacts") and len(msg.contacts) > 0
+        if has_contacts and not self._in_contact:
+            self._in_contact = True
             self._count += 1
-            self._last_event_time = now
-            self._events.append({"t": now, "count": self._count})
+            elapsed = round(time.monotonic() - self._start_time, 2)
+            self._events.append({"t": elapsed, "count": self._count})
+        elif not has_contacts:
+            self._in_contact = False
 
     def update(self) -> None:
         pass
@@ -86,5 +86,6 @@ class CollisionCount(BaseMetric):
 
     def reset(self) -> None:
         self._count = 0
-        self._last_event_time = 0.0
+        self._start_time = 0.0
+        self._in_contact = False
         self._events = []

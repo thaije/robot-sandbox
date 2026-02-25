@@ -75,7 +75,9 @@ def render_scorecard(sc: Scorecard) -> str:
                     sub_line = f"║      {dk}: {dv}"
                 lines.append(sub_line + " " * (w - 2 - len(sub_line) + 2) + "║")
         else:
-            line = f"║    {k}: {v}"
+            # Show integer-valued floats without decimal (e.g. collision_count: 3 not 3.0)
+            display_v = int(v) if isinstance(v, float) and v == int(v) else v
+            line = f"║    {k}: {display_v}"
             lines.append(line + " " * (w - 2 - len(line) + 2) + "║")
     lines.append("╚" + "═" * (w - 2) + "╝")
     return "\n".join(lines)

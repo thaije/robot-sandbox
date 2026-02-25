@@ -16,14 +16,8 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 | SIM-11 | Scenario reset without full restart | Stub in `reset.py` |
 | SIM-12 | Multiple simulator instances in parallel | Future |
 | SIM-13 | Deterministic replay (same seed = same scenario) | Not verified |
-| ROB-02 | RGB bounding box camera | Next step |
-| ROB-03 | 2D LiDAR | Next step |
-| MET-03 | Time to all detections | Needs camera |
-| MET-04 | Task completion time | Needs camera (success depends on detection) |
-| MET-05 | Average time per detection | Needs camera |
+| ROB-03 | 2D LiDAR | Next step — unlocks MET-06 |
 | MET-06 | Exploration coverage % | Needs LiDAR |
-| MET-07 | Object detection rate | Needs camera |
-| MET-08 | False positive rate | Needs camera |
 | MET-10 | Near-miss detection | Not started |
 | MET-13 | Calibrated par values | After first working run |
 | DOC-01–07 | Documentation | Not started |
@@ -31,21 +25,6 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 ---
 
 ## Remaining implementation steps
-
-### Step 3.4 — Object detection tracking
-
-Add `boundingbox_camera` sensor to `robots/derpbot/urdf/derpbot.urdf` (`box_type: visible_2d`). Handles occlusion natively. Output: `vision_msgs/Detection2DArray` on `/{ROBOT_NAME}/detections`. Objects must have `gz-sim-label-system` plugin (class IDs: 1=fire_extinguisher, 2=first_aid_kit, 3=hazard_sign).
-
-Bridge in `spawn_robot.launch.py`:
-```
-/{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V
-```
-
-Implement `src/metrics/object_detection_tracker.py`: subscribe to `/detections`, track first-detection timestamp per class ID.
-
-### Step 3.5 — Detection metrics
-
-Wire `DetectionMetrics` into `runner._build_metrics()` with `total_targets` from scenario config. Computes: `object_detection_rate`, `time_to_all_detections`, `average_time_per_detection`, `false_positive_rate` (0.0 for ground-truth oracle).
 
 ### Step 3.6 — Exploration coverage
 
