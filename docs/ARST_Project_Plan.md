@@ -89,16 +89,16 @@ Run office scenario 3–5 times with teleoperation. Set `par_values` in scenario
 
 ## Scoring system reference
 
-Category weights (configurable per scenario):
-
-| Category   | Default weight | Key inputs |
-|------------|---------------|------------|
-| Speed      | 0.25 | completion_time, avg_time_per_detection, coverage_rate |
-| Accuracy   | 0.30 | object_detection_rate, false_positive_rate, path_efficiency |
-| Safety     | 0.20 | collision_count, near_miss_events |
-| Efficiency | 0.25 | revisit_ratio, coverage_per_meter, exploration_completeness |
-
-Safety tiers: 0 collisions=100, 1–2=80, 3–5=60, 6–10=40, 11+=20.
+Overall = weighted sum of categories, normalised by total weight. All scores 0–100.
 Grades: S≥95, A≥85, B≥70, C≥55, D≥40, F<40.
 
-Full scoring formulas implemented in `src/metrics/scoring.py`.
+| Category        | Default weight | Formula |
+|-----------------|---------------|---------|
+| Speed           | 0.20 | `0.40 × (timeout−elapsed)/timeout + 0.35 × par_time/avg_detect_time + 0.25 × coverage_rate/par_rate` |
+| Accuracy        | 0.25 | `0.45 × detection_rate + 0.30 × (1−fp_rate) + 0.25 × path_efficiency` (path_efficiency=0 until implemented) |
+| Safety          | 0.20 | `0.70 × collision_tier + 0.30 × near_miss_tier`; tiers: 0→100, 1–2→80, 3–5→60, 6–10→40, 11+→20 |
+| Efficiency      | 0.20 | `0.35 × (1−revisit_ratio) + 0.35 × (coverage/meters)/par_cpm + 0.30 × coverage_pct` |
+| Effectiveness   | 0.15 | `Σ (type_weight / Σweights) × (detected_instances / total_instances) × 100`; per-type weights configurable |
+
+All weights are configurable per scenario via `scoring.category_weights` and `scoring.effectiveness_weights`.
+Full implementation in [src/metrics/scoring.py](../src/metrics/scoring.py).

@@ -35,7 +35,7 @@ class CollisionCount(BaseMetric):
     def __init__(
         self,
         bumper_topic: str = "/bumper_contact",
-        debounce_seconds: float = 0.5,
+        debounce_seconds: float = 2.0,
         node: Any = None,
     ) -> None:
         self._bumper_topic = bumper_topic
