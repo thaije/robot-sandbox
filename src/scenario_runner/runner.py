@@ -173,34 +173,67 @@ class ScenarioRunner:
         Keys in the returned dict use the format ``"{metric_name}__{robot_name}"``
         so that ``_collect_metrics`` can aggregate across robots.
 
+        Detection metrics (object_detection_rate, time_to_all_detections,
+        average_time_per_detection, false_positive_rate) are grouped into a
+        single DetectionMetrics instance per robot keyed as
+        ``"detection_metrics__{robot_name}"``.  Its get_result() returns all
+        four keys at once.
+
         Only metrics with concrete implementations are created; unknown names
         are logged and skipped so the runner doesn't crash on stubs.
         """
-        from metrics.meters_traveled import MetersTraveled  # noqa: PLC0415
-        from metrics.collision_count import CollisionCount   # noqa: PLC0415
-        from metrics.revisit_ratio import RevisitRatio       # noqa: PLC0415
+        from metrics.meters_traveled import MetersTraveled    # noqa: PLC0415
+        from metrics.collision_count import CollisionCount     # noqa: PLC0415
+        from metrics.revisit_ratio import RevisitRatio         # noqa: PLC0415
+        from metrics.detection_metrics import DetectionMetrics  # noqa: PLC0415
 
-        def _factory(metric_name: str, robot_name: str) -> Any:
-            if metric_name == "meters_traveled":
-                return MetersTraveled(odom_topic=f"/{robot_name}/odom", node=node)
-            if metric_name == "collision_count":
-                return CollisionCount(bumper_topic=f"/{robot_name}/bumper_contact", node=node)
-            if metric_name == "revisit_ratio":
-                return RevisitRatio(odom_topic=f"/{robot_name}/odom", node=node)
-            return None
+        # All detection-related metric names served by one DetectionMetrics instance.
+        _DETECTION_METRIC_NAMES = {
+            "object_detection_rate",
+            "time_to_all_detections",
+            "average_time_per_detection",
+            "false_positive_rate",
+        }
 
-        _implemented = {"meters_traveled", "collision_count", "revisit_ratio"}
-        requested = self._cfg.get("metrics", {}).get("collect", [])
+        _implemented = {
+            "meters_traveled", "collision_count", "revisit_ratio",
+        } | _DETECTION_METRIC_NAMES
+
+        requested = set(self._cfg.get("metrics", {}).get("collect", []))
+        needs_detection = bool(requested & _DETECTION_METRIC_NAMES)
+
+        # Count unique object types for detection-rate denominator.
+        world_objects = self._cfg.get("world", {}).get("objects", [])
+        total_targets = len(world_objects)
+
         built: dict[str, Any] = {}
 
         for robot in robots_cfg:
             robot_name = robot.get("name", f"{robot['platform']}_0")
+
             for metric_name in requested:
                 if metric_name not in _implemented:
                     log.debug("Metric %r not yet implemented — skipping.", metric_name)
                     continue
+                if metric_name in _DETECTION_METRIC_NAMES:
+                    continue  # handled as a group below
+
                 key = f"{metric_name}__{robot_name}"
-                built[key] = _factory(metric_name, robot_name)
+                if metric_name == "meters_traveled":
+                    built[key] = MetersTraveled(odom_topic=f"/{robot_name}/odom", node=node)
+                elif metric_name == "collision_count":
+                    built[key] = CollisionCount(bumper_topic=f"/{robot_name}/bumper_contact", node=node)
+                elif metric_name == "revisit_ratio":
+                    built[key] = RevisitRatio(odom_topic=f"/{robot_name}/odom", node=node)
+                log.debug("Metric registered: %s", key)
+
+            if needs_detection:
+                key = f"detection_metrics__{robot_name}"
+                built[key] = DetectionMetrics(
+                    detections_topic=f"/{robot_name}/detections",
+                    node=node,
+                    total_targets=total_targets,
+                )
                 log.debug("Metric registered: %s", key)
 
         return built
@@ -225,7 +258,12 @@ class ScenarioRunner:
         # Non-numeric / non-list values are passed through as-is.
         # NEW RATIO METRICS NOTE: add any new ratio/percentage metric names here
         # so they are averaged (not summed) across robots in multi-robot runs.
-        _avg_metrics = {"revisit_ratio"}
+        _avg_metrics = {
+            "revisit_ratio",
+            "object_detection_rate",
+            "false_positive_rate",
+            "average_time_per_detection",
+        }
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}
         counts: dict[str, int] = {}

@@ -167,6 +167,10 @@ def _make_actions(context, *args, **kwargs):
             f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
             # Bumper contact: Gazebo → ROS 2  (feeds CollisionCount metric)
             f"/{robot_name}/bumper_contact@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
+            # Bounding-box camera: Gazebo → ROS 2  (feeds DetectionMetrics)
+            f"/{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V",
+            # RGB camera: Gazebo → ROS 2  (live image stream for RViz2 / debugging)
+            f"/{robot_name}/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
         ],
         remappings=[
             # Merge robot's TF stream into the global /tf topic

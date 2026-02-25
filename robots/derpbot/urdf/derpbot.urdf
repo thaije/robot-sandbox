@@ -19,7 +19,7 @@
     right_wheel     — at (0, -0.115, 0) relative to base_link
     caster_wheel    — at (0.13, 0, -0.03) relative to base_link → z=0.02 world
 
-  Sensors: contact/bumper on base_link (detects all sides).  LiDAR / camera added later.
+  Sensors: contact/bumper on base_link (detects all sides).  Bounding-box camera on top-front.  LiDAR added later.
 
   Visual: yellow strip on front face (+x) marks forward direction.
 
@@ -185,6 +185,36 @@
     </inertial>
   </link>
 
+  <!-- ════════════════════════ BOUNDING-BOX CAMERA ══════════════════════════ -->
+  <!--  Forward-facing camera mounted on top of the robot body.
+        Position: x=+0.15 m (front edge), z=+0.15 m (top of body + 0.05 m mast)
+        relative to base_link.  Faces forward along robot +x with no tilt.
+        ROBOT_NAME is replaced at spawn/generation time.                      -->
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.15 0 0.15" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_link">
+    <!-- Small box visual so the camera mount is visible in Gazebo GUI -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.04 0.02"/>
+      </geometry>
+      <material name="camera_grey">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+      </material>
+    </visual>
+    <!-- Minimal inertia — fixed joint, not dynamic -->
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+    </inertial>
+  </link>
+
   <!-- ════════════════════════ GAZEBO PLUGINS ═══════════════════════════════ -->
 
   <gazebo>
@@ -241,6 +271,57 @@
         <collision>base_footprint_fixed_joint_lump__base_link_collision_collision</collision>
         <topic>/ROBOT_NAME/bumper_contact</topic>
       </contact>
+    </sensor>
+  </gazebo>
+
+  <!-- ── Bounding-box camera ────────────────────────────────────────────── -->
+  <!--  Outputs gz.msgs.AnnotatedAxisAligned2DBox_V, bridged via ros_gz_bridge
+        to vision_msgs/Detection2DArray on /ROBOT_NAME/detections.
+        Requires gz-sim-label-system at model level on target objects (already
+        present in worlds/models/*/model.sdf).
+        The camera renders in the +x direction of camera_link (forward on
+        DerpBot) — matches the forward-facing joint origin above.           -->
+  <gazebo reference="camera_link">
+    <!-- Bounding-box camera: object detection (bridged to vision_msgs/Detection2DArray) -->
+    <sensor name="bbox_camera" type="boundingbox_camera">
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <topic>/ROBOT_NAME/detections</topic>
+      <camera name="bbox_camera">
+        <!-- 90 degrees -->
+        <horizontal_fov>1.5708</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>8.0</far>
+        </clip>
+      </camera>
+      <visualize>false</visualize>
+    </sensor>
+
+    <!-- RGB camera: live image stream for RViz2 / debugging -->
+    <sensor name="rgb_camera" type="camera">
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <topic>/ROBOT_NAME/image_raw</topic>
+      <camera name="rgb_camera">
+        <!-- Same FOV/resolution as bbox_camera so views match -->
+        <horizontal_fov>1.5708</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>8.0</far>
+        </clip>
+      </camera>
+      <visualize>false</visualize>
     </sensor>
   </gazebo>
 

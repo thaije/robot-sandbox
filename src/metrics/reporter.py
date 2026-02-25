@@ -19,6 +19,20 @@ def _bar(score: float, width: int = 10) -> str:
     return "█" * filled + "░" * (width - filled)
 
 
+def _format_event(item: Any) -> str:
+    """Format a single event dict as a compact human-readable string."""
+    if not isinstance(item, dict):
+        return str(item)
+    # detection_events: {class_id, class_name, timestamp}
+    if "class_name" in item:
+        return f"t={item.get('timestamp', '?'):6.1f}s  {item['class_name']} [label {item.get('class_id', '?')}]"
+    # collision_events: {t, count}
+    if "count" in item:
+        return f"t={item.get('t', '?'):6.1f}s  collision #{item['count']}"
+    # fallback
+    return str(item)
+
+
 def render_scorecard(sc: Scorecard) -> str:
     lines = []
     w = SCORECARD_WIDTH
@@ -44,8 +58,16 @@ def render_scorecard(sc: Scorecard) -> str:
     lines.append("╠" + "═" * (w - 2) + "╣")
     lines.append("║  Raw Metrics:" + " " * (w - 16) + "║")
     for k, v in sc.raw_metrics.items():
-        line = f"║    {k}: {v}"
-        lines.append(line + " " * (w - 2 - len(line) + 2) + "║")
+        if isinstance(v, list):
+            header = f"║    {k} ({len(v)}):"
+            lines.append(header + " " * (w - 2 - len(header) + 2) + "║")
+            for item in v:
+                sub = _format_event(item)
+                sub_line = f"║      {sub}"
+                lines.append(sub_line + " " * (w - 2 - len(sub_line) + 2) + "║")
+        else:
+            line = f"║    {k}: {v}"
+            lines.append(line + " " * (w - 2 - len(line) + 2) + "║")
     lines.append("╚" + "═" * (w - 2) + "╝")
     return "\n".join(lines)
 

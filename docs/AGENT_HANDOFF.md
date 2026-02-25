@@ -21,7 +21,8 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 | `src/metrics/{base_metric,evaluator,reporter,scoring}.py` | ✅ |
 | `src/metrics/{meters_traveled,collision_count,revisit_ratio}.py` | ✅ |
 | `src/metrics/exploration_coverage.py` | ⬜ Stub — needs LiDAR |
-| `src/metrics/detection_metrics.py` | ⬜ Stub — needs camera |
+| `src/metrics/detection_metrics.py` | ✅ |
+| `src/metrics/object_detection_tracker.py` | ✅ |
 | `src/scenario_runner/{launcher,runner,__main__}.py` | ✅ |
 | `src/world_manager/{world_generator,object_placer,template_loader}.py` | ✅ |
 | `src/utils/{config_loader,ros_helpers,logging_setup}.py` | ✅ |
@@ -30,26 +31,15 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 
 ## Next steps (priority order)
 
-### 1. Add bounding box camera to DerpBot
-Highest priority — without it `object_detection_rate` is always `[MISSING]` and scenario can never succeed.
+### 1. ~~Add bounding box camera to DerpBot~~ ✅ DONE
 
-Add camera link + sensor to `robots/derpbot/urdf/derpbot.urdf`:
-```xml
-<gazebo reference="camera_link">
-  <sensor name="bbox_camera" type="boundingbox_camera">
-    <topic>/ROBOT_NAME/detections</topic>
-    <update_rate>10</update_rate>
-    <camera>...</camera>
-  </sensor>
-</gazebo>
-```
+Camera link + boundingbox_camera sensor added to `robots/derpbot/urdf/derpbot.urdf`.
+Bridge added to `launch/spawn_robot.launch.py`.
+`ObjectDetectionTracker` + `DetectionMetrics` implemented.
+Runner `_build_metrics()` wired; `total_targets = len(world.objects)` = 3 classes.
 
-Bridge in `spawn_robot.launch.py`:
-```
-/{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V
-```
-
-Implement `src/metrics/object_detection_tracker.py` (tracks first-detection timestamp per class ID), then wire `DetectionMetrics` into `runner._build_metrics()` with `total_targets` from scenario config.
+**Needs real-world verification**: camera orientation (currently `rpy="0 0 0"` = forward +x).
+If objects aren't detected, adjust pitch in the `camera_joint` origin.
 
 ### 2. Add 2D LiDAR to DerpBot
 Unlocks `exploration_coverage`. Add `gpu_lidar` sensor to URDF, bridge:

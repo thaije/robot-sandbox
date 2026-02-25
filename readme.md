@@ -32,6 +32,23 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 
 > Dynamic spawn via `spawn_robot.launch.py` also works but contact sensors won't fire (gz-sim 8.10.0 bug). Use `run_scenario.sh --gui` for full fidelity.
 
+## Visualization (RViz2)
+
+```bash
+rviz2 -d config/derpbot.rviz
+```
+
+Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running first — it provides `robot_state_publisher` and the TF tree.
+
+**Displays included:**
+
+| Display | Topic | Notes |
+|---------|-------|-------|
+| RobotModel | `/derpbot_0/robot_description` | Full URDF with camera mount visible |
+| TF | `/tf` | `odom → base_footprint → base_link → camera_link` |
+| Odometry | `/derpbot_0/odom` | Red arrows, last 100 poses |
+| Camera Image | `/derpbot_0/image_raw` | Live RGB feed from forward-facing camera |
+
 ## Tests
 
 ```bash
