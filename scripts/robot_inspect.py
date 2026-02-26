@@ -51,6 +51,44 @@ from rclpy.node import Node
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+def _get_gz_world_pose(robot: str, timeout: float = 3.0):
+    """Return (world_x, world_y, yaw) from Gazebo ground truth, or None."""
+    import json, threading
+    from pathlib import Path
+    try:
+        state = json.loads(Path("/tmp/arst_worlds/world_state.json").read_text())
+        world = Path(state["map_pgm"]).parent.name
+    except Exception:
+        world = "indoor_office"
+
+    try:
+        from gz.transport13 import Node as GzNode
+        from gz.msgs10.pose_v_pb2 import Pose_V
+
+        gz_node = GzNode()
+        result: list = []
+        ev = threading.Event()
+
+        def cb(msg):
+            if not result:
+                result.append(msg)
+                ev.set()
+
+        gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", cb)
+        ev.wait(timeout=timeout)
+
+        if result:
+            for pose in result[0].pose:
+                if pose.name == robot:
+                    p = pose.position
+                    o = pose.orientation
+                    yaw = math.atan2(2*(o.w*o.z + o.x*o.y), 1 - 2*(o.y*o.y + o.z*o.z))
+                    return p.x, p.y, yaw
+    except Exception:
+        pass
+    return None
+
+
 def _yaw_from_quaternion(q) -> float:
     """Extract yaw (rad) from a geometry_msgs/Quaternion."""
     siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
@@ -84,21 +122,41 @@ def _wait_for_message(node: Node, msg_type, topic: str, timeout: float):
 # ── Subcommands ────────────────────────────────────────────────────────────────
 
 def cmd_status(args):
+    import json
+    from pathlib import Path
+
+    # Try Gazebo ground truth first (no odometry drift)
+    gz_pose = _get_gz_world_pose(args.robot, timeout=args.timeout)
+    if gz_pose is not None:
+        wx, wy, yaw = gz_pose
+        print(f"Robot : {args.robot}")
+        print(f"World : x={wx:.3f}  y={wy:.3f}  (ground truth)")
+        print(f"Yaw   : {yaw:.3f} rad  ({math.degrees(yaw):.1f}°)")
+        return 0
+
+    # Fallback: odometry + spawn offset
     from nav_msgs.msg import Odometry
+
+    try:
+        state = json.loads(Path("/tmp/arst_worlds/world_state.json").read_text())
+        spawn = state.get("spawn_pose", {"x": 1.0, "y": 1.0})
+    except Exception:
+        spawn = {"x": 1.0, "y": 1.0}
 
     rclpy.init()
     node = rclpy.create_node("ri_status")
     try:
         msg = _wait_for_message(node, Odometry, f"/{args.robot}/odom", args.timeout)
         if msg is None:
-            print(f"ERROR: no message on /{args.robot}/odom within {args.timeout}s")
+            print(f"ERROR: no pose available (gz unreachable, no odom on /{args.robot}/odom within {args.timeout}s)")
             return 1
         p = msg.pose.pose.position
         yaw = _yaw_from_quaternion(msg.pose.pose.orientation)
-        yaw_deg = math.degrees(yaw)
+        wx = p.x + spawn.get("x", 1.0)
+        wy = p.y + spawn.get("y", 1.0)
         print(f"Robot : {args.robot}")
-        print(f"Pose  : x={p.x:.3f}  y={p.y:.3f}  z={p.z:.3f}")
-        print(f"Yaw   : {yaw:.3f} rad  ({yaw_deg:.1f}°)")
+        print(f"World : x={wx:.3f}  y={wy:.3f}  (odom estimate — may drift after collisions)")
+        print(f"Yaw   : {yaw:.3f} rad  ({math.degrees(yaw):.1f}°)")
         stamp = msg.header.stamp
         print(f"Stamp : {stamp.sec}.{stamp.nanosec // 1_000_000:03d} s")
     finally:

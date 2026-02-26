@@ -128,10 +128,38 @@ def yaw_to_arrow(yaw: float) -> str:
     return "v"
 
 
-# ── ROS pose fetch ────────────────────────────────────────────────────────────
+# ── Pose fetch (gz ground truth → odom fallback) ──────────────────────────────
 
-def get_robot_odom(robot: str, timeout: float = 3.0):
-    """Return (odom_x, odom_y, yaw) or None if ROS unavailable."""
+def get_robot_pose(robot: str, world: str, spawn: dict, timeout: float = 3.0):
+    """Return (world_x, world_y, yaw) — Gazebo ground truth, or odom+spawn fallback."""
+    # 1. Try Gazebo ground truth via gz.transport (drift-free)
+    try:
+        from gz.transport13 import Node as GzNode
+        from gz.msgs10.pose_v_pb2 import Pose_V
+
+        gz_node = GzNode()
+        result: list = []
+        ev = threading.Event()
+
+        def gz_cb(msg):
+            if not result:
+                result.append(msg)
+                ev.set()
+
+        gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", gz_cb)
+        ev.wait(timeout=timeout)
+
+        if result:
+            for pose in result[0].pose:
+                if pose.name == robot:
+                    p = pose.position
+                    o = pose.orientation
+                    yaw = math.atan2(2*(o.w*o.z + o.x*o.y), 1 - 2*(o.y*o.y + o.z*o.z))
+                    return p.x, p.y, yaw
+    except Exception:
+        pass
+
+    # 2. Fallback: odometry + spawn offset
     try:
         import rclpy
         from nav_msgs.msg import Odometry
@@ -139,18 +167,18 @@ def get_robot_odom(robot: str, timeout: float = 3.0):
         rclpy.init()
         node = rclpy.create_node("ws_node")
         received: list = []
-        ev = threading.Event()
+        ev2 = threading.Event()
 
-        def cb(msg):
+        def odom_cb(msg):
             if not received:
                 received.append(msg)
-                ev.set()
+                ev2.set()
 
-        node.create_subscription(Odometry, f"/{robot}/odom", cb, 1)
+        node.create_subscription(Odometry, f"/{robot}/odom", odom_cb, 1)
         ex = rclpy.executors.SingleThreadedExecutor()
         ex.add_node(node)
         t0 = time.monotonic()
-        while not ev.is_set() and time.monotonic() - t0 < timeout:
+        while not ev2.is_set() and time.monotonic() - t0 < timeout:
             ex.spin_once(timeout_sec=0.1)
         ex.shutdown()
         node.destroy_node()
@@ -160,9 +188,10 @@ def get_robot_odom(robot: str, timeout: float = 3.0):
             p = received[0].pose.pose.position
             q = received[0].pose.pose.orientation
             yaw = math.atan2(2*(q.w*q.z + q.x*q.y), 1 - 2*(q.y*q.y + q.z*q.z))
-            return p.x, p.y, yaw
+            return p.x + spawn.get("x", 1.0), p.y + spawn.get("y", 1.0), yaw
     except Exception:
         pass
+
     return None
 
 
@@ -196,8 +225,7 @@ def render_ascii(
 
     # Robot
     if robot_pose is not None:
-        ox, oy, yaw = robot_pose
-        wx, wy = ox + spawn.get("x", 1.0), oy + spawn.get("y", 1.0)
+        wx, wy, yaw = robot_pose
         col, row = world_to_cell(wx, wy, res, H)
         grid[row][col] = "@" + yaw_to_arrow(yaw)
 
@@ -223,9 +251,8 @@ def print_summary(label_map: dict, spawn: dict, robot_pose, found: set[str]) -> 
               f"  @ world ({info['x']:.1f}, {info['y']:.1f})   {status}")
 
     if robot_pose is not None:
-        ox, oy, yaw = robot_pose
-        wx, wy = ox + spawn.get("x", 1.0), oy + spawn.get("y", 1.0)
-        print(f"\nRobot:  world ({wx:.2f}, {wy:.2f})  odom ({ox:.2f}, {oy:.2f})"
+        wx, wy, yaw = robot_pose
+        print(f"\nRobot:  world ({wx:.2f}, {wy:.2f})"
               f"  yaw {math.degrees(yaw):.1f}°  facing {yaw_to_arrow(yaw)}")
     else:
         print("\nRobot:  (pose unavailable)")
@@ -299,8 +326,7 @@ def render_png(
 
     # Robot
     if robot_pose is not None:
-        ox, oy, yaw = robot_pose
-        wx, wy = ox + spawn.get("x", 1.0), oy + spawn.get("y", 1.0)
+        wx, wy, yaw = robot_pose
         ix, iy = int(wx * SCALE), ih - int(wy * SCALE)
         cv2.circle(img, (ix, iy), 11, (200, 80, 0), -1)    # blue-filled robot
         cv2.circle(img, (ix, iy), 11, (0, 0, 0), 1)        # black outline
@@ -359,12 +385,15 @@ def main() -> None:
         except Exception:
             pass
 
-    # Robot pose
+    # Derive Gazebo world name from map path (e.g. .../templates/indoor_office/... → "indoor_office")
+    world = Path(state["map_pgm"]).parent.name
+
+    # Robot pose — gz ground truth preferred, odom+spawn fallback
     robot_pose = None
     if not args.no_ros:
-        robot_pose = get_robot_odom(args.robot, timeout=3.0)
+        robot_pose = get_robot_pose(args.robot, world, spawn, timeout=3.0)
         if robot_pose is None:
-            print("(no odom received — robot marker omitted)", file=sys.stderr)
+            print("(no pose received — robot marker omitted)", file=sys.stderr)
 
     pixels, W, H = read_pgm(Path(state["map_pgm"]))
 
@@ -373,9 +402,10 @@ def main() -> None:
 
     print_summary(label_map, spawn, robot_pose, found)
 
-    if args.png:
-        render_png(pixels, W, H, res, label_map, spawn, robot_pose, found,
-                   obstacles, args.png)
+    # Default PNG path if none specified
+    png_path = args.png or "/tmp/arst_world_map.png"
+    render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
+    print(f"\n⚠️  CHECK THE MAP BEFORE MOVING — walls and objects visible: {png_path}")
 
 
 if __name__ == "__main__":
