@@ -39,17 +39,17 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 
 These tools give ground-truth information not available to the real robot. Use them to verify the pipeline works, not to chase a high score.
 
-**Launch:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300`
+**Launch:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300` (startup ~5s)
 Writes `/tmp/arst_worlds/world_state.json` at startup. See each script's own docstring for usage and flags.
 
-- `scripts/world_state.py` — PNG map + summary. Use: `world_state.py --png /tmp/map.png` → prints path, then Read the PNG. Map contains walls, furniture, objects to be found (coloured), and found objects (grey, auto-updated). 
+- `scripts/world_state.py` — PNG map + summary. Map contains walls, furniture, objects to be found (coloured), and found objects (grey, auto-updated). 
 - `scripts/robot_inspect.py` — drive, status, detections currently in view.
 
 ### Navigation approach
-1. **Start with the map**: `world_state.py --png /tmp/map.png` then Read the PNG — **prefer the PNG over the ASCII**; it shows room layout and doorway positions much more clearly at a glance.
+1. **Start with the map**: `world_state.py`
 2. **Plan by room, not exact waypoints.** The map shows doorways; navigate room-by-room.
-3. **Move → check loop**: drive 1–2 s, then re-read the map or call `detections`. Adjust based on what you see. Don't plan the full route upfront.
-4. **Run tools often** — it's fast and keeps the user informed.
+3. **Move → check loop**: drive 1–2 s, then re-fetch and reread the map or call `detections`. Adjust based on what you see. Don't plan the full route upfront.
+4. **Run tools often** — it's fast and keeps the user informed. Refresh the map often to prevent collisions. 
 5. **Goal is completion, not score.**
 6. **Objects in doorways**: small objects (first_aid_kit, fire_extinguisher) are narrower than a standard door opening and the robot can physically squeeze past, but there is a real risk of getting stuck against the object and losing time. Only attempt this if no clear alternative route exists — otherwise find another door or approach angle.
 
