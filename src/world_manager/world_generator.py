@@ -116,6 +116,7 @@ class WorldGenerator:
 
         # Embed robots — convert each URDF to SDF and add as <model>
         robots_cfg = scenario_config.get("robots", [])
+        self._save_world_state(template_name, robots_cfg)
         self._embed_robots(world_elem, robots_cfg)
 
         # ── Write output ───────────────────────────────────────────────────────
@@ -179,7 +180,10 @@ class WorldGenerator:
             mt = obj.model_type
             idx = counters.get(mt, 0)
             counters[mt] = idx + 1
-            self.label_map[str(label_counter)] = {"type": mt, "instance": idx}
+            self.label_map[str(label_counter)] = {
+                "type": mt, "instance": idx,
+                "x": round(obj.x, 3), "y": round(obj.y, 3),
+            }
             world_elem.append(self._load_model_element(mt, idx, obj, label_counter))
             label_counter += 1
 
@@ -250,6 +254,24 @@ class WorldGenerator:
             model_elem.insert(0, pose_elem)
 
             world_elem.append(model_elem)
+
+    def _save_world_state(self, template_name: str, robots_cfg: list) -> None:
+        """Write /tmp/arst_worlds/world_state.json for agent navigation tools."""
+        import json
+        spawn: dict = {}
+        if robots_cfg:
+            sp = robots_cfg[0].get("spawn_pose", {})
+            spawn = {"x": float(sp.get("x", 1.0)), "y": float(sp.get("y", 1.0))}
+        pgm = self._root / "worlds" / "templates" / template_name / "ground_truth_map.pgm"
+        state = {
+            "label_map": self.label_map,
+            "map_pgm": str(pgm),
+            "map_resolution": 0.5,
+            "spawn_pose": spawn,
+        }
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+        out = self._output_dir / "world_state.json"
+        out.write_text(json.dumps(state, indent=2))
 
     def _load_model_element(
         self, model_type: str, idx: int, obj: PlacedObject, instance_label: int = 0

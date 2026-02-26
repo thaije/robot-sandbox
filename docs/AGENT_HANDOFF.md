@@ -14,6 +14,7 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
   - Scorecard printed + JSON written to `results/`
 - **Manual sim**: persistent Gazebo + `spawn_robot.launch.py` + teleoperation
 - **Inspection**: `scripts/robot_inspect.py` — snapshot, status, detections, drive (use ≤ 2 s drive calls)
+- **Agent nav tools**: `scripts/world_state.py` + `scripts/robot_inspect.py` — see section below
 - **World**: indoor_office (20×15 m, 4 rooms, furniture, randomised object placement)
 - **Objects**: fire_extinguisher (×3), first_aid_kit (×2), hazard_sign (×4) — 9 instances total with unique labels
 
@@ -32,31 +33,31 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
 
 ---
 
+---
+
+## Running the scenario as an agent (cheat tools)
+
+These tools give ground-truth information not available to the real robot. Use them to verify the pipeline works, not to chase a high score.
+
+**Launch:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300`
+Writes `/tmp/arst_worlds/world_state.json` at startup. See each script's own docstring for usage and flags.
+
+- `scripts/world_state.py` — ASCII + PNG map: floor plan, all object positions, robot pose, found/unfound
+- `scripts/robot_inspect.py` — drive, status, detections
+
+### Navigation approach
+1. **Start with the map**: `world_state.py --png /tmp/map.png` then Read the PNG — **prefer the PNG over the ASCII**; it shows room layout and doorway positions much more clearly at a glance.
+2. **Plan by room, not exact waypoints.** The map shows doorways; navigate room-by-room.
+3. **Move → check loop**: drive 1–2 s, then re-read the map or call `detections`. Adjust based on what you see. Don't plan the full route upfront.
+4. **Run tools often** — it's fast and keeps the user informed.
+5. **Goal is completion, not score.**
+6. **Objects in doorways**: small objects (first_aid_kit, fire_extinguisher) are narrower than a standard door opening and the robot can physically squeeze past, but there is a real risk of getting stuck against the object and losing time. Only attempt this if no clear alternative route exists — otherwise find another door or approach angle.
+
+---
+
 ## Next steps (priority order)
 
-### 0. ~~robot_inspect.py~~ ✅ DONE
-
-`scripts/robot_inspect.py` — one-shot inspection/control for automated sessions.
-
-```bash
-source /opt/ros/jazzy/setup.bash && export PYTHONPATH=src:$PYTHONPATH
-python3.12 scripts/robot_inspect.py status          # pose + sim stamp
-python3.12 scripts/robot_inspect.py snapshot        # save camera frame → /tmp/robot_snapshot.png
-python3.12 scripts/robot_inspect.py detections      # bbox detections in current frame
-python3.12 scripts/robot_inspect.py drive 0.3 0 2   # vx wz duration_s (keep ≤ 2 s per call)
-```
-
-### 1. ~~Add bounding box camera to DerpBot~~ ✅ DONE
-
-Camera link + boundingbox_camera sensor added to `robots/derpbot/urdf/derpbot.urdf`.
-Bridge added to `launch/spawn_robot.launch.py`.
-`ObjectDetectionTracker` + `DetectionMetrics` implemented.
-Runner `_build_metrics()` wired; `total_targets = len(world.objects)` = 3 classes.
-
-**Needs real-world verification**: camera orientation (currently `rpy="0 0 0"` = forward +x).
-If objects aren't detected, adjust pitch in the `camera_joint` origin.
-
-### 2. Add 2D LiDAR to DerpBot
+### 1. Add 2D LiDAR to DerpBot
 Unlocks `exploration_coverage`. Add `gpu_lidar` sensor to URDF, bridge:
 ```
 /{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan
@@ -114,6 +115,7 @@ launch/
 scripts/
   run_scenario.sh
   robot_inspect.py      # status / snapshot / detections / drive
+  world_state.py        # ASCII + PNG map with ground-truth object positions (agent cheat tool)
   despawn_robot.sh
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet
 config/

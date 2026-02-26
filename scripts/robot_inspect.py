@@ -12,9 +12,25 @@ Usage
     # Print current detection events
     python3 scripts/robot_inspect.py detections
 
-    # Drive: linear m/s, angular rad/s, duration seconds
+    # Drive: linear m/s, angular rad/s, duration seconds (open-loop)
     python3 scripts/robot_inspect.py drive 0.3 0.0 3.0
     python3 scripts/robot_inspect.py drive 0.0 0.6 2.0   # turn left ~70 deg
+
+    # Closed-loop rotation by N degrees (+ = CCW/left, - = CW/right)
+    python3 scripts/robot_inspect.py rotate 90
+    python3 scripts/robot_inspect.py rotate -45
+
+    # Closed-loop translation by N metres (+ = forward, - = backward)
+    python3 scripts/robot_inspect.py move 2.0
+    python3 scripts/robot_inspect.py move -0.5
+
+Notes
+-----
+    - Keep drive durations ≤ 2 s. The diff-drive controller holds the last
+      velocity indefinitely; the drive command sends a stop after each call,
+      but long durations risk the robot continuing into walls.
+    - rotate/move use odom feedback and are much more accurate than drive.
+    - Pose from `status` is in odom frame (starts at 0,0 at spawn).
 
 Optional flags
 --------------
@@ -192,6 +208,136 @@ def cmd_drive(args):
     return 0
 
 
+# ── Closed-loop helpers ────────────────────────────────────────────────────────
+
+def _start_odom_listener(node, robot):
+    """Subscribe to odom; return (latest_odom_list, executor, spin_thread).
+
+    The executor spins in a background daemon thread so the main thread can
+    run a control loop without blocking.
+    """
+    from nav_msgs.msg import Odometry
+
+    latest = [None]
+    ready = threading.Event()
+
+    def cb(msg):
+        latest[0] = msg
+        ready.set()
+
+    node.create_subscription(Odometry, f"/{robot}/odom", cb, 10)
+    executor = rclpy.executors.SingleThreadedExecutor()
+    executor.add_node(node)
+    thread = threading.Thread(target=executor.spin, daemon=True)
+    thread.start()
+    return latest, ready, executor
+
+
+def _angle_diff(a: float, b: float) -> float:
+    """Shortest signed angular difference a − b, result in (−π, π]."""
+    return math.atan2(math.sin(a - b), math.cos(a - b))
+
+
+def cmd_rotate(args):
+    """Rotate by args.degrees using closed-loop odom feedback."""
+    from geometry_msgs.msg import Twist
+
+    rclpy.init()
+    node = rclpy.create_node("ri_rotate")
+    pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
+    latest, ready, executor = _start_odom_listener(node, args.robot)
+
+    if not ready.wait(timeout=args.timeout):
+        print(f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s")
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+        return 1
+
+    initial_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
+    target_rad = math.radians(float(args.degrees))
+    KP, MAX_WZ, THRESHOLD = 2.0, 0.8, math.radians(1.5)
+
+    print(f"Rotating {args.degrees}° ({'CCW' if args.degrees >= 0 else 'CW'}) …")
+    start = time.monotonic()
+    try:
+        while True:
+            current_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
+            rotated = _angle_diff(current_yaw, initial_yaw)
+            remaining = _angle_diff(target_rad, rotated)
+            if abs(remaining) < THRESHOLD:
+                break
+            twist = Twist()
+            twist.angular.z = max(-MAX_WZ, min(MAX_WZ, KP * remaining))
+            pub.publish(twist)
+            time.sleep(0.05)
+    finally:
+        stop = Twist()
+        for _ in range(10):
+            pub.publish(stop)
+            time.sleep(0.05)
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+
+    elapsed = time.monotonic() - start
+    current_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
+    actual = math.degrees(_angle_diff(current_yaw, initial_yaw))
+    print(f"Done — {elapsed:.1f}s  target {args.degrees}°  actual {actual:.1f}°")
+    return 0
+
+
+def cmd_move(args):
+    """Translate by args.metres using closed-loop odom feedback."""
+    from geometry_msgs.msg import Twist
+
+    rclpy.init()
+    node = rclpy.create_node("ri_move")
+    pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
+    latest, ready, executor = _start_odom_listener(node, args.robot)
+
+    if not ready.wait(timeout=args.timeout):
+        print(f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s")
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+        return 1
+
+    x0 = latest[0].pose.pose.position.x
+    y0 = latest[0].pose.pose.position.y
+    target = float(args.metres)
+    KP, MAX_VX, THRESHOLD = 1.5, 0.5, 0.04  # 4 cm
+
+    print(f"Moving {args.metres} m ({'forward' if target >= 0 else 'backward'}) …")
+    start = time.monotonic()
+    try:
+        while True:
+            p = latest[0].pose.pose.position
+            displacement = math.sqrt((p.x - x0) ** 2 + (p.y - y0) ** 2)
+            remaining = abs(target) - displacement
+            if remaining < THRESHOLD:
+                break
+            vx = math.copysign(min(MAX_VX, KP * remaining), target)
+            twist = Twist()
+            twist.linear.x = vx
+            pub.publish(twist)
+            time.sleep(0.05)
+    finally:
+        stop = Twist()
+        for _ in range(10):
+            pub.publish(stop)
+            time.sleep(0.05)
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+
+    elapsed = time.monotonic() - start
+    p = latest[0].pose.pose.position
+    actual = math.sqrt((p.x - x0) ** 2 + (p.y - y0) ** 2)
+    print(f"Done — {elapsed:.1f}s  target {target:.2f}m  actual {actual:.2f}m")
+    return 0
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main():
@@ -208,10 +354,16 @@ def main():
 
     sub.add_parser("detections", help="Print objects visible in current frame")
 
-    drv = sub.add_parser("drive", help="Drive for N seconds then stop")
+    drv = sub.add_parser("drive", help="Drive for N seconds then stop (open-loop)")
     drv.add_argument("vx",       type=float, help="Linear velocity m/s (+forward)")
     drv.add_argument("wz",       type=float, help="Angular velocity rad/s (+left)")
     drv.add_argument("duration", type=float, help="Duration in seconds")
+
+    rot = sub.add_parser("rotate", help="Rotate by N degrees using odom feedback (+ = CCW/left)")
+    rot.add_argument("degrees", type=float, help="Degrees to rotate (+ CCW, - CW)")
+
+    mv = sub.add_parser("move", help="Translate N metres using odom feedback (+ = forward)")
+    mv.add_argument("metres", type=float, help="Distance in metres (+ forward, - backward)")
 
     args = parser.parse_args()
 
@@ -220,6 +372,8 @@ def main():
         "snapshot":   cmd_snapshot,
         "detections": cmd_detections,
         "drive":      cmd_drive,
+        "rotate":     cmd_rotate,
+        "move":       cmd_move,
     }
     sys.exit(dispatch[args.command](args))
 
