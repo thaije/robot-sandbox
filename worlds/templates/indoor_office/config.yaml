@@ -36,6 +36,30 @@ placement_zones:
 # Minimum clearance from walls / other objects
 placement_clearance: 0.5  # meters
 
+# Static obstacles (furniture) — rendered on agent maps; positions match world.sdf
+# x,y = centre in world frame; w = x-axis extent (m); h = y-axis extent (m)
+obstacles:
+  # Office A
+  - {name: desk_a1,    x: 4.5,  y: 1.5,  w: 1.4,  h: 0.7}
+  - {name: chair_a1,   x: 4.5,  y: 2.4,  w: 0.45, h: 0.45}
+  - {name: desk_a2,    x: 7.0,  y: 4.5,  w: 1.4,  h: 0.7}
+  - {name: chair_a2,   x: 7.0,  y: 5.4,  w: 0.45, h: 0.45}
+  - {name: cabinet_a,  x: 1.5,  y: 5.8,  w: 0.5,  h: 0.45}
+  # Office B
+  - {name: desk_b1,    x: 12.0, y: 1.5,  w: 1.4,  h: 0.7}
+  - {name: chair_b1,   x: 12.0, y: 2.4,  w: 0.45, h: 0.45}
+  - {name: desk_b2,    x: 17.0, y: 4.5,  w: 1.4,  h: 0.7}
+  - {name: chair_b2,   x: 17.0, y: 5.4,  w: 0.45, h: 0.45}
+  - {name: cabinet_b,  x: 19.2, y: 5.8,  w: 0.5,  h: 0.45}
+  # Meeting Room
+  - {name: conf_table,    x: 10.0, y: 12.0, w: 3.6,  h: 1.4}
+  - {name: conf_chair_0,  x: 8.0,  y: 12.0, w: 0.45, h: 0.45}
+  - {name: conf_chair_1,  x: 9.2,  y: 12.0, w: 0.45, h: 0.45}
+  - {name: conf_chair_2,  x: 10.8, y: 12.0, w: 0.45, h: 0.45}
+  - {name: conf_chair_3,  x: 12.0, y: 12.0, w: 0.45, h: 0.45}
+  - {name: conf_chair_4,  x: 9.2,  y: 13.0, w: 0.45, h: 0.45}
+  - {name: conf_chair_5,  x: 10.8, y: 13.0, w: 0.45, h: 0.45}
+
 variants:
   - id: "low_clutter"
     extra_objects: 5

@@ -15,8 +15,12 @@ assigned by gz-sim-label-system as a string ("1", "2", "3").
 """
 from __future__ import annotations
 
+import json
 import time
+from pathlib import Path
 from typing import Any
+
+_LIVE_DETECTIONS_PATH = Path("/tmp/arst_worlds/detections_live.json")
 
 # Maps gz-sim-label-system integer labels → human-readable class names.
 # Must match the <label> values in worlds/models/*/model.sdf.
@@ -72,12 +76,26 @@ class ObjectDetectionTracker:
 
     def _on_detections(self, msg: Any) -> None:
         elapsed = time.monotonic() - self._start_time
+        new_find = False
         for det in msg.detections:
             for hyp in det.results:
                 class_id = hyp.hypothesis.class_id
                 # Ignore empty or background label ("0")
                 if class_id and class_id != "0" and class_id not in self._first_detections:
                     self._first_detections[class_id] = elapsed
+                    new_find = True
+        if new_find:
+            self._write_live_state()
+
+    def _write_live_state(self) -> None:
+        """Write found class_ids to disk so agent tools can show live progress."""
+        try:
+            _LIVE_DETECTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _LIVE_DETECTIONS_PATH.write_text(
+                json.dumps({"found": list(self._first_detections.keys())})
+            )
+        except Exception:
+            pass
 
     def get_events(self) -> list[dict]:
         """Return first-detection events, one entry per detected instance.

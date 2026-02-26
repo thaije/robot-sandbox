@@ -42,8 +42,8 @@ These tools give ground-truth information not available to the real robot. Use t
 **Launch:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300`
 Writes `/tmp/arst_worlds/world_state.json` at startup. See each script's own docstring for usage and flags.
 
-- `scripts/world_state.py` — ASCII + PNG map: floor plan, all object positions, robot pose, found/unfound
-- `scripts/robot_inspect.py` — drive, status, detections
+- `scripts/world_state.py` — PNG map + summary. Use: `world_state.py --png /tmp/map.png` → prints path, then Read the PNG. Map contains walls, furniture, objects to be found (coloured), and found objects (grey, auto-updated). 
+- `scripts/robot_inspect.py` — drive, status, detections currently in view.
 
 ### Navigation approach
 1. **Start with the map**: `world_state.py --png /tmp/map.png` then Read the PNG — **prefer the PNG over the ASCII**; it shows room layout and doorway positions much more clearly at a glance.
@@ -115,7 +115,7 @@ launch/
 scripts/
   run_scenario.sh
   robot_inspect.py      # status / snapshot / detections / drive
-  world_state.py        # ASCII + PNG map with ground-truth object positions (agent cheat tool)
+  world_state.py        # PNG map (--ascii opt-in); obstacles + found status; path to stdout
   despawn_robot.sh
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet
 config/

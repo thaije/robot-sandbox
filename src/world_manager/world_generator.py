@@ -116,7 +116,7 @@ class WorldGenerator:
 
         # Embed robots — convert each URDF to SDF and add as <model>
         robots_cfg = scenario_config.get("robots", [])
-        self._save_world_state(template_name, robots_cfg)
+        self._save_world_state(template_name, robots_cfg, template_cfg)
         self._embed_robots(world_elem, robots_cfg)
 
         # ── Write output ───────────────────────────────────────────────────────
@@ -255,7 +255,9 @@ class WorldGenerator:
 
             world_elem.append(model_elem)
 
-    def _save_world_state(self, template_name: str, robots_cfg: list) -> None:
+    def _save_world_state(
+        self, template_name: str, robots_cfg: list, template_cfg: dict
+    ) -> None:
         """Write /tmp/arst_worlds/world_state.json for agent navigation tools."""
         import json
         spawn: dict = {}
@@ -268,10 +270,14 @@ class WorldGenerator:
             "map_pgm": str(pgm),
             "map_resolution": 0.5,
             "spawn_pose": spawn,
+            "obstacles": template_cfg.get("obstacles", []),
         }
         self._output_dir.mkdir(parents=True, exist_ok=True)
         out = self._output_dir / "world_state.json"
         out.write_text(json.dumps(state, indent=2))
+        # Clear live detections from any previous run
+        live = self._output_dir / "detections_live.json"
+        live.write_text(json.dumps({"found": []}))
 
     def _load_model_element(
         self, model_type: str, idx: int, obj: PlacedObject, instance_label: int = 0

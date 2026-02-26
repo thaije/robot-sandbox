@@ -49,31 +49,6 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 | Odometry | `/derpbot_0/odom` | Red arrows, last 100 poses |
 | Camera Image | `/derpbot_0/image_raw` | Live RGB feed from forward-facing camera |
 
-## Robot inspection & control (automated sessions)
-
-```bash
-source /opt/ros/jazzy/setup.bash
-export PYTHONPATH=src:$PYTHONPATH
-python3.12 scripts/robot_inspect.py <command>
-```
-
-| Command | Example | What it does |
-|---------|---------|--------------|
-| `status` | `robot_inspect.py status` | Print x/y/yaw + sim stamp |
-| `snapshot` | `robot_inspect.py snapshot [--output /tmp/out.png]` | Save camera frame to PNG |
-| `detections` | `robot_inspect.py detections` | Print objects visible in current frame |
-| `drive` | `robot_inspect.py drive 0.3 0.0 2.0` | Drive `vx` m/s, `wz` rad/s for N seconds then stop |
-
-All commands accept `--robot NAME` (default `derpbot_0`) and `--timeout SEC`.
-
-Drive examples:
-```bash
-python3.12 scripts/robot_inspect.py drive 0.3 0.0 2.0   # forward ~0.6 m
-python3.12 scripts/robot_inspect.py drive 0.0 0.6 2.6   # turn left ~90°
-python3.12 scripts/robot_inspect.py drive 0.0 -0.6 2.6  # turn right ~90°
-```
-
-> Keep drive durations ≤ 2 s — the controller holds the last velocity until a new command arrives.
 
 ## Tests
 

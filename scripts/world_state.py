@@ -1,27 +1,44 @@
 #!/usr/bin/env python3.12
-"""world_state.py — ASCII + PNG world map for agent navigation.
+"""world_state.py — PNG world map for agent navigation.
 
 Shows the floor plan with robot position, object locations (found/unfound),
-and room labels — all derived from ground truth. Intended as a cheat tool
-for automated testing, not for use by the robot itself.
+obstacles (furniture), and room labels — all derived from ground truth.
+Intended as a cheat tool for automated testing, not for use by the robot itself.
+
+Robot = Blue circle with an R
+Hazard sign = Yellow circle
+First aid kit = Green circle
+Fire extinguisher = Red circle
+Obstacles = Brown rectangles
+Found obstacles = grey rectangles
 
 Coordinates are in **world frame**. The robot spawns at world (1, 1) which
 equals odom (0, 0). Room layout and doorway positions are visible in the
 map itself — no need to hard-code them.
 
+Prefer the PNG over the ASCII; it shows room layout and doorway positions much
+more clearly at a glance.
+
 Usage
 -----
-    # Live robot pose (requires running scenario):
+    # Save PNG (recommended — prints path on stdout):
+    python3.12 scripts/world_state.py --png /tmp/map.png
+
+    # Print object list + robot pose (no PNG):
     python3.12 scripts/world_state.py
 
+    # Also print ASCII map (verbose):
+    python3.12 scripts/world_state.py --ascii
+
     # Mark found objects from a results JSON:
-    python3.12 scripts/world_state.py --results results/run.json
+    python3.12 scripts/world_state.py --results results/run.json --png /tmp/map.png
 
     # Skip ROS (no robot marker):
-    python3.12 scripts/world_state.py --no-ros
+    python3.12 scripts/world_state.py --no-ros --png /tmp/map.png
 
-    # Also save a PNG:
-    python3.12 scripts/world_state.py --png /tmp/map.png
+Found objects are automatically read from /tmp/arst_worlds/detections_live.json
+when a scenario is running (written by ObjectDetectionTracker on each new find).
+Pass --results to override with a completed-run JSON instead.
 """
 from __future__ import annotations
 
@@ -34,6 +51,7 @@ import time
 from pathlib import Path
 
 WORLD_STATE = Path("/tmp/arst_worlds/world_state.json")
+LIVE_DETECTIONS = Path("/tmp/arst_worlds/detections_live.json")
 
 # 2-char symbol per object type (unfound prefix = label number, found = ✓)
 OBJ_SYM = {"fire_extinguisher": "F", "first_aid_kit": "A", "hazard_sign": "H"}
@@ -217,7 +235,8 @@ def print_summary(label_map: dict, spawn: dict, robot_pose, found: set[str]) -> 
 
 def render_png(
     pixels: list[list[int]], W: int, H: int, res: float,
-    label_map: dict, spawn: dict, robot_pose, found: set[str], path: str,
+    label_map: dict, spawn: dict, robot_pose, found: set[str],
+    obstacles: list[dict], path: str,
 ) -> None:
     try:
         import cv2
@@ -230,8 +249,7 @@ def render_png(
     iw, ih = int(W * res * SCALE), int(H * res * SCALE)
     img = np.full((ih, iw, 3), 200, dtype=np.uint8)
 
-    # Draw occupancy grid
-    # PGM row 0 = north (high world-y) → image row 0 = top; no y-flip needed here.
+    # Draw occupancy grid (walls from PGM)
     for r in range(H):
         for c in range(W):
             y1 = int(r * res * SCALE)
@@ -241,13 +259,28 @@ def render_png(
             color = (255, 255, 255) if pixels[r][c] >= 128 else (50, 50, 50)
             img[y1:y2, x1:x2] = color
 
-    # Room outlines (light grey)
-    for rx, ry, name in ROOMS:
-        pass  # room boundaries come from PGM walls, nothing extra needed
+    # Draw obstacles (furniture) as filled rectangles
+    for obs in obstacles:
+        cx, cy = obs["x"], obs["y"]
+        hw, hh = obs["w"] / 2, obs["h"] / 2
+        x1 = int((cx - hw) * SCALE)
+        x2 = int((cx + hw) * SCALE)
+        y1 = ih - int((cy + hh) * SCALE)
+        y2 = ih - int((cy - hh) * SCALE)
+        name = obs.get("name", "")
+        # Desks: brown; chairs: dark grey; cabinets: blue-grey
+        if "desk" in name or "table" in name:
+            color = (100, 70, 40)
+        elif "chair" in name:
+            color = (80, 80, 80)
+        else:
+            color = (130, 130, 150)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, -1)
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 0), 1)
 
     # Object colours by type
     TYPE_COLOR = {
-        "fire_extinguisher": (50,  50, 220),   # red
+        "fire_extinguisher": (50,  50, 220),   # red (BGR)
         "first_aid_kit":     (50, 180,  50),   # green
         "hazard_sign":       (30, 200, 230),   # yellow
     }
@@ -287,7 +320,7 @@ def render_png(
                     cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 100, 100), 1)
 
     cv2.imwrite(path, img)
-    print(f"PNG saved → {path}")
+    print(path)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -296,6 +329,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Render world map with robot and objects")
     parser.add_argument("--robot",   default="derpbot_0")
     parser.add_argument("--no-ros",  action="store_true", help="Skip ROS pose lookup")
+    parser.add_argument("--ascii",   action="store_true", help="Print ASCII map (verbose)")
     parser.add_argument("--results", default=None,        help="Results JSON to mark found objects")
     parser.add_argument("--png",     default=None,        help="Save PNG to this path")
     parser.add_argument("--state",   default=str(WORLD_STATE), help="world_state.json path")
@@ -307,31 +341,41 @@ def main() -> None:
         sys.exit(1)
 
     state = json.loads(state_path.read_text())
-    label_map: dict = state["label_map"]
-    spawn: dict     = state.get("spawn_pose", {"x": 1.0, "y": 1.0})
-    res: float      = state.get("map_resolution", 0.5)
+    label_map: dict  = state["label_map"]
+    spawn: dict      = state.get("spawn_pose", {"x": 1.0, "y": 1.0})
+    res: float       = state.get("map_resolution", 0.5)
+    obstacles: list  = state.get("obstacles", [])
 
-    # Mark found objects from results JSON
+    # Mark found objects — prefer explicit --results, else read live detections file
     found: set[str] = set()
     if args.results:
         rj = json.loads(Path(args.results).read_text())
         for ev in rj.get("raw_metrics", {}).get("detection_events", []):
             found.add(str(ev["class_id"]))
+    elif LIVE_DETECTIONS.exists():
+        try:
+            live = json.loads(LIVE_DETECTIONS.read_text())
+            found = set(str(x) for x in live.get("found", []))
+        except Exception:
+            pass
 
     # Robot pose
     robot_pose = None
     if not args.no_ros:
         robot_pose = get_robot_odom(args.robot, timeout=3.0)
         if robot_pose is None:
-            print("(no odom received — robot marker omitted)\n")
+            print("(no odom received — robot marker omitted)", file=sys.stderr)
 
     pixels, W, H = read_pgm(Path(state["map_pgm"]))
 
-    render_ascii(pixels, W, H, res, label_map, spawn, robot_pose, found)
+    if args.ascii:
+        render_ascii(pixels, W, H, res, label_map, spawn, robot_pose, found)
+
     print_summary(label_map, spawn, robot_pose, found)
 
     if args.png:
-        render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, args.png)
+        render_png(pixels, W, H, res, label_map, spawn, robot_pose, found,
+                   obstacles, args.png)
 
 
 if __name__ == "__main__":
