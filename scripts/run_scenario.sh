@@ -39,4 +39,16 @@ cd "$REPO_ROOT"
 # python3 on this machine may resolve to a non-system venv (e.g. text-generation-webui).
 # ROS 2 Jazzy's rclpy C extension is compiled for Python 3.12 — use it explicitly.
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+
+# Start the map image publisher in the background.  It polls arst_world_map.png
+# for changes and republishes to /arst/world_map (TRANSIENT_LOCAL) so RViz
+# always shows the current map without world_state.py needing to touch ROS.
+python3.12 "$SCRIPT_DIR/map_publisher.py" &
+MAP_PUB_PID=$!
+_cleanup() {
+    kill "$MAP_PUB_PID" 2>/dev/null || true
+    wait "$MAP_PUB_PID" 2>/dev/null || true
+}
+trap _cleanup EXIT INT TERM
+
 python3.12 -m scenario_runner --scenario "$@"

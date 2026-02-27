@@ -134,24 +134,30 @@ def get_robot_pose(robot: str, world: str, spawn: dict, timeout: float = 3.0):
         from nav_msgs.msg import Odometry
 
         rclpy.init()
-        node = rclpy.create_node("ws_node")
+        node = None
+        ex = None
         received: list = []
-        ev = threading.Event()
+        try:
+            node = rclpy.create_node("ws_node")
+            ev = threading.Event()
 
-        def odom_cb(msg):
-            if not received:
-                received.append(msg)
-                ev.set()
+            def odom_cb(msg):
+                if not received:
+                    received.append(msg)
+                    ev.set()
 
-        node.create_subscription(Odometry, f"/{robot}/odom", odom_cb, 1)
-        ex = rclpy.executors.SingleThreadedExecutor()
-        ex.add_node(node)
-        t0 = time.monotonic()
-        while not ev.is_set() and time.monotonic() - t0 < timeout:
-            ex.spin_once(timeout_sec=0.1)
-        ex.shutdown()
-        node.destroy_node()
-        rclpy.shutdown()
+            node.create_subscription(Odometry, f"/{robot}/odom", odom_cb, 1)
+            ex = rclpy.executors.SingleThreadedExecutor()
+            ex.add_node(node)
+            t0 = time.monotonic()
+            while not ev.is_set() and time.monotonic() - t0 < timeout:
+                ex.spin_once(timeout_sec=0.1)
+        finally:
+            if ex is not None:
+                ex.shutdown()
+            if node is not None:
+                node.destroy_node()
+            rclpy.shutdown()
 
         if received:
             p = received[0].pose.pose.position
@@ -190,7 +196,7 @@ def render_png(
     label_map: dict, spawn: dict, robot_pose, found: set[str],
     obstacles: list[dict], path: str,
 ):
-    """Render map to *path* and return the BGR numpy image, or None on failure."""
+    """Render map to *path*."""
     try:
         import cv2
         import numpy as np
@@ -272,64 +278,6 @@ def render_png(
     return img
 
 
-# ── ROS image publisher ───────────────────────────────────────────────────────
-
-def publish_map_image(img_bgr) -> None:
-    """Publish the map as sensor_msgs/Image on /arst/world_map (transient-local).
-
-    Accepts the BGR numpy array that render_png already built — no disk read-back.
-    All rclpy / sensor_msgs imports and the full ROS lifecycle run inside a
-    background thread so the caller returns in < 5 ms.  daemon=False keeps the
-    process alive until the thread finishes naturally (~300 ms).
-    """
-    import threading
-
-    if img_bgr is None:
-        return
-
-    try:
-        import cv2
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    except Exception:
-        return
-
-    def _publish() -> None:
-        try:
-            import rclpy
-            from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-            from sensor_msgs.msg import Image as RosImage
-
-            h, w = img_rgb.shape[:2]
-            msg = RosImage()
-            msg.header.frame_id = "map"
-            msg.height = h
-            msg.width = w
-            msg.encoding = "rgb8"
-            msg.is_bigendian = False
-            msg.step = w * 3
-            msg.data = img_rgb.flatten().tobytes()
-
-            qos = QoSProfile(
-                depth=1,
-                durability=DurabilityPolicy.TRANSIENT_LOCAL,
-                reliability=ReliabilityPolicy.RELIABLE,
-                history=HistoryPolicy.KEEP_LAST,
-            )
-            rclpy.init()
-            node = rclpy.create_node("world_map_publisher")
-            pub = node.create_publisher(RosImage, "/arst/world_map", qos)
-            pub.publish(msg)
-            # 50 ms is enough for DDS to deliver on localhost; TRANSIENT_LOCAL
-            # ensures late-joining subscribers (e.g. RViz) still receive it.
-            time.sleep(0.05)
-            node.destroy_node()
-            rclpy.shutdown()
-        except Exception:
-            pass
-
-    threading.Thread(target=_publish, daemon=False).start()
-
-
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -394,12 +342,10 @@ def main() -> None:
 
     # Default PNG path if none specified
     png_path = args.png or str(DEFAULT_PNG)
-    img = render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
+    render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
     t = _dt("render_png", t)
     print(png_path)
     print(f"\n⚠️  CHECK THE MAP BEFORE MOVING — walls and objects visible: {png_path}")
-    publish_map_image(img)
-    t = _dt("publish_map_image", t)
     if args.debug:
         print(f"[debug] total elapsed: {time.monotonic() - t0:.3f}s", file=sys.stderr)
 
