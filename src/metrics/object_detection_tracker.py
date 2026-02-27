@@ -16,10 +16,14 @@ assigned by gz-sim-label-system as a string ("1", "2", "3").
 from __future__ import annotations
 
 import json
-import math
+import sys
 import time
 from pathlib import Path
 from typing import Any
+
+# Allow importing from src/ whether the package is installed or not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from utils.gz_transport import gz_subscribe_robot_pose  # noqa: E402
 
 _LIVE_DETECTIONS_PATH = Path("/tmp/arst_worlds/detections_live.json")
 _WORLD_STATE_PATH = Path("/tmp/arst_worlds/world_state.json")
@@ -109,7 +113,6 @@ class ObjectDetectionTracker:
         """Load occupancy grid from PGM for LOS ray-casting."""
         try:
             import cv2
-            import numpy as np
 
             state = json.loads(_WORLD_STATE_PATH.read_text())
             self._map_res = float(state.get("map_resolution", 0.5))
@@ -126,24 +129,15 @@ class ObjectDetectionTracker:
     def _start_pose_listener(self) -> None:
         """Background gz-transport subscriber that keeps self._robot_pose current."""
         try:
-            from gz.transport13 import Node as GzNode  # noqa: PLC0415
-            from gz.msgs10.pose_v_pb2 import Pose_V      # noqa: PLC0415
-
             state = json.loads(_WORLD_STATE_PATH.read_text())
             world = Path(state["map_pgm"]).parent.name
-            # robot name = second segment of topic, e.g. /derpbot_0/detections
+            # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
             robot = self._topic.strip("/").split("/")[0]
 
-            gz_node = GzNode()
+            def _cb(x: float, y: float, _yaw: float) -> None:
+                self._robot_pose = (x, y)
 
-            def _cb(msg: Any) -> None:
-                for pose in msg.pose:
-                    if pose.name == robot:
-                        self._robot_pose = (pose.position.x, pose.position.y)
-                        return
-
-            gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", _cb)
-            self._gz_pose_node = gz_node  # keep reference so the subscription stays alive
+            self._gz_pose_node = gz_subscribe_robot_pose(robot, world, _cb)
         except Exception:
             pass
 

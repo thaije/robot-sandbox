@@ -16,9 +16,6 @@ Coordinates are in **world frame**. The robot spawns at world (1, 1) which
 equals odom (0, 0). Room layout and doorway positions are visible in the
 map itself — no need to hard-code them.
 
-Prefer the PNG over the ASCII; it shows room layout and doorway positions much
-more clearly at a glance.
-
 Usage
 -----
     # PNG always written; default path: <repo_root>/arst_world_map.png
@@ -26,9 +23,6 @@ Usage
 
     # Override PNG output path:
     python3.12 scripts/world_state.py --png /tmp/map.png
-
-    # Also print ASCII map (verbose):
-    python3.12 scripts/world_state.py --ascii
 
     # Mark found objects from a results JSON:
     python3.12 scripts/world_state.py --results results/run.json
@@ -46,9 +40,12 @@ import argparse
 import json
 import math
 import sys
-import threading
 import time
 from pathlib import Path
+
+# Allow importing from src/ whether the package is installed or not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from utils.gz_transport import gz_get_robot_pose  # noqa: E402
 
 WORLD_STATE = Path("/tmp/arst_worlds/world_state.json")
 LIVE_DETECTIONS = Path("/tmp/arst_worlds/detections_live.json")
@@ -110,15 +107,6 @@ def read_pgm(path: Path) -> tuple[list[list[int]], int, int]:
     return pixels, w, h
 
 
-# ── Coordinate helpers ────────────────────────────────────────────────────────
-
-def world_to_cell(wx: float, wy: float, res: float, h: int) -> tuple[int, int]:
-    """World (x right, y up) → grid (col, row) where row 0 = top."""
-    col = int(wx / res)
-    row = h - 1 - int(wy / res)
-    return max(0, min(h - 1, col)), max(0, min(h - 1, row))
-
-
 def yaw_to_arrow(yaw: float) -> str:
     deg = math.degrees(yaw) % 360
     if deg < 45 or deg >= 315:
@@ -135,52 +123,31 @@ def yaw_to_arrow(yaw: float) -> str:
 def get_robot_pose(robot: str, world: str, spawn: dict, timeout: float = 3.0):
     """Return (world_x, world_y, yaw) — Gazebo ground truth, or odom+spawn fallback."""
     # 1. Try Gazebo ground truth via gz.transport (drift-free)
-    try:
-        from gz.transport13 import Node as GzNode
-        from gz.msgs10.pose_v_pb2 import Pose_V
-
-        gz_node = GzNode()
-        result: list = []
-        ev = threading.Event()
-
-        def gz_cb(msg):
-            if not result:
-                result.append(msg)
-                ev.set()
-
-        gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", gz_cb)
-        ev.wait(timeout=timeout)
-
-        if result:
-            for pose in result[0].pose:
-                if pose.name == robot:
-                    p = pose.position
-                    o = pose.orientation
-                    yaw = math.atan2(2*(o.w*o.z + o.x*o.y), 1 - 2*(o.y*o.y + o.z*o.z))
-                    return p.x, p.y, yaw
-    except Exception:
-        pass
+    pose = gz_get_robot_pose(robot, world, timeout=timeout)
+    if pose is not None:
+        return pose
 
     # 2. Fallback: odometry + spawn offset
     try:
         import rclpy
+        import threading
         from nav_msgs.msg import Odometry
 
         rclpy.init()
         node = rclpy.create_node("ws_node")
         received: list = []
-        ev2 = threading.Event()
+        ev = threading.Event()
 
         def odom_cb(msg):
             if not received:
                 received.append(msg)
-                ev2.set()
+                ev.set()
 
         node.create_subscription(Odometry, f"/{robot}/odom", odom_cb, 1)
         ex = rclpy.executors.SingleThreadedExecutor()
         ex.add_node(node)
         t0 = time.monotonic()
-        while not ev2.is_set() and time.monotonic() - t0 < timeout:
+        while not ev.is_set() and time.monotonic() - t0 < timeout:
             ex.spin_once(timeout_sec=0.1)
         ex.shutdown()
         node.destroy_node()
@@ -195,50 +162,6 @@ def get_robot_pose(robot: str, world: str, spawn: dict, timeout: float = 3.0):
         pass
 
     return None
-
-
-# ── ASCII renderer ────────────────────────────────────────────────────────────
-
-def render_ascii(
-    pixels: list[list[int]], W: int, H: int, res: float,
-    label_map: dict, spawn: dict, robot_pose, found: set[str],
-) -> None:
-    """Print an ASCII map (2 chars wide × 1 char tall per grid cell)."""
-    # Build char grid
-    grid = [
-        ["##" if pixels[r][c] < 128 else "  " for c in range(W)]
-        for r in range(H)
-    ]
-
-    # Room labels (stamped into free cells)
-    for rx, ry, name in ROOMS:
-        col, row = world_to_cell(rx, ry, res, H)
-        # Write chars across available cells
-        for k, ch in enumerate(name[:W - col]):
-            if 0 <= col + k < W and grid[row][col + k] == "  ":
-                grid[row][col + k] = ch + " "
-
-    # Objects
-    for lbl, info in label_map.items():
-        col, row = world_to_cell(info["x"], info["y"], res, H)
-        sym = OBJ_SYM.get(info["type"], "?")
-        prefix = "✓" if lbl in found else lbl
-        grid[row][col] = (prefix + sym)[:2]
-
-    # Robot
-    if robot_pose is not None:
-        wx, wy, yaw = robot_pose
-        col, row = world_to_cell(wx, wy, res, H)
-        grid[row][col] = "@" + yaw_to_arrow(yaw)
-
-    # Print
-    sep = "+" + "-" * (W * 2) + "+"
-    print(sep)
-    for row_cells in grid:
-        print("|" + "".join(row_cells) + "|")
-    print(sep)
-    print(f"  N↑  1 cell = {res}m   World: {W*res:.0f}m × {H*res:.0f}m")
-    print("  Legend: ## wall   @> robot   F fire_ext  A first_aid  H hazard  ✓ found\n")
 
 
 # ── Text summary ──────────────────────────────────────────────────────────────
@@ -266,27 +189,25 @@ def render_png(
     pixels: list[list[int]], W: int, H: int, res: float,
     label_map: dict, spawn: dict, robot_pose, found: set[str],
     obstacles: list[dict], path: str,
-) -> None:
+):
+    """Render map to *path* and return the BGR numpy image, or None on failure."""
     try:
         import cv2
         import numpy as np
     except ImportError:
         print("WARNING: cv2 not available, skipping PNG", file=sys.stderr)
-        return
+        return None
 
     SCALE = 20  # px per metre
     iw, ih = int(W * res * SCALE), int(H * res * SCALE)
-    img = np.full((ih, iw, 3), 200, dtype=np.uint8)
 
-    # Draw occupancy grid (walls from PGM)
-    for r in range(H):
-        for c in range(W):
-            y1 = int(r * res * SCALE)
-            y2 = int((r + 1) * res * SCALE)
-            x1 = int(c * res * SCALE)
-            x2 = int((c + 1) * res * SCALE)
-            color = (255, 255, 255) if pixels[r][c] >= 128 else (50, 50, 50)
-            img[y1:y2, x1:x2] = color
+    # Vectorised wall/floor rendering: build a single H×W grayscale grid then
+    # upscale with nearest-neighbour — avoids a Python double-loop over cells.
+    ppc = max(1, int(res * SCALE))  # pixels per cell
+    grid_gray = np.where(np.array(pixels, dtype=np.uint8) >= 128, 255, 50)
+    grid_up = cv2.resize(grid_gray.astype(np.uint8), (W * ppc, H * ppc),
+                         interpolation=cv2.INTER_NEAREST)
+    img = cv2.cvtColor(grid_up, cv2.COLOR_GRAY2BGR)
 
     # Draw obstacles (furniture) as filled rectangles
     for obs in obstacles:
@@ -348,51 +269,66 @@ def render_png(
                     cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 100, 100), 1)
 
     cv2.imwrite(path, img)
-    print(path)
+    return img
 
 
 # ── ROS image publisher ───────────────────────────────────────────────────────
 
-def publish_map_image(png_path: str) -> None:
-    """Publish the PNG map as sensor_msgs/Image on /arst/world_map (transient-local)."""
+def publish_map_image(img_bgr) -> None:
+    """Publish the map as sensor_msgs/Image on /arst/world_map (transient-local).
+
+    Accepts the BGR numpy array that render_png already built — no disk read-back.
+    All rclpy / sensor_msgs imports and the full ROS lifecycle run inside a
+    background thread so the caller returns in < 5 ms.  daemon=False keeps the
+    process alive until the thread finishes naturally (~300 ms).
+    """
+    import threading
+
+    if img_bgr is None:
+        return
+
     try:
         import cv2
-        import numpy as np
-        import rclpy
-        from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-        from sensor_msgs.msg import Image as RosImage
-
-        img_bgr = cv2.imread(png_path)
-        if img_bgr is None:
-            return
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        h, w = img_rgb.shape[:2]
-
-        msg = RosImage()
-        msg.header.frame_id = "map"
-        msg.height = h
-        msg.width = w
-        msg.encoding = "rgb8"
-        msg.is_bigendian = False
-        msg.step = w * 3
-        msg.data = img_rgb.flatten().tobytes()
-
-        qos = QoSProfile(
-            depth=1,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-            reliability=ReliabilityPolicy.RELIABLE,
-            history=HistoryPolicy.KEEP_LAST,
-        )
-        rclpy.init()
-        node = rclpy.create_node("world_map_publisher")
-        pub = node.create_publisher(RosImage, "/arst/world_map", qos)
-        pub.publish(msg)
-        # Brief spin to let the message be delivered to late-joining subscribers
-        time.sleep(0.3)
-        node.destroy_node()
-        rclpy.shutdown()
     except Exception:
-        pass
+        return
+
+    def _publish() -> None:
+        try:
+            import rclpy
+            from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
+            from sensor_msgs.msg import Image as RosImage
+
+            h, w = img_rgb.shape[:2]
+            msg = RosImage()
+            msg.header.frame_id = "map"
+            msg.height = h
+            msg.width = w
+            msg.encoding = "rgb8"
+            msg.is_bigendian = False
+            msg.step = w * 3
+            msg.data = img_rgb.flatten().tobytes()
+
+            qos = QoSProfile(
+                depth=1,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                reliability=ReliabilityPolicy.RELIABLE,
+                history=HistoryPolicy.KEEP_LAST,
+            )
+            rclpy.init()
+            node = rclpy.create_node("world_map_publisher")
+            pub = node.create_publisher(RosImage, "/arst/world_map", qos)
+            pub.publish(msg)
+            # 50 ms is enough for DDS to deliver on localhost; TRANSIENT_LOCAL
+            # ensures late-joining subscribers (e.g. RViz) still receive it.
+            time.sleep(0.05)
+            node.destroy_node()
+            rclpy.shutdown()
+        except Exception:
+            pass
+
+    threading.Thread(target=_publish, daemon=False).start()
+
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -401,7 +337,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Render world map with robot and objects")
     parser.add_argument("--robot",   default="derpbot_0")
     parser.add_argument("--no-ros",  action="store_true", help="Skip ROS pose lookup")
-    parser.add_argument("--ascii",   action="store_true", help="Print ASCII map (verbose)")
     parser.add_argument("--results", default=None,        help="Results JSON to mark found objects")
     parser.add_argument("--png",     default=None,        help="Save PNG to this path")
     parser.add_argument("--state",   default=str(WORLD_STATE), help="world_state.json path")
@@ -436,27 +371,37 @@ def main() -> None:
     # Derive Gazebo world name from map path (e.g. .../templates/indoor_office/... → "indoor_office")
     world = Path(state["map_pgm"]).parent.name
 
+    def _dt(label: str, prev: float) -> float:
+        now = time.monotonic()
+        if args.debug:
+            print(f"[debug]   {label}: {now - prev:.3f}s", file=sys.stderr)
+        return now
+
+    t = time.monotonic()
+
     # Robot pose — gz ground truth preferred, odom+spawn fallback
     robot_pose = None
     if not args.no_ros:
         robot_pose = get_robot_pose(args.robot, world, spawn, timeout=3.0)
         if robot_pose is None:
             print("(no pose received — robot marker omitted)", file=sys.stderr)
+    t = _dt("get_robot_pose", t)
 
     pixels, W, H = read_pgm(Path(state["map_pgm"]))
-
-    if args.ascii:
-        render_ascii(pixels, W, H, res, label_map, spawn, robot_pose, found)
+    t = _dt("read_pgm", t)
 
     print_summary(label_map, spawn, robot_pose, found)
 
     # Default PNG path if none specified
     png_path = args.png or str(DEFAULT_PNG)
-    render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
+    img = render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
+    t = _dt("render_png", t)
+    print(png_path)
     print(f"\n⚠️  CHECK THE MAP BEFORE MOVING — walls and objects visible: {png_path}")
-    publish_map_image(png_path)
+    publish_map_image(img)
+    t = _dt("publish_map_image", t)
     if args.debug:
-        print(f"[debug] elapsed: {time.monotonic() - t0:.2f}s", file=sys.stderr)
+        print(f"[debug] total elapsed: {time.monotonic() - t0:.3f}s", file=sys.stderr)
 
 
 if __name__ == "__main__":

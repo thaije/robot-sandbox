@@ -40,10 +40,16 @@ Optional flags
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 import time
 import threading
+from pathlib import Path
+
+# Allow importing from src/ whether the package is installed or not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from utils.gz_transport import gz_get_robot_pose  # noqa: E402
 
 import rclpy
 from rclpy.node import Node
@@ -53,40 +59,12 @@ from rclpy.node import Node
 
 def _get_gz_world_pose(robot: str, timeout: float = 3.0):
     """Return (world_x, world_y, yaw) from Gazebo ground truth, or None."""
-    import json, threading
-    from pathlib import Path
     try:
         state = json.loads(Path("/tmp/arst_worlds/world_state.json").read_text())
         world = Path(state["map_pgm"]).parent.name
     except Exception:
         world = "indoor_office"
-
-    try:
-        from gz.transport13 import Node as GzNode
-        from gz.msgs10.pose_v_pb2 import Pose_V
-
-        gz_node = GzNode()
-        result: list = []
-        ev = threading.Event()
-
-        def cb(msg):
-            if not result:
-                result.append(msg)
-                ev.set()
-
-        gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", cb)
-        ev.wait(timeout=timeout)
-
-        if result:
-            for pose in result[0].pose:
-                if pose.name == robot:
-                    p = pose.position
-                    o = pose.orientation
-                    yaw = math.atan2(2*(o.w*o.z + o.x*o.y), 1 - 2*(o.y*o.y + o.z*o.z))
-                    return p.x, p.y, yaw
-    except Exception:
-        pass
-    return None
+    return gz_get_robot_pose(robot, world, timeout=timeout)
 
 
 def _yaw_from_quaternion(q) -> float:
@@ -112,7 +90,7 @@ def _wait_for_message(node: Node, msg_type, topic: str, timeout: float):
 
     deadline = time.monotonic() + timeout
     while not event.is_set() and time.monotonic() < deadline:
-        executor.spin_once(timeout_sec=0.1)
+        executor.spin_once(timeout_sec=0.02)
 
     executor.shutdown()
     node.destroy_subscription(sub)

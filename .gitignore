@@ -198,4 +198,4 @@ dmypy.json
 cython_debug/
 
 # MCP servers and tools
-.serena/*
+.serena

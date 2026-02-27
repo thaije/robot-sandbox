@@ -106,7 +106,7 @@ launch/
 scripts/
   run_scenario.sh
   robot_inspect.py      # status / snapshot / detections / drive
-  world_state.py        # PNG map (--ascii opt-in); obstacles + found status; path to stdout
+  world_state.py        # PNG map ; obstacles + found status; path to stdout
   despawn_robot.sh
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet
 config/
