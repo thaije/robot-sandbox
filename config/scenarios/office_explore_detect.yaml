@@ -26,7 +26,7 @@ robots:
   - platform: "derpbot"
     name: "derpbot_0"
     spawn_pose:
-      x: 1.0
+      x: 2.5
       y: 1.0
       z: 0.0
       yaw: 0.0

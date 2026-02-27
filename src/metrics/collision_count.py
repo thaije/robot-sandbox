@@ -93,8 +93,26 @@ class CollisionCount(BaseMetric):
     def update(self) -> None:
         pass
 
+    def _cluster_events(self) -> tuple[int, list[dict]]:
+        """Merge consecutive events with gaps < 0.5 s into a single collision event."""
+        if not self._events:
+            return 0, []
+        clusters: list[dict] = []
+        cluster_t = self._events[0]["t"]
+        prev_t = self._events[0]["t"]
+        for ev in self._events[1:]:
+            if ev["t"] - prev_t < 0.5:
+                prev_t = ev["t"]
+            else:
+                clusters.append({"t": cluster_t, "count": len(clusters) + 1})
+                cluster_t = ev["t"]
+                prev_t = ev["t"]
+        clusters.append({"t": cluster_t, "count": len(clusters) + 1})
+        return len(clusters), clusters
+
     def get_result(self) -> dict[str, Any]:
-        return {"collision_count": self._count, "collision_events": self._events}
+        clustered_count, clustered_events = self._cluster_events()
+        return {"collision_count": clustered_count, "collision_events": clustered_events}
 
     def reset(self) -> None:
         self._count = 0

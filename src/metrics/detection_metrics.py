@@ -58,7 +58,7 @@ class DetectionMetrics(BaseMetric):
 
         detection_rate = n_detected / self._total_targets if self._total_targets else 0.0
         time_to_all = max(timestamps) if timestamps else 0.0
-        avg_time = sum(timestamps) / len(timestamps) if timestamps else 0.0
+        avg_time = time_to_all / n_detected if n_detected else 0.0
 
         return {
             "object_detection_rate": round(detection_rate, 4),
