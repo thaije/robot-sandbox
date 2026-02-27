@@ -13,8 +13,8 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
   - Ends on `SUCCESS` (all instances found) or `TIME_LIMIT` (600 s)
   - Scorecard printed + JSON written to `results/`
 - **Manual sim**: persistent Gazebo + `spawn_robot.launch.py` + teleoperation
-- **Inspection**: `scripts/robot_inspect.py` — snapshot, status, detections, drive (use ≤ 2 s drive calls)
-- **Agent nav tools**: `scripts/world_state.py` + `scripts/robot_inspect.py` — see section below
+- **Control**: `scripts/robot_control.py` — snapshot, status, drive (use ≤ 2 s drive calls); no detections here
+- **Agent nav tools**: `scripts/world_state.py` + `scripts/robot_control.py` — see section below
 - **World**: indoor_office (20×15 m, 4 rooms, furniture, randomised object placement)
 - **Objects**: fire_extinguisher (×3), first_aid_kit (×2), hazard_sign (×4) — 9 instances total with unique labels
 
@@ -43,6 +43,13 @@ These tools give ground-truth information not available to the real robot. Use t
 
 **Navigation guidance → invoke the `/arst-nav` skill.**
 
+`world_state.py` now shows:
+- `[visible 👁]` tag on objects currently in camera view (LOS-checked, wall-safe)
+- `⚡ COLLISION` status when robot is touching an obstacle
+- Clear error message when simulation is not running
+
+`robot_control.py` replaces `robot_inspect.py`; `detections` subcommand removed (use world_state.py instead).
+
 
 ---
 
@@ -67,6 +74,7 @@ After metrics work: teleop the scenario, record typical values, set `par_values`
 - **`use_sim_time`**: rclpy metrics node must be created with `use_sim_time=True` or messages are silently dropped as future-dated.
 - **Contact sensor topic**: `<contact><topic>` (NOT `<sensor><topic>`) controls what gz transport publishes. Must be `/ROBOT_NAME/bumper_contact` inside the `<contact>` block. If absent, `gz sdf -p` sets it to a scoped default that doesn't match the bridge.
 - **URDF→SDF joint lumping**: `gz sdf -p` lumps `base_footprint→base_link`. Collision name becomes `base_footprint_fixed_joint_lump__base_link_collision_collision`. Contact sensor reference must use the post-lumping name.
+- **Camera wall-clipping**: camera_joint x moved from 0.15 → 0.05 m (10 cm behind front collision face). Camera is well inside the robot body and cannot reach a wall surface, so it physically cannot look through walls. The software LOS check in `ObjectDetectionTracker` and `world_state.py` adds defence-in-depth using Bresenham ray-casting from the camera world position.
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Fixed by embedding robots in world SDF at generation time — already implemented in `WorldGenerator._embed_robots()`.
 - **Process cleanup**: `SimulationLauncher.shutdown()` captures pgids *before* SIGTERM (process may exit before SIGKILL). Uses `os.killpg()` to kill entire process groups. Runner wrapped in `try/finally` so shutdown always runs.
 - **Scenario config schema**: `robots:` is a list (not `robot:`). Each entry: `{platform, name, spawn_pose: {x,y,z,yaw}}`.
@@ -105,7 +113,7 @@ launch/
   spawn_robot.launch.py         # RSP + bridges; spawn:=false for automated runs
 scripts/
   run_scenario.sh
-  robot_inspect.py      # status / snapshot / detections / drive
+  robot_control.py      # status / snapshot / drive (no detections — use world_state.py)
   world_state.py        # PNG map ; obstacles + found status; path to stdout
   despawn_robot.sh
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet

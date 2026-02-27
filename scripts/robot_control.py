@@ -1,36 +1,31 @@
 #!/usr/bin/env python3.12
-"""robot_inspect.py — DerpBot live inspection and control utility.
+"""robot_control.py — DerpBot live control utility.
 
 Usage
 -----
     # One-shot status (pose + sim time)
-    python3 scripts/robot_inspect.py status
+    python3.12 scripts/robot_control.py status
 
     # Save camera snapshot to /tmp/robot_snapshot.png
-    python3 scripts/robot_inspect.py snapshot
+    python3.12 scripts/robot_control.py snapshot
 
-    # Print current detection events
-    python3 scripts/robot_inspect.py detections
-
-    # Drive: linear m/s, angular rad/s, duration seconds (open-loop)
-    python3 scripts/robot_inspect.py drive 0.3 0.0 3.0
-    python3 scripts/robot_inspect.py drive 0.0 0.6 2.0   # turn left ~70 deg
+    # Drive: linear m/s, angular rad/s, duration seconds (open-loop, ≤ 2 s)
+    python3.12 scripts/robot_control.py drive 0.3 0.0 2.0
+    python3.12 scripts/robot_control.py drive 0.0 0.6 2.0   # turn left ~70°
 
     # Closed-loop rotation by N degrees (+ = CCW/left, - = CW/right)
-    python3 scripts/robot_inspect.py rotate 90
-    python3 scripts/robot_inspect.py rotate -45
+    python3.12 scripts/robot_control.py rotate 90
+    python3.12 scripts/robot_control.py rotate -45
 
     # Closed-loop translation by N metres (+ = forward, - = backward)
-    python3 scripts/robot_inspect.py move 2.0
-    python3 scripts/robot_inspect.py move -0.5
+    python3.12 scripts/robot_control.py move 2.0
+    python3.12 scripts/robot_control.py move -0.5
 
 Notes
 -----
-    - Keep drive durations ≤ 2 s. The diff-drive controller holds the last
-      velocity indefinitely; the drive command sends a stop after each call,
-      but long durations risk the robot continuing into walls.
-    - rotate/move use odom feedback and are much more accurate than drive.
-    - Pose from `status` is in odom frame (starts at 0,0 at spawn).
+    - rotate/move use odom feedback and are far more accurate than drive.
+    - Keep drive durations ≤ 2 s.
+    - Object detections and collision status are in world_state.py, not here.
 
 Optional flags
 --------------
@@ -54,13 +49,23 @@ from utils.gz_transport import gz_get_robot_pose  # noqa: E402
 import rclpy
 from rclpy.node import Node
 
+_WORLD_STATE = Path("/tmp/arst_worlds/world_state.json")
+
+
+def _sim_not_running_hint() -> str:
+    return (
+        "Simulation may not be running.\n"
+        "Start one with:\n"
+        "  ./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless"
+    )
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _get_gz_world_pose(robot: str, timeout: float = 3.0):
     """Return (world_x, world_y, yaw) from Gazebo ground truth, or None."""
     try:
-        state = json.loads(Path("/tmp/arst_worlds/world_state.json").read_text())
+        state = json.loads(_WORLD_STATE.read_text())
         world = Path(state["map_pgm"]).parent.name
     except Exception:
         world = "indoor_office"
@@ -100,10 +105,6 @@ def _wait_for_message(node: Node, msg_type, topic: str, timeout: float):
 # ── Subcommands ────────────────────────────────────────────────────────────────
 
 def cmd_status(args):
-    import json
-    from pathlib import Path
-
-    # Try Gazebo ground truth first (no odometry drift)
     gz_pose = _get_gz_world_pose(args.robot, timeout=args.timeout)
     if gz_pose is not None:
         wx, wy, yaw = gz_pose
@@ -112,21 +113,23 @@ def cmd_status(args):
         print(f"Yaw   : {yaw:.3f} rad  ({math.degrees(yaw):.1f}°)")
         return 0
 
-    # Fallback: odometry + spawn offset
     from nav_msgs.msg import Odometry
 
     try:
-        state = json.loads(Path("/tmp/arst_worlds/world_state.json").read_text())
+        state = json.loads(_WORLD_STATE.read_text())
         spawn = state.get("spawn_pose", {"x": 1.0, "y": 1.0})
     except Exception:
         spawn = {"x": 1.0, "y": 1.0}
 
     rclpy.init()
-    node = rclpy.create_node("ri_status")
+    node = rclpy.create_node("rc_status")
     try:
         msg = _wait_for_message(node, Odometry, f"/{args.robot}/odom", args.timeout)
         if msg is None:
-            print(f"ERROR: no pose available (gz unreachable, no odom on /{args.robot}/odom within {args.timeout}s)")
+            print(
+                f"ERROR: no pose from Gazebo or /{args.robot}/odom within {args.timeout}s.\n"
+                + _sim_not_running_hint()
+            )
             return 1
         p = msg.pose.pose.position
         yaw = _yaw_from_quaternion(msg.pose.pose.orientation)
@@ -135,8 +138,6 @@ def cmd_status(args):
         print(f"Robot : {args.robot}")
         print(f"World : x={wx:.3f}  y={wy:.3f}  (odom estimate — may drift after collisions)")
         print(f"Yaw   : {yaw:.3f} rad  ({math.degrees(yaw):.1f}°)")
-        stamp = msg.header.stamp
-        print(f"Stamp : {stamp.sec}.{stamp.nanosec // 1_000_000:03d} s")
     finally:
         node.destroy_node()
         rclpy.shutdown()
@@ -149,14 +150,16 @@ def cmd_snapshot(args):
     import cv2
 
     rclpy.init()
-    node = rclpy.create_node("ri_snapshot")
+    node = rclpy.create_node("rc_snapshot")
     try:
         msg = _wait_for_message(node, Image, f"/{args.robot}/image_raw", args.timeout)
         if msg is None:
-            print(f"ERROR: no message on /{args.robot}/image_raw within {args.timeout}s")
+            print(
+                f"ERROR: no image on /{args.robot}/image_raw within {args.timeout}s.\n"
+                + _sim_not_running_hint()
+            )
             return 1
 
-        # Convert raw bytes → numpy → cv2 image
         dtype = np.uint8
         arr = np.frombuffer(bytes(msg.data), dtype=dtype)
 
@@ -181,39 +184,11 @@ def cmd_snapshot(args):
     return 0
 
 
-def cmd_detections(args):
-    from vision_msgs.msg import Detection2DArray
-
-    rclpy.init()
-    node = rclpy.create_node("ri_detections")
-    try:
-        msg = _wait_for_message(node, Detection2DArray, f"/{args.robot}/detections", args.timeout)
-        if msg is None:
-            print(f"No detections on /{args.robot}/detections within {args.timeout}s (nothing in view?)")
-            return 0
-        if not msg.detections:
-            print("Message received but 0 detections in frame.")
-            return 0
-        print(f"Detections in current frame ({len(msg.detections)}):")
-        for i, det in enumerate(msg.detections):
-            for hyp in det.results:
-                bb = det.bbox
-                print(
-                    f"  [{i}] label={hyp.hypothesis.class_id}  score={hyp.hypothesis.score:.2f}"
-                    f"  bbox=({bb.center.position.x:.0f},{bb.center.position.y:.0f})"
-                    f"  {bb.size_x:.0f}×{bb.size_y:.0f}"
-                )
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-    return 0
-
-
 def cmd_drive(args):
     from geometry_msgs.msg import Twist
 
     rclpy.init()
-    node = rclpy.create_node("ri_drive")
+    node = rclpy.create_node("rc_drive")
     pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
 
     twist = Twist()
@@ -228,7 +203,6 @@ def cmd_drive(args):
             pub.publish(twist)
             time.sleep(0.1)
     finally:
-        # Send zero-velocity for 0.5s to ensure the controller receives it
         stop = Twist()
         stop_deadline = time.monotonic() + 0.5
         while time.monotonic() < stop_deadline:
@@ -247,11 +221,7 @@ def cmd_drive(args):
 # ── Closed-loop helpers ────────────────────────────────────────────────────────
 
 def _start_odom_listener(node, robot):
-    """Subscribe to odom; return (latest_odom_list, executor, spin_thread).
-
-    The executor spins in a background daemon thread so the main thread can
-    run a control loop without blocking.
-    """
+    """Subscribe to odom; return (latest_odom_list, ready_event, executor)."""
     from nav_msgs.msg import Odometry
 
     latest = [None]
@@ -279,12 +249,15 @@ def cmd_rotate(args):
     from geometry_msgs.msg import Twist
 
     rclpy.init()
-    node = rclpy.create_node("ri_rotate")
+    node = rclpy.create_node("rc_rotate")
     pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
     latest, ready, executor = _start_odom_listener(node, args.robot)
 
     if not ready.wait(timeout=args.timeout):
-        print(f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s")
+        print(
+            f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s.\n"
+            + _sim_not_running_hint()
+        )
         executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
@@ -328,12 +301,15 @@ def cmd_move(args):
     from geometry_msgs.msg import Twist
 
     rclpy.init()
-    node = rclpy.create_node("ri_move")
+    node = rclpy.create_node("rc_move")
     pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
     latest, ready, executor = _start_odom_listener(node, args.robot)
 
     if not ready.wait(timeout=args.timeout):
-        print(f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s")
+        print(
+            f"ERROR: no odom on /{args.robot}/odom within {args.timeout}s.\n"
+            + _sim_not_running_hint()
+        )
         executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
@@ -377,28 +353,26 @@ def cmd_move(args):
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="DerpBot inspection & control utility")
+    parser = argparse.ArgumentParser(description="DerpBot control utility")
     parser.add_argument("--robot",   default="derpbot_0", help="Robot name (default: derpbot_0)")
     parser.add_argument("--timeout", default=5.0, type=float, help="Topic wait timeout in seconds")
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("status",     help="Print current pose and sim time")
+    sub.add_parser("status",   help="Print current pose")
 
     snap = sub.add_parser("snapshot", help="Save camera frame to PNG")
     snap.add_argument("--output", default=None, help="Output path (default: /tmp/robot_snapshot.png)")
 
-    sub.add_parser("detections", help="Print objects visible in current frame")
-
-    drv = sub.add_parser("drive", help="Drive for N seconds then stop (open-loop)")
+    drv = sub.add_parser("drive", help="Drive for N seconds then stop (open-loop, ≤ 2 s)")
     drv.add_argument("vx",       type=float, help="Linear velocity m/s (+forward)")
     drv.add_argument("wz",       type=float, help="Angular velocity rad/s (+left)")
     drv.add_argument("duration", type=float, help="Duration in seconds")
 
-    rot = sub.add_parser("rotate", help="Rotate by N degrees using odom feedback (+ = CCW/left)")
+    rot = sub.add_parser("rotate", help="Rotate N degrees with odom feedback (+ = CCW/left)")
     rot.add_argument("degrees", type=float, help="Degrees to rotate (+ CCW, - CW)")
 
-    mv = sub.add_parser("move", help="Translate N metres using odom feedback (+ = forward)")
+    mv = sub.add_parser("move", help="Translate N metres with odom feedback (+ = forward)")
     mv.add_argument("metres", type=float, help="Distance in metres (+ forward, - backward)")
 
     parser.add_argument("--debug", action="store_true", help="Print wall-clock execution time")
@@ -406,18 +380,17 @@ def main():
     args = parser.parse_args()
 
     dispatch = {
-        "status":     cmd_status,
-        "snapshot":   cmd_snapshot,
-        "detections": cmd_detections,
-        "drive":      cmd_drive,
-        "rotate":     cmd_rotate,
-        "move":       cmd_move,
+        "status":   cmd_status,
+        "snapshot": cmd_snapshot,
+        "drive":    cmd_drive,
+        "rotate":   cmd_rotate,
+        "move":     cmd_move,
     }
     t0 = time.monotonic()
     ret = dispatch[args.command](args)
     if args.debug:
         print(f"[debug] elapsed: {time.monotonic() - t0:.2f}s", file=sys.stderr)
-    sys.exit(ret)
+    sys.exit(ret or 0)
 
 
 if __name__ == "__main__":

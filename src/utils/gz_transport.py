@@ -2,7 +2,7 @@
 
 Centralises the repeated pattern of subscribing to Pose_V on the dynamic-pose
 topic and extracting one robot's position, used by world_state.py,
-robot_inspect.py, and ObjectDetectionTracker.
+robot_control.py, and ObjectDetectionTracker.
 
 Two modes
 ---------

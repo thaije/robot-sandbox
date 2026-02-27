@@ -58,4 +58,3 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 ```bash
 python3.12 -m pytest tests/
 ```
-

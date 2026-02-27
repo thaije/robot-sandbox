@@ -16,6 +16,7 @@ assigned by gz-sim-label-system as a string ("1", "2", "3").
 from __future__ import annotations
 
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -24,6 +25,10 @@ from typing import Any
 # Allow importing from src/ whether the package is installed or not.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.gz_transport import gz_subscribe_robot_pose  # noqa: E402
+
+# Camera is mounted this far forward (x) from the robot centre in robot frame.
+# Must match the camera_joint origin x in robots/derpbot/urdf/derpbot.urdf.
+CAMERA_FORWARD_OFFSET: float = 0.05
 
 _LIVE_DETECTIONS_PATH = Path("/tmp/arst_worlds/detections_live.json")
 _WORLD_STATE_PATH = Path("/tmp/arst_worlds/world_state.json")
@@ -85,8 +90,8 @@ class ObjectDetectionTracker:
         self._start_time: float = 0.0
         self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
-        # LOS state
-        self._robot_pose: tuple[float, float] | None = None  # world (x, y)
+        # LOS state — camera world position (precomputed from robot pose + offset)
+        self._robot_pose: tuple[float, float] | None = None  # camera world (x, y)
         self._pgm_pixels: list[list[int]] | None = None      # occupancy grid rows
         self._pgm_W: int = 0
         self._pgm_H: int = 0
@@ -134,19 +139,26 @@ class ObjectDetectionTracker:
             # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
             robot = self._topic.strip("/").split("/")[0]
 
-            def _cb(x: float, y: float, _yaw: float) -> None:
-                self._robot_pose = (x, y)
+            def _cb(x: float, y: float, yaw: float) -> None:
+                # Track camera world position, not robot centre, for LOS checks.
+                self._robot_pose = (
+                    x + CAMERA_FORWARD_OFFSET * math.cos(yaw),
+                    y + CAMERA_FORWARD_OFFSET * math.sin(yaw),
+                )
 
             self._gz_pose_node = gz_subscribe_robot_pose(robot, world, _cb)
         except Exception:
             pass
 
     def _has_line_of_sight(self, class_id: str) -> bool:
-        """Return True if a clear sightline exists from robot to the object.
+        """Return True if a clear sightline exists from camera to the object.
 
         Uses Bresenham ray-casting on the PGM occupancy grid.  A cell with
-        value < 128 is considered a wall.  Returns True (allow detection) when
-        the grid or pose is unavailable so failures are non-blocking.
+        value < 128 is considered a wall.  The ray origin is the camera's world
+        position (robot centre + CAMERA_FORWARD_OFFSET along heading), not the
+        robot centre, so the check works correctly when the robot is pressed
+        against a wall.  Returns True (allow detection) when the grid or pose
+        is unavailable so failures are non-blocking.
         """
         if self._pgm_pixels is None or self._robot_pose is None:
             return True  # data not ready — allow
@@ -155,7 +167,7 @@ class ObjectDetectionTracker:
 
         res = self._map_res
         H = self._pgm_H
-        rx, ry = self._robot_pose
+        rx, ry = self._robot_pose  # camera world position
         obj = self._label_map[class_id]
         ox, oy = float(obj["x"]), float(obj["y"])
 
