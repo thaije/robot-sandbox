@@ -1,6 +1,6 @@
 ---
 name: arst-nav
-description: Navigate DerpBot through an ARST scenario (robot_control.py + world_state.py). Use when running any ARST scenario as an agent — fetching maps, driving, checking detections, finding all objects within the time limit.
+description: Navigate DerpBot through an ARST scenario (robot_control.py + world_state.py) with cheat tools. Use when running any ARST scenario as an agent — fetching maps, driving, checking detections, finding all objects within the time limit.
 user_invocable: true
 ---
 

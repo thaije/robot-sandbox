@@ -81,7 +81,24 @@ objects:
 
 ---
 
-### 6. Object Distribution Strategies
+### 6. Door States
+**What**: Doors between rooms are currently always open — the world SDF has physical wall gaps but no door models. Adding closeable doors means injecting thin box panels (1m × 0.15m × 2.5m) at each gap at generation time.
+
+Four door positions in indoor_office:
+- Office A ↔ B: x=9, y=3.0
+- Office A → Corridor: x=2.5, y=6.5
+- Office B → Corridor: x=14.5, y=6.5
+- Corridor → Meeting Room: x=9.5, y=9.5
+
+**Implementation**: `WorldGenerator._apply_door_states()` reads `variations.door_states` (`open` / `closed` / `random`). For each door, inject a static box model at the gap coordinates if closed. `random` flips a per-door coin using the scenario seed. No door-open animation — static panels only.
+
+**Note**: `door_states` is already in the scenario YAML schema; the generator just ignores it today.
+
+**Priority**: Medium. Straightforward SDF injection, small generator change. Closed doors force the robot to navigate to open passages → meaningful path constraint.
+
+---
+
+### 7. Object Distribution Strategies
 **What**: Named placement strategies beyond random. Controlled via scenario YAML, no code change needed beyond `object_placer.py` strategy dispatch.
 
 | Strategy | Description | Tests |
@@ -98,7 +115,7 @@ objects:
 
 ---
 
-### 7. Spawn Variations & Seed Sweeps
+### 8. Spawn Variations & Seed Sweeps
 **What**: Vary robot starting position and random seed to separate agent skill from luck.
 
 **Implementation**: Already supported in scenario YAML (`spawn_pose`, `random_seed`). Add named compound scenario files (see Difficulty Tiers below). Seed sweep = shell loop, no code needed.

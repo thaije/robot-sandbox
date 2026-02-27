@@ -1,6 +1,7 @@
 # Agent Handoff — ARST
 
-Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). Full plan: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
+Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive).
+Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 
 ---
 
@@ -13,58 +14,11 @@ Gazebo Harmonic + ROS 2 Jazzy simulation testbed. DerpBot (custom diff-drive). F
   - Ends on `SUCCESS` (all instances found) or `TIME_LIMIT` (600 s)
   - Scorecard printed + JSON written to `results/`
 - **Manual sim**: persistent Gazebo + `spawn_robot.launch.py` + teleoperation
-- **Control**: `scripts/robot_control.py` — snapshot, status, drive (use ≤ 2 s drive calls); no detections here
-- **Agent nav tools**: `scripts/world_state.py` + `scripts/robot_control.py` — see section below
 - **World**: indoor_office (20×15 m, 4 rooms, furniture, randomised object placement)
 - **Objects**: fire_extinguisher (×3), first_aid_kit (×2), hazard_sign (×4) — 9 instances total with unique labels
 
-## Implementation status
-
-| Module | Status |
-|--------|--------|
-| `src/metrics/{base_metric,evaluator,reporter,scoring}.py` | ✅ |
-| `src/metrics/{meters_traveled,collision_count,revisit_ratio}.py` | ✅ |
-| `src/metrics/exploration_coverage.py` | ⬜ Stub — needs LiDAR |
-| `src/metrics/detection_metrics.py` | ✅ instance-level tracking + detection_by_type |
-| `src/metrics/object_detection_tracker.py` | ✅ label_map → "fire_extinguisher #2" display |
-| `src/scenario_runner/{launcher,runner,__main__}.py` | ✅ |
-| `src/world_manager/{world_generator,object_placer,template_loader}.py` | ✅ |
-| `src/utils/{config_loader,ros_helpers,logging_setup}.py` | ✅ |
-
----
-
----
-
-## Running the scenario as an agent (cheat tools)
-
-These tools give ground-truth information not available to the real robot. Use them to verify the pipeline works, not to chase a high score.
-
-**Launch:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300` (startup ~5s)
-
-**Navigation guidance → invoke the `/arst-nav` skill.**
-
-`world_state.py` now shows:
-- `[visible 👁]` tag on objects currently in camera view (LOS-checked, wall-safe)
-- `⚡ COLLISION` status when robot is touching an obstacle
-- Clear error message when simulation is not running
-
-`robot_control.py` replaces `robot_inspect.py`; `detections` subcommand removed (use world_state.py instead).
-
-
----
-
-## Next steps (priority order)
-
-### 1. Add 2D LiDAR to DerpBot
-Unlocks `exploration_coverage`. Add `gpu_lidar` sensor to URDF, bridge:
-```
-/{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan
-/model/{robot_name}/pose@geometry_msgs/msg/Pose[gz.msgs.Pose
-```
-Implement `exploration_coverage.py`: grid raycasting with `skimage.draw.line()` against `worlds/templates/indoor_office/ground_truth_map.pgm` at 0.5m resolution.
-
-### 3. Calibrate par values (Step 3.13)
-After metrics work: teleop the scenario, record typical values, set `par_values` in `config/scenarios/office_explore_detect.yaml` so a competent operator scores ~70 (B).
+**Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300` (startup ~5s).   
+Navigation → invoke the `/arst-nav` skill. It has all documentation.
 
 ---
 
@@ -79,6 +33,7 @@ After metrics work: teleop the scenario, record typical values, set `par_values`
 - **Process cleanup**: `SimulationLauncher.shutdown()` captures pgids *before* SIGTERM (process may exit before SIGKILL). Uses `os.killpg()` to kill entire process groups. Runner wrapped in `try/finally` so shutdown always runs.
 - **Scenario config schema**: `robots:` is a list (not `robot:`). Each entry: `{platform, name, spawn_pose: {x,y,z,yaw}}`.
 - **Parallel sessions**: Isolate with `ROS_DOMAIN_ID=N ./scripts/run_scenario.sh ...`. gz transport is isolated per process; only ROS DDS needs the domain ID.
+- **Door states**: `door_states` YAML field is a stub — not implemented. Doors are always open (physical wall gaps, no door models). Closed doors require injecting box panels at generation time.
 
 ---
 
@@ -109,22 +64,28 @@ ScenarioRunner.run()
 
 ```
 launch/
-  arst_sim.launch.py            # Gazebo (world_sdf override arg)
-  spawn_robot.launch.py         # RSP + bridges; spawn:=false for automated runs
+  arst_sim.launch.py            # Gazebo; accepts world_sdf override arg
+  spawn_robot.launch.py         # RSP + bridges; spawn:=false for automated runs (robot in world SDF)
 scripts/
-  run_scenario.sh
-  robot_control.py      # status / snapshot / drive (no detections — use world_state.py)
-  world_state.py        # PNG map ; obstacles + found status; path to stdout
+  run_scenario.sh               # main entry point; handles python3.12, cleanup, results
+  robot_control.py              # drive / status / snapshot (no detections — dev/cheat tool)
+  world_state.py                # PNG map + object positions + found/visible status (dev/cheat tool)
   despawn_robot.sh
-robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR/camera yet
+robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR yet
 config/
-  robots/derpbot.yaml
-  scenarios/office_explore_detect.yaml
-worlds/templates/indoor_office/   # world.sdf + config.yaml + ground_truth_map.pgm/.yaml
-worlds/models/                    # fire_extinguisher, first_aid_kit, hazard_sign
+  robots/derpbot.yaml           # robot platform config
+  scenarios/office_explore_detect.yaml  # main scenario; see also environment_variations.md
+worlds/
+  templates/indoor_office/      # world.sdf + config.yaml + ground_truth_map.pgm/.yaml
+  models/                       # fire_extinguisher, first_aid_kit, hazard_sign SDF models
 src/
-  metrics/
-  scenario_runner/
-  world_manager/
-  utils/
+  metrics/                      # base_metric, evaluator, reporter, scoring, meters_traveled,
+                                #   collision_count, revisit_ratio, detection_metrics,
+                                #   object_detection_tracker; exploration_coverage stub (needs LiDAR)
+  scenario_runner/              # launcher, runner, __main__
+  world_manager/                # world_generator, object_placer, template_loader
+  utils/                        # config_loader, ros_helpers, logging_setup
+docs/
+  ARST_Project_Plan.md          # vision, requirements, remaining steps, scoring reference
+  environment_variations.md     # robustness variation designs + priority order
 ```

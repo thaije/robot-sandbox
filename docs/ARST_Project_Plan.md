@@ -12,8 +12,8 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 
 | ID | Requirement | Notes |
 |----|-------------|-------|
-| SIM-09 | Configurable environment variations (lighting, door states) | Lighting stub only |
-| SIM-11 | Scenario reset without full restart | Stub in `reset.py` |
+| SIM-09 | Configurable environment variations (lighting, door states, dynamic obstacles) | Lighting only; door_states/dynamic obstacles not implemented — see [`docs/environment_variations.md`](environment_variations.md) |
+| SIM-11 | Scenario reset without full restart | Sim must be restarted; reset.py stub removed |
 | SIM-12 | Multiple simulator instances in parallel | Future |
 | SIM-13 | Deterministic replay (same seed = same scenario) | Not verified |
 | ROB-03 | 2D LiDAR | Next step — unlocks MET-06 |
@@ -44,19 +44,28 @@ Subscribe to ground-truth pose. Count events where robot-to-obstacle proximity <
 
 Run office scenario 3–5 times with teleoperation. Set `par_values` in scenario YAML so a competent operator scores ~70 (B). Document baseline values in YAML comments.
 
-### Steps 4.5–4.7
+### Step 3.14 — Environment variations
 
-- **4.5 Scenario reset**: implement `reset.py` (currently a stub)
+Implement the robustness variations described in [`docs/environment_variations.md`](environment_variations.md). Priority order from that doc:
+
+1. Localized lighting (per-room point/spot lights in SDF)
+2. Vertical object placement (`z_offset` in object_placer + scenario YAML)
+3. Flickering lights (gz-transport `UserCommands` timer in scenario runner)
+4. Compound scenario YAMLs (easy / hard / brutal / perception_stress)
+5. Patrol bot dynamic obstacle (scripted model, embedded in world SDF)
+6. Object distribution strategies (placer strategy dispatch)
+7. Smoke / particle emitters (forward-looking; no metric impact until visual detection)
+
+Also covers door state implementation: inject door-panel models at generation time when `door_states: closed` or `random` (currently always open — gaps in walls, no door models).
+
+### Steps 4.6–4.7
+
 - **4.6 Batch execution**: `scripts/run_batch.sh` — N runs with different seeds, aggregate mean/std/min/max
 - **4.7 Integration test**: scripted movement pattern, verify all metrics record correctly
 
-### Phase 5 — Documentation
-
-`docs/installation.md`, `docs/user_guide.md`, `docs/developer_guide.md`, `docs/architecture.md`, example scenarios with expected metric ranges.
-
 ---
 
-## Phase 6 — Future (post Phase 5)
+## Future (post Phase 4)
 
 - **Autonomy**: SLAM (slam_toolbox) + Nav2 + frontier exploration + YOLO detection (swap ground-truth oracle via topic remap)
 - **Additional robots**: Spot, quadcopter (PX4 SITL)
