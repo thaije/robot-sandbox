@@ -1,0 +1,83 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(apt list:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(git branch:*)",
+      "Bash(git -C /home/plip/Projects/robot-sandbox submodule add git@github.com:thaije/agent-scripts.git agent-scripts)",
+      "Bash(git -C /home/plip/Projects/robot-sandbox status)",
+      "Bash(git -C /home/plip/Projects/robot-sandbox rm:*)",
+      "Bash(ros2 --version:*)",
+      "Bash(gz:*)",
+      "Bash(ros2 pkg list:*)",
+      "Bash(chmod:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(bash -c \"source /opt/ros/jazzy/setup.bash 2>/dev/null && ros2 --version && gz --version 2>/dev/null\")",
+      "Bash(bash -c \"source /opt/ros/jazzy/setup.bash && ros2 pkg list 2>/dev/null | grep -E ''turtlebot4|ros_gz|teleop''\")",
+      "Bash(bash -c:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(python3:*)",
+      "Bash(dpkg:*)",
+      "Read(//opt/ros/**)",
+      "Bash(for f in worlds/models/*/model.sdf worlds/models/*/model.config)",
+      "Bash(do printf \"%-55s \" \"$f\")",
+      "Bash(xmllint:*)",
+      "Bash(done)",
+      "Bash(source:*)",
+      "Bash(export GZ_SIM_RESOURCE_PATH=\"$PWD/worlds/models\")",
+      "Bash(for model in fire_extinguisher first_aid_kit hazard_sign)",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(tmux new-session:*)",
+      "Bash(tmux kill-session:*)",
+      "Bash(tmux send-keys:*)",
+      "Bash(tmux capture-pane:*)",
+      "Bash(tmux new-window:*)",
+      "Bash(kill:*)",
+      "Bash(committer)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ros2 topic list:*)",
+      "Bash(timeout 5 ros2 topic echo:*)",
+      "Bash(timeout 2 ros2 topic echo:*)",
+      "Bash(timeout 3 ros2 topic echo:*)",
+      "Bash(ros2 topic info:*)",
+      "Bash(pgrep:*)",
+      "Bash(PYTHONPATH=src python3 -c \":*)",
+      "Bash(export ROS_DOMAIN_ID=5)",
+      "Bash(export PYTHONPATH=src:$PYTHONPATH)",
+      "Bash(tee /tmp/scenario_run.log)",
+      "Bash(timeout 30 ros2 launch launch/arst_sim.launch.py headless:=true)",
+      "Bash(./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml)",
+      "Bash(export PYTHONPATH=/home/plip/Projects/robot-sandbox/src:$PYTHONPATH)",
+      "Bash(timeout*)",
+      "Bash(bash -c \"source*)",
+      "Bash(./scripts/:*)",
+      "Bash(tmux ls)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "source /opt/ros/jazzy/setup.bash"
+          },
+          {
+            "type": "command",
+            "command": "export PYTHONPATH=/home/plip/Projects/robot-sandbox/src:$PYTHONPATH"
+          },
+          {
+            "type": "command",
+            "command": "cd /home/plip/Projects/robot-sandbox"
+          }
+        ]
+      }
+    ]
+  }
+}
