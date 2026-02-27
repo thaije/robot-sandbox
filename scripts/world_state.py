@@ -200,10 +200,29 @@ def _ros_query(
             det_msg.append(msg)
             det_ev.set()
 
+    # Bumper logic:
+    #   The contact sensor fires for ALL contacts including the robot resting on
+    #   the ground plane (always true — not a real collision).  Filter those out.
+    #   Sensor publishes at ~300+ Hz so a short settle window is plenty.
+    _BUMP_SETTLE_S = 0.10   # wait after first message for fresh readings
+    _BUMP_MIN_COUNT = 5     # messages needed before trusting the reading
+    bump_first_time: list[float | None] = [None]
+    bump_count = [0]
+
+    def _non_ground(contacts) -> list:
+        return [
+            c for c in (contacts or [])
+            if "ground_plane" not in str(getattr(c, "collision1", ""))
+            and "ground_plane" not in str(getattr(c, "collision2", ""))
+        ]
+
     def on_bump(msg):
-        if not bump_msg:
-            bump_msg.append(msg)
-            bump_ev.set()
+        bump_msg.clear()
+        bump_msg.append(msg)
+        bump_count[0] += 1
+        if bump_first_time[0] is None:
+            bump_first_time[0] = time.monotonic()
+        bump_ev.set()
 
     def on_odom(msg):
         if not odom_msg:
@@ -221,10 +240,14 @@ def _ros_query(
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        odom_ok = odom_ev.is_set() if want_odom else True
-        if det_ev.is_set() and bump_ev.is_set() and odom_ok:
-            break
         executor.spin_once(timeout_sec=0.05)
+        odom_ok = odom_ev.is_set() if want_odom else True
+        bump_settled = (
+            bump_first_time[0] is not None
+            and (time.monotonic() - bump_first_time[0]) >= _BUMP_SETTLE_S
+        )
+        if det_ev.is_set() and bump_settled and odom_ok:
+            break
 
     executor.shutdown()
     node.destroy_node()
@@ -251,9 +274,10 @@ def _ros_query(
                     visible_ids.add(cid)
 
     # --- collision ---
+    # Filter ground-plane contacts (always present) and require enough messages.
     is_colliding = None
-    if bump_msg:
-        is_colliding = bool(getattr(bump_msg[0], "contacts", None))
+    if bump_msg and bump_count[0] >= _BUMP_MIN_COUNT:
+        is_colliding = bool(_non_ground(getattr(bump_msg[0], "contacts", [])))
 
     return odom_pose, visible_ids, is_colliding
 
@@ -321,9 +345,9 @@ def print_summary(
 
     if is_colliding is True:
         print("Status: ⚡ COLLISION — robot is currently touching an obstacle")
-    elif is_colliding is False:
+    else:
+        # False = confirmed clear; None = sensor silent (no contact msgs) = also clear
         print("Status: no collision")
-    # None = topic unavailable, say nothing
 
 
 # ── PNG renderer ──────────────────────────────────────────────────────────────
@@ -342,7 +366,7 @@ def render_png(
         print("WARNING: cv2 not available, skipping PNG", file=sys.stderr)
         return None
 
-    SCALE = 20  # px per metre
+    SCALE = 40  # px per metre (2× → higher res, icons smaller relative to walls)
     iw, ih = int(W * res * SCALE), int(H * res * SCALE)
 
     ppc = max(1, int(res * SCALE))
@@ -369,20 +393,22 @@ def render_png(
         cv2.rectangle(img, (x1, y1), (x2, y2), color, -1)
         cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 0), 1)
 
-    # Robot
+    # Robot — kept small (8 px) so wall clearance is visible
     if robot_pose is not None:
         wx, wy, yaw = robot_pose
         ix, iy = int(wx * SCALE), ih - int(wy * SCALE)
-        robot_color = (200, 80, 0)  # blue
-        ring_color  = (0, 0, 220) if is_colliding else (0, 0, 0)
-        ring_thick  = 2 if not is_colliding else 3
-        cv2.circle(img, (ix, iy), 11, robot_color, -1)
-        cv2.circle(img, (ix, iy), 11, ring_color, ring_thick)
-        ax = ix + int(12 * math.cos(yaw))
-        ay = iy - int(12 * math.sin(yaw))
-        ex = ix + int(22 * math.cos(yaw))
-        ey = iy - int(22 * math.sin(yaw))
-        cv2.arrowedLine(img, (ax, ay), (ex, ey), (0, 0, 0), 2, tipLength=0.5)
+        robot_color = (200, 80, 0)  # blue-orange
+        ring_color  = (0, 0, 220) if is_colliding is True else (0, 0, 0)
+        ring_thick  = 3 if is_colliding is True else 2
+        cv2.circle(img, (ix, iy), 8, robot_color, -1)
+        cv2.circle(img, (ix, iy), 8, ring_color, ring_thick)
+        ax = ix + int(9 * math.cos(yaw))
+        ay = iy - int(9 * math.sin(yaw))
+        ex = ix + int(17 * math.cos(yaw))
+        ey = iy - int(17 * math.sin(yaw))
+        # Arrow: white outline first, then coloured fill — stays visible against dark walls
+        cv2.arrowedLine(img, (ax, ay), (ex, ey), (255, 255, 255), 4, tipLength=0.5)
+        cv2.arrowedLine(img, (ax, ay), (ex, ey), (0, 180, 255), 2, tipLength=0.5)
         cv2.putText(img, "R", (ix - 4, iy + 4),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
@@ -405,14 +431,14 @@ def render_png(
         ring_w   = 2 if lbl in visible_ids else 1
         cv2.circle(img, (ix, iy), 9, ring_col, ring_w)
         text_color = (0, 0, 0) if info["type"] == "hazard_sign" and lbl not in found else (255, 255, 255)
-        cv2.putText(img, lbl, (ix - 5, iy + 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1)
+        cv2.putText(img, lbl, (ix - 6, iy + 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, text_color, 1)
 
     # Room name labels
     for rx, ry, name in ROOMS:
         ix, iy = int(rx * SCALE), ih - int(ry * SCALE)
         cv2.putText(img, name, (ix - 30, iy),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 100, 100), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 100, 100), 1)
 
     cv2.imwrite(path, img)
     return img

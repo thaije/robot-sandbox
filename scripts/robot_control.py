@@ -221,7 +221,7 @@ def cmd_drive(args):
 # ── Closed-loop helpers ────────────────────────────────────────────────────────
 
 def _start_odom_listener(node, robot):
-    """Subscribe to odom; return (latest_odom_list, ready_event, executor)."""
+    """Subscribe to odom; return (latest_odom_list, ready_event, executor, thread)."""
     from nav_msgs.msg import Odometry
 
     latest = [None]
@@ -236,7 +236,7 @@ def _start_odom_listener(node, robot):
     executor.add_node(node)
     thread = threading.Thread(target=executor.spin, daemon=True)
     thread.start()
-    return latest, ready, executor
+    return latest, ready, executor, thread
 
 
 def _angle_diff(a: float, b: float) -> float:
@@ -251,7 +251,7 @@ def cmd_rotate(args):
     rclpy.init()
     node = rclpy.create_node("rc_rotate")
     pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
-    latest, ready, executor = _start_odom_listener(node, args.robot)
+    latest, ready, executor, spin_thread = _start_odom_listener(node, args.robot)
 
     if not ready.wait(timeout=args.timeout):
         print(
@@ -259,6 +259,7 @@ def cmd_rotate(args):
             + _sim_not_running_hint()
         )
         executor.shutdown()
+        spin_thread.join(timeout=2.0)
         node.destroy_node()
         rclpy.shutdown()
         return 1
@@ -286,6 +287,7 @@ def cmd_rotate(args):
             pub.publish(stop)
             time.sleep(0.05)
         executor.shutdown()
+        spin_thread.join(timeout=2.0)
         node.destroy_node()
         rclpy.shutdown()
 
@@ -303,7 +305,7 @@ def cmd_move(args):
     rclpy.init()
     node = rclpy.create_node("rc_move")
     pub = node.create_publisher(Twist, f"/{args.robot}/cmd_vel", 1)
-    latest, ready, executor = _start_odom_listener(node, args.robot)
+    latest, ready, executor, spin_thread = _start_odom_listener(node, args.robot)
 
     if not ready.wait(timeout=args.timeout):
         print(
@@ -311,6 +313,7 @@ def cmd_move(args):
             + _sim_not_running_hint()
         )
         executor.shutdown()
+        spin_thread.join(timeout=2.0)
         node.destroy_node()
         rclpy.shutdown()
         return 1
@@ -340,6 +343,7 @@ def cmd_move(args):
             pub.publish(stop)
             time.sleep(0.05)
         executor.shutdown()
+        spin_thread.join(timeout=2.0)
         node.destroy_node()
         rclpy.shutdown()
 

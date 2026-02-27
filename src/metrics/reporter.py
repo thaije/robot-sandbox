@@ -45,6 +45,8 @@ def render_scorecard(sc: Scorecard) -> str:
 
     icons = {"speed": "🏎 ", "accuracy": "🎯", "safety": "🛡 ", "efficiency": "⚡"}
     for cat in sc.categories:
+        if cat.weight == 0.0:
+            continue  # skip disabled categories (e.g. efficiency without LiDAR)
         icon = icons.get(cat.name, "  ")
         bar = _bar(cat.score)
         line = f"║  {icon} {cat.name.capitalize():<12}{cat.score:5.0f}/100  {bar}  {cat.grade}  {cat.grade_label:<13}║"

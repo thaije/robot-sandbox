@@ -64,12 +64,24 @@ class CollisionCount(BaseMetric):
             10,
         )
 
+    @staticmethod
+    def _non_ground_contacts(msg: Any) -> list:
+        """Return contacts that are NOT between the robot and the ground plane.
+
+        The Gazebo contact sensor fires whenever the robot rests on the floor
+        (ground_plane), which is always true and must be excluded.
+        """
+        return [
+            c for c in getattr(msg, "contacts", [])
+            if "ground_plane" not in str(getattr(c, "collision1", c))
+            and "ground_plane" not in str(getattr(c, "collision2", c))
+        ]
+
     def _on_contact(self, msg: Any) -> None:
         # Rising-edge detection: count a new collision only when contact starts.
-        # Gazebo publishes at a fixed rate both during contact (non-empty contacts
-        # list) and when idle (empty contacts list).  Tracking _in_contact avoids
-        # counting repeated messages from the same sustained physical contact.
-        has_contacts = hasattr(msg, "contacts") and len(msg.contacts) > 0
+        # Ground-plane contacts are excluded — the robot always rests on the floor.
+        real = self._non_ground_contacts(msg)
+        has_contacts = len(real) > 0
         if has_contacts and not self._in_contact:
             self._in_contact = True
             self._count += 1

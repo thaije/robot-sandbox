@@ -80,9 +80,13 @@ Identify unfound objects + their rooms. Note the time limit. Plan room order.
 ```
 move / rotate  →  world_state.py  →  Read map
 ```
-- Refresh map **after every move** — shows collision status, visible tags, pose.
+- Refresh map **after every single move or rotate** — shows collision status, visible tags, pose.
 - No separate detections call needed — visible objects are tagged in world_state.py output.
 - React to what the map shows; don't plan the full route upfront.
+
+> **⚠️ Anti-drift rule: never chain more than one move/rotate without checking the map.**
+> Small yaw errors compound fast. After 2–3 unchained moves you can be 20–30° off and
+> heading into a wall. Check the map, read your actual yaw, then decide the next move.
 
 ### 3. Room search pattern
 **Rotate 360° at room centre** — spots most objects in one pass.
@@ -109,7 +113,8 @@ that cross a wall cell in the occupancy grid.
 ## Efficiency rules
 
 - **No redundant status calls** — map shows pose.
-- **world_state.py after every move** — replaces separate detections + map calls.
+- **world_state.py after EVERY move or rotate** — replaces separate detections + map calls.
+- **Never chain moves without a map check** — yaw errors compound; one check per move prevents getting lost.
 - **Prefer rotate+move** over drive for precise manoeuvres.
 - **360 sweep** at each room centre before detailed search.
 - **Move through doorways decisively** — hesitation causes doorpost collisions.
