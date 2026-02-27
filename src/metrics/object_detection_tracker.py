@@ -16,11 +16,31 @@ assigned by gz-sim-label-system as a string ("1", "2", "3").
 from __future__ import annotations
 
 import json
+import math
 import time
 from pathlib import Path
 from typing import Any
 
 _LIVE_DETECTIONS_PATH = Path("/tmp/arst_worlds/detections_live.json")
+_WORLD_STATE_PATH = Path("/tmp/arst_worlds/world_state.json")
+
+
+def _bresenham(x0: int, y0: int, x1: int, y1: int):
+    """Yield (col, row) integer grid cells on the line from (x0,y0) to (x1,y1)."""
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
+    err = dx - dy
+    while True:
+        yield x0, y0
+        if x0 == x1 and y0 == y1:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x0 += sx
+        if e2 < dx:
+            err += dx
+            y0 += sy
 
 # Maps gz-sim-label-system integer labels → human-readable class names.
 # Must match the <label> values in worlds/models/*/model.sdf.
@@ -61,6 +81,13 @@ class ObjectDetectionTracker:
         self._start_time: float = 0.0
         self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
+        # LOS state
+        self._robot_pose: tuple[float, float] | None = None  # world (x, y)
+        self._pgm_pixels: list[list[int]] | None = None      # occupancy grid rows
+        self._pgm_W: int = 0
+        self._pgm_H: int = 0
+        self._map_res: float = 0.5  # metres per grid cell
+        self._gz_pose_node: Any = None  # kept alive to keep subscription active
 
     def start(self) -> None:
         """Subscribe to the detection topic and record start time."""
@@ -73,6 +100,82 @@ class ObjectDetectionTracker:
             self._on_detections,
             10,
         )
+        self._load_pgm()
+        self._start_pose_listener()
+
+    # ── LOS helpers ───────────────────────────────────────────────────────────
+
+    def _load_pgm(self) -> None:
+        """Load occupancy grid from PGM for LOS ray-casting."""
+        try:
+            import cv2
+            import numpy as np
+
+            state = json.loads(_WORLD_STATE_PATH.read_text())
+            self._map_res = float(state.get("map_resolution", 0.5))
+            pgm_path = state["map_pgm"]
+            grid = cv2.imread(pgm_path, cv2.IMREAD_GRAYSCALE)
+            if grid is None:
+                return
+            self._pgm_H, self._pgm_W = grid.shape
+            # Store as list-of-lists (row-major, row 0 = top of map = max world-y)
+            self._pgm_pixels = grid.tolist()
+        except Exception:
+            pass
+
+    def _start_pose_listener(self) -> None:
+        """Background gz-transport subscriber that keeps self._robot_pose current."""
+        try:
+            from gz.transport13 import Node as GzNode  # noqa: PLC0415
+            from gz.msgs10.pose_v_pb2 import Pose_V      # noqa: PLC0415
+
+            state = json.loads(_WORLD_STATE_PATH.read_text())
+            world = Path(state["map_pgm"]).parent.name
+            # robot name = second segment of topic, e.g. /derpbot_0/detections
+            robot = self._topic.strip("/").split("/")[0]
+
+            gz_node = GzNode()
+
+            def _cb(msg: Any) -> None:
+                for pose in msg.pose:
+                    if pose.name == robot:
+                        self._robot_pose = (pose.position.x, pose.position.y)
+                        return
+
+            gz_node.subscribe(Pose_V, f"/world/{world}/dynamic_pose/info", _cb)
+            self._gz_pose_node = gz_node  # keep reference so the subscription stays alive
+        except Exception:
+            pass
+
+    def _has_line_of_sight(self, class_id: str) -> bool:
+        """Return True if a clear sightline exists from robot to the object.
+
+        Uses Bresenham ray-casting on the PGM occupancy grid.  A cell with
+        value < 128 is considered a wall.  Returns True (allow detection) when
+        the grid or pose is unavailable so failures are non-blocking.
+        """
+        if self._pgm_pixels is None or self._robot_pose is None:
+            return True  # data not ready — allow
+        if class_id not in self._label_map:
+            return True  # unknown object — allow
+
+        res = self._map_res
+        H = self._pgm_H
+        rx, ry = self._robot_pose
+        obj = self._label_map[class_id]
+        ox, oy = float(obj["x"]), float(obj["y"])
+
+        # World → grid cell.  Row 0 is the top of the map (highest world-y).
+        c0, r0 = int(rx / res), H - 1 - int(ry / res)
+        c1, r1 = int(ox / res), H - 1 - int(oy / res)
+
+        pixels = self._pgm_pixels
+        for c, r in _bresenham(c0, r0, c1, r1):
+            if r < 0 or r >= H or c < 0 or c >= self._pgm_W:
+                continue
+            if pixels[r][c] < 128:  # wall cell
+                return False
+        return True
 
     def _on_detections(self, msg: Any) -> None:
         elapsed = time.monotonic() - self._start_time
@@ -82,6 +185,8 @@ class ObjectDetectionTracker:
                 class_id = hyp.hypothesis.class_id
                 # Ignore empty or background label ("0")
                 if class_id and class_id != "0" and class_id not in self._first_detections:
+                    if not self._has_line_of_sight(class_id):
+                        continue  # through-wall clip — reject
                     self._first_detections[class_id] = elapsed
                     new_find = True
         if new_find:

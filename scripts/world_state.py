@@ -52,6 +52,8 @@ from pathlib import Path
 
 WORLD_STATE = Path("/tmp/arst_worlds/world_state.json")
 LIVE_DETECTIONS = Path("/tmp/arst_worlds/detections_live.json")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_PNG = REPO_ROOT / "arst_world_map.png"
 
 # 2-char symbol per object type (unfound prefix = label number, found = ✓)
 OBJ_SYM = {"fire_extinguisher": "F", "first_aid_kit": "A", "hazard_sign": "H"}
@@ -305,7 +307,22 @@ def render_png(
         cv2.rectangle(img, (x1, y1), (x2, y2), color, -1)
         cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 0), 1)
 
-    # Object colours by type
+    # Robot (drawn before objects so objects always appear on top)
+    if robot_pose is not None:
+        wx, wy, yaw = robot_pose
+        ix, iy = int(wx * SCALE), ih - int(wy * SCALE)
+        cv2.circle(img, (ix, iy), 11, (200, 80, 0), -1)    # blue-filled robot
+        cv2.circle(img, (ix, iy), 11, (0, 0, 0), 1)        # black outline
+        # Arrow starts at circle edge, points outward in heading direction
+        ax = ix + int(12 * math.cos(yaw))
+        ay = iy - int(12 * math.sin(yaw))
+        ex = ix + int(22 * math.cos(yaw))
+        ey = iy - int(22 * math.sin(yaw))
+        cv2.arrowedLine(img, (ax, ay), (ex, ey), (0, 0, 0), 2, tipLength=0.5)
+        cv2.putText(img, "R", (ix - 4, iy + 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+
+    # Object colours by type (drawn after robot so always visible on top)
     TYPE_COLOR = {
         "fire_extinguisher": (50,  50, 220),   # red (BGR)
         "first_aid_kit":     (50, 180,  50),   # green
@@ -324,21 +341,6 @@ def render_png(
         cv2.putText(img, lbl, (ix - 5, iy + 4),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1)
 
-    # Robot
-    if robot_pose is not None:
-        wx, wy, yaw = robot_pose
-        ix, iy = int(wx * SCALE), ih - int(wy * SCALE)
-        cv2.circle(img, (ix, iy), 11, (200, 80, 0), -1)    # blue-filled robot
-        cv2.circle(img, (ix, iy), 11, (0, 0, 0), 1)        # black outline
-        # Arrow starts at circle edge, points outward in heading direction
-        ax = ix + int(12 * math.cos(yaw))
-        ay = iy - int(12 * math.sin(yaw))
-        ex = ix + int(22 * math.cos(yaw))
-        ey = iy - int(22 * math.sin(yaw))
-        cv2.arrowedLine(img, (ax, ay), (ex, ey), (0, 0, 0), 2, tipLength=0.5)
-        cv2.putText(img, "R", (ix - 4, iy + 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
     # Room name labels
     for rx, ry, name in ROOMS:
         ix, iy = int(rx * SCALE), ih - int(ry * SCALE)
@@ -347,6 +349,50 @@ def render_png(
 
     cv2.imwrite(path, img)
     print(path)
+
+
+# ── ROS image publisher ───────────────────────────────────────────────────────
+
+def publish_map_image(png_path: str) -> None:
+    """Publish the PNG map as sensor_msgs/Image on /arst/world_map (transient-local)."""
+    try:
+        import cv2
+        import numpy as np
+        import rclpy
+        from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
+        from sensor_msgs.msg import Image as RosImage
+
+        img_bgr = cv2.imread(png_path)
+        if img_bgr is None:
+            return
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        h, w = img_rgb.shape[:2]
+
+        msg = RosImage()
+        msg.header.frame_id = "map"
+        msg.height = h
+        msg.width = w
+        msg.encoding = "rgb8"
+        msg.is_bigendian = False
+        msg.step = w * 3
+        msg.data = img_rgb.flatten().tobytes()
+
+        qos = QoSProfile(
+            depth=1,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+        )
+        rclpy.init()
+        node = rclpy.create_node("world_map_publisher")
+        pub = node.create_publisher(RosImage, "/arst/world_map", qos)
+        pub.publish(msg)
+        # Brief spin to let the message be delivered to late-joining subscribers
+        time.sleep(0.3)
+        node.destroy_node()
+        rclpy.shutdown()
+    except Exception:
+        pass
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -359,7 +405,9 @@ def main() -> None:
     parser.add_argument("--results", default=None,        help="Results JSON to mark found objects")
     parser.add_argument("--png",     default=None,        help="Save PNG to this path")
     parser.add_argument("--state",   default=str(WORLD_STATE), help="world_state.json path")
+    parser.add_argument("--debug",   action="store_true", help="Print wall-clock execution time")
     args = parser.parse_args()
+    t0 = time.monotonic()
 
     state_path = Path(args.state)
     if not state_path.exists():
@@ -403,9 +451,12 @@ def main() -> None:
     print_summary(label_map, spawn, robot_pose, found)
 
     # Default PNG path if none specified
-    png_path = args.png or "/tmp/arst_world_map.png"
+    png_path = args.png or str(DEFAULT_PNG)
     render_png(pixels, W, H, res, label_map, spawn, robot_pose, found, obstacles, png_path)
     print(f"\n⚠️  CHECK THE MAP BEFORE MOVING — walls and objects visible: {png_path}")
+    publish_map_image(png_path)
+    if args.debug:
+        print(f"[debug] elapsed: {time.monotonic() - t0:.2f}s", file=sys.stderr)
 
 
 if __name__ == "__main__":

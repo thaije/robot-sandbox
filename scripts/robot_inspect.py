@@ -423,6 +423,8 @@ def main():
     mv = sub.add_parser("move", help="Translate N metres using odom feedback (+ = forward)")
     mv.add_argument("metres", type=float, help="Distance in metres (+ forward, - backward)")
 
+    parser.add_argument("--debug", action="store_true", help="Print wall-clock execution time")
+
     args = parser.parse_args()
 
     dispatch = {
@@ -433,7 +435,11 @@ def main():
         "rotate":     cmd_rotate,
         "move":       cmd_move,
     }
-    sys.exit(dispatch[args.command](args))
+    t0 = time.monotonic()
+    ret = dispatch[args.command](args)
+    if args.debug:
+        print(f"[debug] elapsed: {time.monotonic() - t0:.2f}s", file=sys.stderr)
+    sys.exit(ret)
 
 
 if __name__ == "__main__":
