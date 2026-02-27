@@ -21,20 +21,20 @@ more clearly at a glance.
 
 Usage
 -----
-    # Save PNG (recommended — prints path on stdout):
-    python3.12 scripts/world_state.py --png /tmp/map.png
-
-    # Print object list + robot pose (no PNG):
+    # PNG always written; default path: <repo_root>/arst_world_map.png
     python3.12 scripts/world_state.py
+
+    # Override PNG output path:
+    python3.12 scripts/world_state.py --png /tmp/map.png
 
     # Also print ASCII map (verbose):
     python3.12 scripts/world_state.py --ascii
 
     # Mark found objects from a results JSON:
-    python3.12 scripts/world_state.py --results results/run.json --png /tmp/map.png
+    python3.12 scripts/world_state.py --results results/run.json
 
     # Skip ROS (no robot marker):
-    python3.12 scripts/world_state.py --no-ros --png /tmp/map.png
+    python3.12 scripts/world_state.py --no-ros
 
 Found objects are automatically read from /tmp/arst_worlds/detections_live.json
 when a scenario is running (written by ObjectDetectionTracker on each new find).

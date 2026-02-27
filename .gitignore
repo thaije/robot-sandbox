@@ -1,4 +1,7 @@
+# index claude skills but not the rest
 .claude/*
+!.claude/skills/
+!.claude/skills/**
 
 # ROS 2
 install/
