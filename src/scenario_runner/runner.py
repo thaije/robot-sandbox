@@ -29,6 +29,7 @@ from utils.logging_setup import setup_logging
 from world_manager.world_generator import WorldGenerator
 from scenario_runner.launcher import SimulationLauncher
 from scenario_runner.reset import ScenarioResetter
+from scenario_runner.flicker_controller import FlickerController
 from metrics.evaluator import evaluate_criteria
 from metrics.scoring import ScoringEngine
 from metrics.reporter import render_scorecard, write_results
@@ -89,6 +90,18 @@ class ScenarioRunner:
         )
         robot_names = [r.get("name", f"{r['platform']}_0") for r in robots_cfg]
         log.info("Simulation ready — robots: %s", robot_names)
+
+        # ── 2b. Start flickering lights (if configured) ───────────────────────
+        flicker_specs = world_cfg.get("variations", {}).get("flicker", [])
+        lighting_preset_name = world_cfg.get("variations", {}).get("lighting", "normal")
+        template_cfg = gen._loader.load(world_cfg["template"])
+        lighting_preset = template_cfg.get("lighting_presets", {}).get(lighting_preset_name, {})
+        flicker_ctrl = FlickerController(
+            world_name=world_cfg["template"],
+            flicker_specs=flicker_specs,
+            lighting_preset=lighting_preset,
+        )
+        flicker_ctrl.start()
 
         # ── 3. Start ROS 2 metrics collection ─────────────────────────────────
         # rclpy is imported lazily to keep this module importable without ROS 2.
@@ -157,6 +170,7 @@ class ScenarioRunner:
 
         finally:
             # ── 8. Cleanup — always runs even on Ctrl-C ────────────────────────
+            flicker_ctrl.stop()
             node.destroy_node()
             try:
                 rclpy.shutdown()

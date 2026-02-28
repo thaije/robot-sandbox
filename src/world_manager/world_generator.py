@@ -111,6 +111,20 @@ class WorldGenerator:
             template_cfg.get("lighting_presets", {}),
         )
 
+        # Apply door states (pass spawn zone for connectivity guarantee)
+        door_state = world_cfg.get("variations", {}).get("door_states", "open")
+        spawn_zone = _find_spawn_zone(
+            scenario_config.get("robots", []),
+            template_cfg.get("placement_zones", []),
+        )
+        self._apply_door_states(
+            world_elem,
+            door_state,
+            template_cfg.get("doors", []),
+            seed,
+            spawn_zone=spawn_zone,
+        )
+
         # Inject placed objects before </world>
         self._inject_objects(world_elem, placements)
 
@@ -140,6 +154,11 @@ class WorldGenerator:
         Affects:
           - ``<world><scene><ambient>``   — overall scene ambient colour
           - ``<world><light><diffuse>``   — every directional/point/spot light
+
+        If the preset defines ``room_lights``, those are injected as new
+        ``<light>`` elements in the world.  This is used by localized presets
+        that kill the global directional light (diffuse → 0) and replace it
+        with per-room point/spot lights.
         """
         if preset not in lighting_presets:
             return  # unknown preset → leave template defaults unchanged
@@ -160,6 +179,127 @@ class WorldGenerator:
                 d = light.find("diffuse")
                 if d is not None:
                     d.text = _rgba_str(diffuse_val)
+
+        for rl in cfg.get("room_lights", []):
+            world_elem.append(_build_room_light(rl))
+
+    def _apply_door_states(
+        self,
+        world_elem: ET.Element,
+        door_state: str,
+        doors: list[dict],
+        seed: int,
+        spawn_zone: str = "",
+    ) -> None:
+        """Inject static door-panel models for closed/random door states.
+
+        Guarantees the world graph remains connected from *spawn_zone* to all
+        other zones — doors are reopened (in reverse close order) until full
+        connectivity is restored.  This prevents unsolvable scenarios.
+
+        Parameters
+        ----------
+        door_state:
+            ``"open"`` — no panels injected.
+            ``"closed"`` — all doors blocked (subject to connectivity guarantee).
+            ``"random"`` — each door independently blocked (50 %) using *seed*,
+            then connectivity-checked.
+        doors:
+            List of door dicts from ``config.yaml``
+            (id, x, y, orientation, width, connects).
+        seed:
+            Scenario seed for reproducible ``"random"`` states.
+        spawn_zone:
+            The placement-zone id containing the robot spawn.  If non-empty and
+            ``connects`` metadata is present on the doors, connectivity from
+            this zone to all others is guaranteed.
+        """
+        if door_state == "open" or not doors:
+            return
+
+        import random as _random
+        rng = _random.Random(seed + 999)  # offset avoids collision with object placement rng
+
+        # Decide which doors to close (ordered list so we can reopen from the end)
+        close_order: list[str] = []
+        for door in doors:
+            if door_state == "closed" or rng.choice([True, False]):
+                close_order.append(door["id"])
+
+        # ── Connectivity guarantee ─────────────────────────────────────────────
+        # If every door in the template has 'connects' metadata AND we know the
+        # spawn zone, restore connectivity by reopening doors as needed.
+        if spawn_zone and all("connects" in d for d in doors):
+            # Collect all zone ids
+            all_zones: set[str] = set()
+            for d in doors:
+                all_zones.update(d["connects"])
+
+            def _connected(closed_ids: set[str]) -> bool:
+                """BFS from spawn_zone over open doors."""
+                adj: dict[str, set[str]] = {z: set() for z in all_zones}
+                for d in doors:
+                    if d["id"] not in closed_ids:
+                        a, b = d["connects"][0], d["connects"][1]
+                        adj[a].add(b)
+                        adj[b].add(a)
+                visited: set[str] = set()
+                queue = [spawn_zone]
+                while queue:
+                    node = queue.pop()
+                    if node in visited:
+                        continue
+                    visited.add(node)
+                    queue.extend(adj.get(node, []))
+                return visited == all_zones
+
+            closed_set = set(close_order)
+            # Reopen doors from the end of close_order until graph is connected
+            for door_id in reversed(close_order):
+                if _connected(closed_set):
+                    break
+                closed_set.discard(door_id)
+            close_order = [d for d in close_order if d in closed_set]
+        # ──────────────────────────────────────────────────────────────────────
+
+        PANEL_H = 2.5   # floor-to-ceiling panel height (m)
+        PANEL_T = 0.15  # panel thickness (m)
+
+        closed_ids = set(close_order)
+        for door in doors:
+            if door["id"] not in closed_ids:
+                continue
+
+            door_id = door["id"]
+            cx, cy = float(door["x"]), float(door["y"])
+            width = float(door.get("width", 1.0))
+            orientation = door.get("orientation", "ew")
+
+            # NS wall: panel thin in x, wide in y.  EW wall: wide in x, thin in y.
+            if orientation == "ns":
+                sx, sy, sz = PANEL_T, width, PANEL_H
+            else:
+                sx, sy, sz = width, PANEL_T, PANEL_H
+
+            panel = ET.fromstring(
+                f'<model name="door_panel_{door_id}">'
+                f'<static>true</static>'
+                f'<pose>{cx} {cy} {PANEL_H / 2:.4f} 0 0 0</pose>'
+                f'<link name="link">'
+                f'<collision name="collision">'
+                f'<geometry><box><size>{sx} {sy} {sz}</size></box></geometry>'
+                f'</collision>'
+                f'<visual name="visual">'
+                f'<geometry><box><size>{sx} {sy} {sz}</size></box></geometry>'
+                f'<material>'
+                f'<ambient>0.55 0.38 0.18 1</ambient>'
+                f'<diffuse>0.65 0.45 0.22 1</diffuse>'
+                f'</material>'
+                f'</visual>'
+                f'</link>'
+                f'</model>'
+            )
+            world_elem.append(panel)
 
     def _inject_objects(
         self,
@@ -321,7 +461,7 @@ class WorldGenerator:
 
         # Insert pose at position 0 (before <static> etc.) so it takes effect
         pose = ET.Element("pose")
-        pose.text = f"{obj.x:.4f} {obj.y:.4f} 0 0 0 {obj.yaw:.4f}"
+        pose.text = f"{obj.x:.4f} {obj.y:.4f} {obj.z:.4f} 0 0 {obj.yaw:.4f}"
         model.insert(0, pose)
 
         return model
@@ -342,6 +482,53 @@ def _resolve_pgm_path(template_cfg: dict, project_root: Path) -> None:
     pgm = gt.get("pgm")
     if pgm and not Path(pgm).is_absolute():
         gt["pgm"] = str(project_root / pgm)
+
+
+def _build_room_light(rl: dict) -> ET.Element:
+    """Build a ``<light>`` element from a room_lights config dict.
+
+    Expected keys: name, type (point/spot/directional), pose ([x,y,z,r,p,y]),
+    diffuse, specular, range, constant, linear, quadratic.
+    """
+    light_type = rl.get("type", "point")
+    name = rl["name"]
+    pose = rl.get("pose", [0, 0, 3, 0, 0, 0])
+    pose_str = " ".join(str(float(v)) for v in pose)
+    diffuse = _rgba_str(rl.get("diffuse", [1, 1, 1, 1]))
+    specular = _rgba_str(rl.get("specular", [0.3, 0.3, 0.3, 1]))
+    att_range = float(rl.get("range", 10.0))
+    constant = float(rl.get("constant", 0.5))
+    linear = float(rl.get("linear", 0.05))
+    quadratic = float(rl.get("quadratic", 0.005))
+    return ET.fromstring(
+        f'<light type="{light_type}" name="{name}">'
+        f'<cast_shadows>false</cast_shadows>'
+        f'<pose>{pose_str}</pose>'
+        f'<diffuse>{diffuse}</diffuse>'
+        f'<specular>{specular}</specular>'
+        f'<attenuation>'
+        f'<range>{att_range}</range>'
+        f'<constant>{constant}</constant>'
+        f'<linear>{linear}</linear>'
+        f'<quadratic>{quadratic}</quadratic>'
+        f'</attenuation>'
+        f'</light>'
+    )
+
+
+def _find_spawn_zone(robots_cfg: list[dict], zones: list[dict]) -> str:
+    """Return the placement-zone id that contains the first robot's spawn pose.
+
+    Falls back to ``""`` (connectivity check disabled) if no match is found.
+    """
+    if not robots_cfg or not zones:
+        return ""
+    sp = robots_cfg[0].get("spawn_pose", {})
+    x, y = float(sp.get("x", 0.0)), float(sp.get("y", 0.0))
+    for zone in zones:
+        if zone["x_min"] <= x <= zone["x_max"] and zone["y_min"] <= y <= zone["y_max"]:
+            return zone["id"]
+    return ""
 
 
 def _rgba_str(rgba: list) -> str:

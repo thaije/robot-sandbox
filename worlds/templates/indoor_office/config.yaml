@@ -39,26 +39,56 @@ placement_clearance: 0.5  # meters
 # Static obstacles (furniture) — rendered on agent maps; positions match world.sdf
 # x,y = centre in world frame; w = x-axis extent (m); h = y-axis extent (m)
 obstacles:
+  # surface_height: top of the furniture surface (m). Non-zero = can be a placement surface.
   # Office A
-  - {name: desk_a1,    x: 4.5,  y: 1.5,  w: 1.4,  h: 0.7}
+  - {name: desk_a1,    x: 4.5,  y: 1.5,  w: 1.4,  h: 0.7,  surface_height: 0.74, surface_class: desk}
   - {name: chair_a1,   x: 4.5,  y: 2.4,  w: 0.45, h: 0.45}
-  - {name: desk_a2,    x: 7.0,  y: 4.5,  w: 1.4,  h: 0.7}
+  - {name: desk_a2,    x: 7.0,  y: 4.5,  w: 1.4,  h: 0.7,  surface_height: 0.74, surface_class: desk}
   - {name: chair_a2,   x: 7.0,  y: 5.4,  w: 0.45, h: 0.45}
-  - {name: cabinet_a,  x: 1.5,  y: 5.8,  w: 0.5,  h: 0.45}
+  - {name: cabinet_a,  x: 1.5,  y: 5.8,  w: 0.5,  h: 0.45, surface_height: 0.90, surface_class: cabinet}
   # Office B
-  - {name: desk_b1,    x: 12.0, y: 1.5,  w: 1.4,  h: 0.7}
+  - {name: desk_b1,    x: 12.0, y: 1.5,  w: 1.4,  h: 0.7,  surface_height: 0.74, surface_class: desk}
   - {name: chair_b1,   x: 12.0, y: 2.4,  w: 0.45, h: 0.45}
-  - {name: desk_b2,    x: 17.0, y: 4.5,  w: 1.4,  h: 0.7}
+  - {name: desk_b2,    x: 17.0, y: 4.5,  w: 1.4,  h: 0.7,  surface_height: 0.74, surface_class: desk}
   - {name: chair_b2,   x: 17.0, y: 5.4,  w: 0.45, h: 0.45}
-  - {name: cabinet_b,  x: 19.2, y: 5.8,  w: 0.5,  h: 0.45}
+  - {name: cabinet_b,  x: 19.2, y: 5.8,  w: 0.5,  h: 0.45, surface_height: 0.90, surface_class: cabinet}
   # Meeting Room
-  - {name: conf_table,    x: 10.0, y: 12.0, w: 3.6,  h: 1.4}
+  - {name: conf_table,    x: 10.0, y: 12.0, w: 3.6,  h: 1.4,  surface_height: 0.74, surface_class: table}
   - {name: conf_chair_0,  x: 8.0,  y: 12.0, w: 0.45, h: 0.45}
   - {name: conf_chair_1,  x: 9.2,  y: 12.0, w: 0.45, h: 0.45}
   - {name: conf_chair_2,  x: 10.8, y: 12.0, w: 0.45, h: 0.45}
   - {name: conf_chair_3,  x: 12.0, y: 12.0, w: 0.45, h: 0.45}
   - {name: conf_chair_4,  x: 9.2,  y: 13.0, w: 0.45, h: 0.45}
   - {name: conf_chair_5,  x: 10.8, y: 13.0, w: 0.45, h: 0.45}
+
+# Door gaps — static box panels are injected here when door_states: closed/random.
+# x, y: panel centre (world frame). orientation: ns = wall runs N–S (panel thin in x);
+# ew = wall runs E–W (panel thin in y). width: gap size (m).
+doors:
+  - id: "office_ab"
+    x: 9.0
+    y: 3.0
+    orientation: "ns"
+    width: 1.0
+    connects: ["office_a", "office_b"]
+  - id: "office_a_corridor"
+    x: 2.5
+    y: 6.5
+    orientation: "ew"
+    width: 1.0
+    connects: ["office_a", "corridor"]
+  - id: "office_b_corridor"
+    x: 14.5
+    y: 6.5
+    orientation: "ew"
+    width: 1.0
+    connects: ["office_b", "corridor"]
+  - id: "corridor_meeting"
+    x: 9.5
+    y: 9.5
+    orientation: "ew"
+    width: 1.0
+    connects: ["corridor", "meeting_room"]
 
 variants:
   - id: "low_clutter"
@@ -78,3 +108,139 @@ lighting_presets:
   bright:
     ambient: [0.6, 0.6, 0.6, 1.0]
     diffuse: [1.0, 1.0, 1.0, 1.0]
+
+  # Localized: global directional light killed (diffuse→0); per-room point lights injected.
+  # Interesting for future visual detectors: coloured lights bias RGB-based recognition.
+  localized:
+    ambient: [0.05, 0.05, 0.05, 1.0]
+    diffuse: [0.0, 0.0, 0.0, 1.0]       # disables global ceiling_light
+    room_lights:
+      - name: "light_office_a"
+        type: "point"
+        pose: [4.5, 3.5, 3.2, 0, 0, 0]
+        diffuse: [1.0, 0.95, 0.82, 1.0]  # warm bright white
+        specular: [0.3, 0.28, 0.25, 1.0]
+        range: 8.0
+        constant: 0.3
+        linear: 0.05
+        quadratic: 0.005
+      - name: "light_office_b"
+        type: "point"
+        pose: [14.0, 3.5, 3.2, 0, 0, 0]
+        diffuse: [0.3, 0.35, 0.55, 1.0]  # cool dim blue-white
+        specular: [0.08, 0.09, 0.14, 1.0]
+        range: 6.0
+        constant: 0.5
+        linear: 0.08
+        quadratic: 0.01
+      - name: "light_corridor"
+        type: "point"
+        pose: [9.5, 8.0, 3.0, 0, 0, 0]
+        diffuse: [0.8, 0.04, 0.04, 1.0]  # emergency red
+        specular: [0.2, 0.0, 0.0, 1.0]
+        range: 5.0
+        constant: 0.5
+        linear: 0.10
+        quadratic: 0.02
+      - name: "light_meeting"
+        type: "point"
+        pose: [9.5, 12.0, 3.2, 0, 0, 0]
+        diffuse: [0.9, 0.9, 0.88, 1.0]   # neutral white
+        specular: [0.28, 0.28, 0.28, 1.0]
+        range: 7.0
+        constant: 0.4
+        linear: 0.06
+        quadratic: 0.008
+
+  # Used by hard/brutal tiers: localized + low global ambient for challenging navigation.
+  dim_localized:
+    ambient: [0.03, 0.03, 0.03, 1.0]
+    diffuse: [0.0, 0.0, 0.0, 1.0]
+    room_lights:
+      - name: "light_office_a"
+        type: "point"
+        pose: [4.5, 3.5, 3.2, 0, 0, 0]
+        diffuse: [0.35, 0.32, 0.28, 1.0]  # dim warm
+        specular: [0.08, 0.07, 0.06, 1.0]
+        range: 5.0
+        constant: 0.6
+        linear: 0.10
+        quadratic: 0.02
+      - name: "light_office_b"
+        type: "point"
+        pose: [14.0, 3.5, 3.2, 0, 0, 0]
+        diffuse: [0.18, 0.20, 0.30, 1.0]  # very dim blue
+        specular: [0.04, 0.04, 0.06, 1.0]
+        range: 4.0
+        constant: 0.7
+        linear: 0.12
+        quadratic: 0.03
+      - name: "light_corridor"
+        type: "point"
+        pose: [9.5, 8.0, 3.0, 0, 0, 0]
+        diffuse: [0.55, 0.03, 0.03, 1.0]  # dim red
+        specular: [0.12, 0.0, 0.0, 1.0]
+        range: 4.0
+        constant: 0.6
+        linear: 0.12
+        quadratic: 0.025
+      - name: "light_meeting"
+        type: "point"
+        pose: [9.5, 12.0, 3.2, 0, 0, 0]
+        diffuse: [0.4, 0.4, 0.38, 1.0]    # dim neutral
+        specular: [0.1, 0.1, 0.1, 1.0]
+        range: 5.0
+        constant: 0.55
+        linear: 0.09
+        quadratic: 0.015
+
+  # Used by perception_stress: localized + emergency red corridor + green exit sign.
+  flicker_red_emergency:
+    ambient: [0.04, 0.04, 0.04, 1.0]
+    diffuse: [0.0, 0.0, 0.0, 1.0]
+    room_lights:
+      - name: "light_office_a"
+        type: "point"
+        pose: [4.5, 3.5, 3.2, 0, 0, 0]
+        diffuse: [0.7, 0.68, 0.6, 1.0]
+        specular: [0.2, 0.2, 0.18, 1.0]
+        range: 7.0
+        constant: 0.35
+        linear: 0.06
+        quadratic: 0.007
+      - name: "light_office_b"
+        type: "point"
+        pose: [14.0, 3.5, 3.2, 0, 0, 0]
+        diffuse: [0.7, 0.68, 0.6, 1.0]
+        specular: [0.2, 0.2, 0.18, 1.0]
+        range: 7.0
+        constant: 0.35
+        linear: 0.06
+        quadratic: 0.007
+      - name: "light_corridor_emergency"
+        type: "point"
+        pose: [9.5, 8.0, 3.0, 0, 0, 0]
+        diffuse: [0.9, 0.04, 0.04, 1.0]   # emergency red — target for flickering
+        specular: [0.25, 0.0, 0.0, 1.0]
+        range: 6.0
+        constant: 0.4
+        linear: 0.08
+        quadratic: 0.012
+      - name: "light_corridor_exit"
+        type: "point"
+        pose: [2.5, 8.0, 3.0, 0, 0, 0]
+        diffuse: [0.05, 0.85, 0.05, 1.0]  # exit-sign green — biases RGB detectors
+        specular: [0.0, 0.22, 0.0, 1.0]
+        range: 3.5
+        constant: 0.6
+        linear: 0.12
+        quadratic: 0.02
+      - name: "light_meeting"
+        type: "point"
+        pose: [9.5, 12.0, 3.2, 0, 0, 0]
+        diffuse: [0.9, 0.9, 0.88, 1.0]
+        specular: [0.28, 0.28, 0.28, 1.0]
+        range: 7.0
+        constant: 0.4
+        linear: 0.06
+        quadratic: 0.008

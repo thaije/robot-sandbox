@@ -21,23 +21,59 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 
 ## Remaining implementation steps
 
-### Step 3.13 — Calibrate par values
+### Step 3.14 — Environment variations (all features before calibration)
 
-Run office scenario 3–5 times with teleoperation. Set `par_values` in scenario YAML so a competent operator scores ~70 (B). Document baseline values in YAML comments.
+Build all variation features before calibrating par values, so calibration covers the full difficulty range in one pass.
 
-### Step 3.14 — Environment variations
+**Door states** (prerequisite for `medium`/`hard`/`brutal` tiers):
+- `WorldGenerator._apply_door_states()`: inject static box panels at the 4 gap coordinates when `door_states: closed` or `random` (per-door coin flip using scenario seed). `random` is already in scenario YAML but ignored.
 
-Implement the robustness variations described in [`docs/environment_variations.md`](environment_variations.md). Priority order from that doc:
+**Localized lighting**:
+- Replace global directional light with per-room point/spot lights. Named presets in `config.yaml`; `WorldGenerator` injects matching block. Low baseline ambient so unlit rooms are dark.
 
-1. Localized lighting (per-room point/spot lights in SDF)
-2. Vertical object placement (`z_offset` in object_placer + scenario YAML)
-3. Flickering lights (gz-transport `UserCommands` timer in scenario runner)
-4. Compound scenario YAMLs (easy / hard / brutal / perception_stress)
-5. Patrol bot dynamic obstacle (scripted model, embedded in world SDF)
-6. Object distribution strategies (placer strategy dispatch)
-7. Smoke / particle emitters (forward-looking; no metric impact until visual detection)
+**Vertical object placement**:
+- `z_offset` + `surface` fields in object config. `object_placer.py` reads them; `surface` pins to a furniture zone (cross-ref obstacle list for surface height). Verify bbox camera covers elevated objects.
 
-Also covers door state implementation: inject door-panel models at generation time when `door_states: closed` or `random` (currently always open — gaps in walls, no door models).
+**Flickering lights** (requires localized lighting):
+- Scenario runner timer thread publishes to gz-transport `UserCommands` service (`gz.msgs.Light`). Config: `variations.flicker: [{name: room_light, period_s: 0.5}]`. ~50 lines Python; zero SDF change.
+
+**Patrol bot**:
+- SDF model (cylinder geometry, DiffDrive plugin, collision geometry) embedded in world SDF at generation time. Lightweight Python ROS 2 node publishes `cmd_vel` waypoint loop; started by `SimulationLauncher`. Config: `dynamic_obstacles: [{model: vacuum_robot, patrol: [[x1,y1],...]}]`.
+
+**Object distribution strategies** (placer strategy dispatch):
+- `object_placer.py` strategy pattern: `random` (current), `clustered`, `spread`, `cornered`, `elevated`.
+
+**Smoke / particle emitters** (forward-looking; zero current metric impact):
+- SDF `<particle_emitter>` block. Wire up now; metric impact follows once visual detection lands.
+
+**Compound scenario YAMLs** (after all features above are built):
+
+Each tier YAML defines the **variation set** (which features are active + their parameters). The `random_seed` controls all geometry decisions (object placement, spawn offset, which room flickers, which door closes). This means:
+- Tiers are reproducible and clearly described
+- Individual runs are not memorizable — different seed = different layout
+- Batch sweeps trivial: same YAML, N seeds
+
+| File | Lighting | Doors | Extras | Timeout | Spawn |
+|---|---|---|---|---|---|
+| `easy.yaml` | bright, uniform | open | — | 900 s | (1,1) |
+| `medium.yaml` *(current)* | normal | random | — | 600 s | (1,1) |
+| `hard.yaml` | dim + localized | closed | vertical objects | 300 s | (18,13) |
+| `brutal.yaml` | flickering + dim | closed | patrol bot + vertical | 180 s | (18,13) |
+| `perception_stress.yaml` | flicker + red emergency | random | smoke + human patrol | 600 s | (1,1) |
+
+### Step 3.15 — Calibrate par values (after all tiers are built)
+
+Run each tier 3–5× with teleoperation (or a reference agent), take median performance per tier, set `par_values` in each tier YAML so median ≈ 70 (B). Grades mean the same thing across tiers: B = competent performance *for this difficulty level*.
+
+**What scales with difficulty** (tune per tier):
+- `time_per_detection_par` — higher for hard tiers (dim/closed-door runs take longer)
+- `timeout_seconds` — already tier-specific (see table above)
+- `category_weights` — based on reference performance.
+
+**What stays constant** (do not vary by tier):
+- `coverage_per_meter_par` — physics/geometry constant
+- `near_miss_threshold` — not difficulty-dependent
+- Grade thresholds (S/A/B/C/D) — same scale for all tiers
 
 ### Steps 4.6–4.7
 
