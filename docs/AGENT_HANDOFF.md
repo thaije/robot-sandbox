@@ -62,7 +62,7 @@ ScenarioRunner.run()
 - Robots embedded in world SDF (not dynamically spawned) — required for contact sensors
 - `spawn_robot.launch.py` with `spawn:=false` starts RSP + bridges only (used by automated runs; robot already in world SDF). True dynamic spawn works for teleop/odom/TF but contact sensor won't fire.
 - `boundingbox_camera` for ground-truth detection — handles occlusion, outputs `vision_msgs/Detection2DArray` (same as YOLO → easy swap later)
-- Coverage: raycasting at 0.5m res using `skimage.draw.line()` + Gazebo ground-truth pose (zero drift, SLAM-decoupled)
+- Coverage: raycasting at 0.5m res using `skimage.draw.line()` + odom pose converted to world frame via spawn offset (near-zero drift in sim)
 - TF frames unprefixed (`odom → base_footprint → base_link`) — fine for single robot
 
 ---
@@ -78,7 +78,7 @@ scripts/
   robot_control.py              # drive / status / snapshot (no detections — dev/cheat tool)
   world_state.py                # PNG map + object positions + found/visible status (dev/cheat tool)
   despawn_robot.sh
-robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; no LiDAR yet
+robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; LiDAR; boundingbox camera
 config/
   robots/derpbot.yaml           # robot platform config
   scenarios/office_explore_detect.yaml  # main scenario; see also environment_variations.md
@@ -88,7 +88,7 @@ worlds/
 src/
   metrics/                      # base_metric, evaluator, reporter, scoring, meters_traveled,
                                 #   collision_count, revisit_ratio, detection_metrics,
-                                #   object_detection_tracker; exploration_coverage stub (needs LiDAR)
+                                #   object_detection_tracker, exploration_coverage, near_miss_tracker
   scenario_runner/              # launcher, runner, __main__
   world_manager/                # world_generator, object_placer, template_loader
   utils/                        # config_loader, ros_helpers, logging_setup

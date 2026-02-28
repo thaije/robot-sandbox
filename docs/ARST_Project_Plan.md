@@ -13,28 +13,13 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 | ID | Requirement | Notes |
 |----|-------------|-------|
 | SIM-09 | Configurable environment variations (lighting, door states, dynamic obstacles) | Lighting only; door_states/dynamic obstacles not implemented — see [`docs/environment_variations.md`](environment_variations.md) |
-| SIM-11 | Scenario reset without full restart | Sim must be restarted; reset.py stub removed |
 | SIM-12 | Multiple simulator instances in parallel | Future |
 | SIM-13 | Deterministic replay (same seed = same scenario) | Not verified |
-| ~~ROB-03~~ | ~~2D LiDAR~~ | Done |
-| ~~MET-06~~ | ~~Exploration coverage %~~ | Done — `ExplorationCoverage` in `src/metrics/exploration_coverage.py` |
-| ~~MET-10~~ | ~~Near-miss detection~~ | Done — `NearMissTracker` in `src/metrics/near_miss_tracker.py`; wired into runner + scorecard |
 | MET-13 | Calibrated par values | After first working run |
-| DOC-01–07 | Documentation | Not started |
 
 ---
 
 ## Remaining implementation steps
-
-### Step 3.6 — Exploration coverage
-
-Add `gpu_lidar` sensor to DerpBot URDF. Bridge:
-```
-/{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan
-/model/{robot_name}/pose@geometry_msgs/msg/Pose[gz.msgs.Pose
-```
-
-Implement `exploration_coverage.py`: subscribe to `/scan` + ground-truth pose. Load `worlds/templates/indoor_office/ground_truth_map.pgm` (binary mask, 0.5m resolution). Per scan: vectorise ray endpoints, trace each with `skimage.draw.line()`, mark cells observed. Coverage % = `100 * observed_cells / explorable_cells`. Publish `Float32` at 1 Hz.
 
 ### Step 3.13 — Calibrate par values
 
