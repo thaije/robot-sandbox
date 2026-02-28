@@ -1,6 +1,5 @@
 # DerpBot robot configuration
 # Simple two-wheeled differential drive robot — ARST Phase 1 baseline.
-# No sensors in this revision; LiDAR / camera added in a later step.
 
 platform: "derpbot"
 
@@ -33,7 +32,23 @@ ground_truth:
   pose_topic: "/model/derpbot_0/pose"
   msg_type: "geometry_msgs/Pose"
 
-sensors: {}  # no sensors yet
+sensors:
+  lidar:
+    type: "gpu_lidar"
+    topic: "/derpbot_0/scan"
+    msg_type: "sensor_msgs/LaserScan"
+    frame_id: "lidar_link"
+    update_rate: 10       # Hz
+    range_min: 0.15       # m
+    range_max: 12.0       # m
+    samples: 720          # rays per scan (0.5° resolution)
+    fov: 360              # degrees
+  imu:
+    type: "imu"
+    topic: "/derpbot_0/imu"
+    msg_type: "sensor_msgs/Imu"
+    frame_id: "imu_link"
+    update_rate: 100      # Hz
 
 spawn:
   default_name: "derpbot_0"

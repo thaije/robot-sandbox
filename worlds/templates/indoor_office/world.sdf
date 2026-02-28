@@ -42,6 +42,8 @@
     <plugin name="gz::sim::systems::Sensors"         filename="gz-sim-sensors-system">
       <render_engine>ogre2</render_engine>
     </plugin>
+    <!-- IMU: physics-based sensor, needs its own system (separate from Sensors/ogre2) -->
+    <plugin name="gz::sim::systems::Imu"             filename="gz-sim-imu-system"/>
 
     <!-- ═══════════════════════════════ SCENE ════════════════════════════════ -->
     <scene>

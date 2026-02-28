@@ -19,13 +19,17 @@
     right_wheel     — at (0, -0.115, 0) relative to base_link
     caster_wheel    — at (0.13, 0, -0.03) relative to base_link → z=0.02 world
 
-  Sensors: contact/bumper on base_link (detects all sides).  Bounding-box camera on top-front.  LiDAR added later.
+  Sensors: contact/bumper on base_link (detects all sides).  Bounding-box camera on top-front.
+           2D LiDAR (gpu_lidar) on top of body at z=+0.12 rel to base_link.
+           IMU at body centre z=+0.05 rel to base_link.
 
   Visual: yellow strip on front face (+x) marks forward direction.
 
   Gazebo plugins (Harmonic):
     gz-sim-diff-drive-system        — velocity control + odometry
     gz-sim-joint-state-publisher-system — joint state publication
+    gpu_lidar sensor                — 720-ray 360° scan → /ROBOT_NAME/scan
+    imu sensor                      — 100 Hz IMU → /ROBOT_NAME/imu
 -->
 <robot name="derpbot">
 
@@ -323,6 +327,121 @@
           <far>100.0</far>
         </clip>
       </camera>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <!-- ════════════════════════════ LIDAR ═══════════════════════════════════ -->
+  <!--  2-D 360° LiDAR mounted on top of robot body.
+        lidar_joint at (0, 0, +0.12) rel to base_link.
+        base_link is at z=0.05 world, body top is at z=0.15 world
+        → lidar centre at z = 0.05 + 0.12 = 0.17 m world (2 cm above body).
+        ROBOT_NAME is substituted at spawn/generation time.                  -->
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0 0 0.12" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lidar_link">
+    <!-- Cylinder visual: r=0.04 m, h=0.04 m — typical spinning-lidar drum -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.04"/>
+      </geometry>
+      <material name="lidar_black">
+        <color rgba="0.10 0.10 0.10 1.0"/>
+      </material>
+    </visual>
+    <!-- Minimal inertia — fixed joint, mass negligible for dynamics -->
+    <inertial>
+      <mass value="0.1"/>
+      <!-- Cylinder Ixx=Iyy=m/12*(3r²+h²)=0.1/12*(0.0048+0.0016)=0.0000533
+           Izz=m/2*r²=0.05*0.0016=0.000080                               -->
+      <inertia ixx="0.000053" ixy="0" ixz="0"
+               iyy="0.000053" iyz="0"
+               izz="0.000080"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════ IMU ══════════════════════════════════ -->
+  <!--  IMU placed at body centre.
+        imu_joint at (0, 0, +0.05) rel to base_link → at body CoM.
+        No collision/visual — internal chip.                                 -->
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0"
+               iyy="0.000001" iyz="0"
+               izz="0.000001"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════ LIDAR GAZEBO SENSOR ══════════════════════════════ -->
+  <!--  gpu_lidar: 360° horizontal, 720 samples, 10 Hz, range 0.15–12 m.
+        Requires gz-sim-sensors-system (ogre2) — already in world.sdf.
+        gz_frame_id overrides the default scoped-name frame to "lidar_link"
+        so the ROS 2 LaserScan header.frame_id matches the URDF link name.  -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <always_on>true</always_on>
+      <update_rate>10</update_rate>
+      <topic>/ROBOT_NAME/scan</topic>
+      <gz_frame_id>lidar_link</gz_frame_id>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159265</min_angle>
+            <max_angle>3.14159265</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.15</min>
+          <max>12.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </lidar>
+      <visualize>false</visualize>
+    </sensor>
+  </gazebo>
+
+  <!-- ════════════════════ IMU GAZEBO SENSOR ═══════════════════════════════ -->
+  <!--  IMU: 100 Hz, light Gaussian noise (consumer-grade MEMS model).
+        gz_frame_id sets header.frame_id = "imu_link" in bridged ROS message. -->
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <topic>/ROBOT_NAME/imu</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
       <visualize>false</visualize>
     </sensor>
   </gazebo>

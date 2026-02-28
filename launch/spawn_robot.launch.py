@@ -171,6 +171,10 @@ def _make_actions(context, *args, **kwargs):
             f"/{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V",
             # RGB camera: Gazebo → ROS 2  (live image stream for RViz2 / debugging)
             f"/{robot_name}/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
+            # 2-D LiDAR: Gazebo → ROS 2  (feeds ExplorationCoverage + Nav2)
+            f"/{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            # IMU: Gazebo → ROS 2
+            f"/{robot_name}/imu@sensor_msgs/msg/Imu[gz.msgs.IMU",
         ],
         remappings=[
             # Merge robot's TF stream into the global /tf topic
