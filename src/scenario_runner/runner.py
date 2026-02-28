@@ -183,10 +183,12 @@ class ScenarioRunner:
         Only metrics with concrete implementations are created; unknown names
         are logged and skipped so the runner doesn't crash on stubs.
         """
-        from metrics.meters_traveled import MetersTraveled    # noqa: PLC0415
-        from metrics.collision_count import CollisionCount     # noqa: PLC0415
-        from metrics.revisit_ratio import RevisitRatio         # noqa: PLC0415
-        from metrics.detection_metrics import DetectionMetrics  # noqa: PLC0415
+        from metrics.meters_traveled import MetersTraveled          # noqa: PLC0415
+        from metrics.collision_count import CollisionCount           # noqa: PLC0415
+        from metrics.revisit_ratio import RevisitRatio               # noqa: PLC0415
+        from metrics.detection_metrics import DetectionMetrics       # noqa: PLC0415
+        from metrics.near_miss_tracker import NearMissTracker        # noqa: PLC0415
+        from metrics.exploration_coverage import ExplorationCoverage  # noqa: PLC0415
 
         # All detection-related metric names served by one DetectionMetrics instance.
         _DETECTION_METRIC_NAMES = {
@@ -198,6 +200,7 @@ class ScenarioRunner:
 
         _implemented = {
             "meters_traveled", "collision_count", "revisit_ratio",
+            "near_miss_count", "exploration_coverage",
         } | _DETECTION_METRIC_NAMES
 
         requested = set(self._cfg.get("metrics", {}).get("collect", []))
@@ -232,6 +235,23 @@ class ScenarioRunner:
                     built[key] = CollisionCount(bumper_topic=f"/{robot_name}/bumper_contact", node=node)
                 elif metric_name == "revisit_ratio":
                     built[key] = RevisitRatio(odom_topic=f"/{robot_name}/odom", node=node)
+                elif metric_name == "near_miss_count":
+                    nm_threshold = float(
+                        self._cfg.get("scoring", {})
+                        .get("par_values", {})
+                        .get("near_miss_threshold", 0.3)
+                    )
+                    built[key] = NearMissTracker(
+                        scan_topic=f"/{robot_name}/scan",
+                        threshold_meters=nm_threshold,
+                        node=node,
+                    )
+                elif metric_name == "exploration_coverage":
+                    built[key] = ExplorationCoverage(
+                        scan_topic=f"/{robot_name}/scan",
+                        odom_topic=f"/{robot_name}/odom",
+                        node=node,
+                    )
                 log.debug("Metric registered: %s", key)
 
             if needs_detection:
@@ -271,6 +291,7 @@ class ScenarioRunner:
             "object_detection_rate",
             "false_positive_rate",
             "average_time_per_detection",
+            "exploration_coverage",
         }
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}

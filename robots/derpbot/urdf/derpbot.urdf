@@ -7,8 +7,9 @@
           front (+x)
              ↑
      ┌───────────────┐
+     │       ●       │  ← front caster sphere r=0.02 at x=+0.13
      │               │  ← body: 0.30 × 0.20 × 0.10 m (L × W × H)
-     │       ●       │  ← caster sphere r=0.02 at x=+0.13
+     │       ●       │  ← rear caster sphere r=0.02 at x=-0.13
      └───────────────┘
     ○               ○   ← wheels r=0.05, w=0.03, separation 0.23 m
 
@@ -17,7 +18,8 @@
     base_link       — at z=0.05 (wheel axle height), body centre
     left_wheel      — at (0, +0.115, 0) relative to base_link
     right_wheel     — at (0, -0.115, 0) relative to base_link
-    caster_wheel    — at (0.13, 0, -0.03) relative to base_link → z=0.02 world
+    caster_wheel      — at (+0.13, 0, -0.03) relative to base_link → z=0.02 world
+    rear_caster_wheel — at (-0.13, 0, -0.03) relative to base_link → z=0.02 world
 
   Sensors: contact/bumper on base_link (detects all sides).  Bounding-box camera on top-front.
            2D LiDAR (gpu_lidar) on top of body at z=+0.12 rel to base_link.
@@ -155,9 +157,10 @@
     </inertial>
   </link>
 
-  <!-- ════════════════════════ CASTER WHEEL (front) ═════════════════════════ -->
-  <!--  Sphere r=0.02.  Joint at (0.13, 0, -0.03) rel to base_link
-        → sphere centre at z = 0.05 - 0.03 = 0.02 world (just touching ground). -->
+  <!-- ════════════════════════ CASTER WHEELS (front + rear) ════════════════ -->
+  <!--  Two casters provide stable 4-point contact and prevent pitch under
+        acceleration.  Both spheres r=0.02, joints at z=-0.03 rel to base_link
+        → sphere centres at z = 0.05 - 0.03 = 0.02 world (just touching ground). -->
 
   <joint name="caster_joint" type="fixed">
     <parent link="base_link"/>
@@ -183,6 +186,35 @@
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="0.05"/>
       <!-- Solid sphere: I = 2/5*m*r² = 0.4*0.05*0.0004 = 0.000008 -->
+      <inertia ixx="0.000008" ixy="0.0" ixz="0.0"
+               iyy="0.000008" iyz="0.0"
+               izz="0.000008"/>
+    </inertial>
+  </link>
+
+  <joint name="rear_caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_caster_wheel"/>
+    <origin xyz="-0.13 0 -0.03" rpy="0 0 0"/>
+  </joint>
+
+  <link name="rear_caster_wheel">
+    <visual>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="caster_grey">
+        <color rgba="0.50 0.50 0.50 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
       <inertia ixx="0.000008" ixy="0.0" ixz="0.0"
                iyy="0.000008" iyz="0.0"
                izz="0.000008"/>
@@ -243,7 +275,7 @@
            For multi-robot, these would need per-instance prefixes too. -->
       <frame_id>odom</frame_id>
       <child_frame_id>base_footprint</child_frame_id>
-      <max_linear_acceleration>1.0</max_linear_acceleration>
+      <max_linear_acceleration>0.5</max_linear_acceleration>
       <max_angular_acceleration>2.0</max_angular_acceleration>
     </plugin>
 
@@ -446,8 +478,15 @@
     </sensor>
   </gazebo>
 
-  <!-- Frictionless caster so it doesn't resist turning -->
+  <!-- Frictionless casters so they don't resist turning -->
   <gazebo reference="caster_wheel">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+  </gazebo>
+
+  <gazebo reference="rear_caster_wheel">
     <mu1>0.0</mu1>
     <mu2>0.0</mu2>
     <kp>1000000.0</kp>

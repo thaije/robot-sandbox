@@ -75,6 +75,10 @@
           {
             "type": "command",
             "command": "cd /home/plip/Projects/robot-sandbox"
+          },
+          {
+            "type": "command",
+            "command": "source .venv/bin/activate"
           }
         ]
       }

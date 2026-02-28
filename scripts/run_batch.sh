@@ -12,10 +12,13 @@ N="${2:?Usage: run_batch.sh <scenario.yaml> <N>}"
 source /opt/ros/jazzy/setup.bash
 cd "$REPO_ROOT"
 
+# source python
+source .venv/bin/activate 
+
 for i in $(seq 0 $((N - 1))); do
     echo "=== Run $((i + 1)) / $N (seed=$i) ==="
     python -m scenario_runner --scenario "$SCENARIO" --seed "$i"
 done
 
 echo "=== Batch complete. Aggregating results... ==="
-python scripts/aggregate_results.py results/
+python3.12 scripts/aggregate_results.py results/

@@ -18,6 +18,7 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 - **Objects**: fire_extinguisher (×3), first_aid_kit (×2), hazard_sign (×4) — 9 instances total with unique labels
 - **LiDAR**: `/derpbot_0/scan` → `sensor_msgs/LaserScan` @ 9.8 Hz, 720 samples, 360°, 0.15–12 m, `frame_id=lidar_link`
 - **IMU**: `/derpbot_0/imu` → `sensor_msgs/Imu` @ 100 Hz, `frame_id=imu_link`, **BEST_EFFORT QoS** (subscribe with `ReliabilityPolicy.BEST_EFFORT`)
+- **Exploration coverage** (MET-06): `ExplorationCoverage` in `src/metrics/exploration_coverage.py` — LiDAR raycasting + odom-based pose (world frame = spawn offset + odom transform), Bresenham cells onto 40×30 binary grid, coverage % against PGM free-space mask. Registered in `_build_metrics` / `_avg_metrics`.
 
 **Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300` (startup ~5s).   
 Navigation → invoke the `/arst-nav` skill. It has all documentation.
@@ -27,9 +28,11 @@ Navigation → invoke the `/arst-nav` skill. It has all documentation.
 ## Key gotchas
 
 - **Python interpreter**: Always `python3.12`. `python3` may resolve to another venv. `run_scenario.sh` handles this.
+- **gz-transport Python bindings not in venv**: `gz.transport13` lives in `/usr/lib/python3/dist-packages/` (system), excluded when the project venv is active. Use ROS odom topic + spawn offset instead of `gz_subscribe_robot_pose` for metrics that need world-frame pose.
 - **`use_sim_time`**: rclpy metrics node must be created with `use_sim_time=True` or messages are silently dropped as future-dated.
 - **Contact sensor topic**: `<contact><topic>` (NOT `<sensor><topic>`) controls what gz transport publishes. Must be `/ROBOT_NAME/bumper_contact` inside the `<contact>` block. If absent, `gz sdf -p` sets it to a scoped default that doesn't match the bridge.
 - **URDF→SDF joint lumping**: `gz sdf -p` lumps `base_footprint→base_link`. Collision name becomes `base_footprint_fixed_joint_lump__base_link_collision_collision`. Contact sensor reference must use the post-lumping name.
+- **Dual casters**: Robot has front caster (x=+0.13) AND rear caster (x=-0.13) — required for pitch stability under acceleration. Removing either causes the robot to tilt when driving.
 - **Camera wall-clipping**: camera_joint x moved from 0.15 → 0.05 m (10 cm behind front collision face). Camera is well inside the robot body and cannot reach a wall surface, so it physically cannot look through walls. The software LOS check in `ObjectDetectionTracker` and `world_state.py` adds defence-in-depth using Bresenham ray-casting from the camera world position.
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Fixed by embedding robots in world SDF at generation time — already implemented in `WorldGenerator._embed_robots()`.
 - **Process cleanup**: `SimulationLauncher.shutdown()` captures pgids *before* SIGTERM (process may exit before SIGKILL). Uses `os.killpg()` to kill entire process groups. Runner wrapped in `try/finally` so shutdown always runs.

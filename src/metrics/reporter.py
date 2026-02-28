@@ -26,9 +26,12 @@ def _format_event(item: Any) -> str:
     # detection_events: {class_id, class_name, timestamp}
     if "class_name" in item:
         return f"t={item.get('timestamp', '?'):6.1f}s  {item['class_name']} [label {item.get('class_id', '?')}]"
-    # collision_events: {t, count}
-    if "count" in item:
+    # collision_events: {t, count}  (no min_range key)
+    if "count" in item and "min_range" not in item:
         return f"t={item.get('t', '?'):6.1f}s  collision #{item['count']}"
+    # near_miss_events: {t, count, min_range}
+    if "min_range" in item:
+        return f"t={item.get('t', '?'):6.1f}s  near-miss #{item['count']}  ({item['min_range']:.2f} m)"
     # fallback
     return str(item)
 
@@ -59,7 +62,42 @@ def render_scorecard(sc: Scorecard) -> str:
     lines.append("║" + " " * (w - 2) + "║")
     lines.append("╠" + "═" * (w - 2) + "╣")
     lines.append("║  Raw Metrics:" + " " * (w - 16) + "║")
-    for k, v in sc.raw_metrics.items():
+
+    # ── Metric display order (grouped by scoring category) ──────────────────
+    # Keys not listed here appear at the end in their original order.
+    _ORDER = [
+        # Movement / efficiency
+        "meters_traveled",
+        "exploration_coverage",
+        "revisit_ratio",
+        # Timing / speed
+        "task_completion_time",
+        "time_to_all_detections",
+        "average_time_per_detection",
+        # Detection / accuracy
+        "object_detection_rate",
+        "false_positive_rate",
+        "detection_count",
+        "detection_by_type",
+        "detection_events",
+        # Safety
+        "collision_count",
+        "collision_events",
+        "near_miss_count",
+        "near_miss_events",
+    ]
+    # Suffix to append for specific metrics (exploration_coverage is stored as %, others as 0–1)
+    _SUFFIX: dict[str, str] = {
+        "exploration_coverage": "%",
+    }
+
+    ordered_keys = [k for k in _ORDER if k in sc.raw_metrics]
+    remaining = [k for k in sc.raw_metrics if k not in set(_ORDER)]
+    all_keys = ordered_keys + remaining
+
+    for k in all_keys:
+        v = sc.raw_metrics[k]
+        suffix = _SUFFIX.get(k, "")
         if isinstance(v, list):
             header = f"║    {k} ({len(v)}):"
             lines.append(header + " " * (w - 2 - len(header) + 2) + "║")
@@ -79,7 +117,7 @@ def render_scorecard(sc: Scorecard) -> str:
         else:
             # Show integer-valued floats without decimal (e.g. collision_count: 3 not 3.0)
             display_v = int(v) if isinstance(v, float) and v == int(v) else v
-            line = f"║    {k}: {display_v}"
+            line = f"║    {k}: {display_v}{suffix}"
             lines.append(line + " " * (w - 2 - len(line) + 2) + "║")
     lines.append("╚" + "═" * (w - 2) + "╝")
     return "\n".join(lines)

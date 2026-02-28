@@ -9,7 +9,7 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md) · Agent sta
 - Ubuntu 24.04, ROS 2 Jazzy, Gazebo Harmonic (`ros-jazzy-ros-gz*`)
 - `robot_state_publisher`, `ros_gz_bridge`, `ros_gz_sim`, `teleop_twist_keyboard`
 - **Python 3.12** — `rclpy` is compiled for 3.12; `python3` may resolve to a different interpreter
-- **uv** — Python package/tool runner (`pip install uv` or see [docs.astral.sh/uv](https://docs.astral.sh/uv))
+- **uv** — Python package/tool runner (`pip install uv` or see [docs.astral.sh/uv](https://docs.astral.sh/uv)): `uv venv` > source venv > `uv pip install -r requirements.txt`
 - **ast-grep** — structural code search (`npm install -g @ast-grep/cli`)
 - **Serena MCP** — symbol-level code navigation for AI agents (auto-installed via uv/uvx; see `~/.claude.json`)
 
@@ -47,11 +47,39 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 
 | Display | Topic | Notes |
 |---------|-------|-------|
-| RobotModel | `/derpbot_0/robot_description` | Full URDF with camera mount visible |
-| TF | `/tf` | `odom → base_footprint → base_link → camera_link` |
+| RobotModel | `/derpbot_0/robot_description` | Full URDF with lidar drum visible |
+| TF | `/tf` | `odom → base_footprint → base_link → lidar_link / camera_link` |
 | Odometry | `/derpbot_0/odom` | Red arrows, last 100 poses |
 | Camera Image | `/derpbot_0/image_raw` | Live RGB feed from forward-facing camera |
+| World Map | `/arst/world_map` | Top-down floor plan with robot + object positions |
+| LiDAR Scan | `/derpbot_0/scan` | Cyan point cloud, 360° 12 m range |
 
+## Human play
+
+Drive the scenario yourself to create a baseline for the robot autonomy to compare to..
+
+The human player gets **only the forward camera** — no map, no object positions, no collision indicators.  Use `rqt_image_view` rather than RViz so there is no information leak.
+
+**Terminal 1 — simulation (headless; metrics still collected):**
+```bash
+./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300
+```
+
+**Terminal 2 — camera-only view:**
+```bash
+ros2 run rqt_image_view rqt_image_view /derpbot_0/image_raw
+```
+
+**Terminal 3 — keyboard teleop:**
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+```
+
+Teleop keys (default): `i` forward · `,` backward · `j`/`l` rotate · `k` stop · `u`/`o`/`m`/`.` diagonals.
+Speed is capped at 0.5 m/s and 2.0 rad/s by the diff-drive plugin regardless of what you send.
+
+Navigate the four rooms and locate all objects as quickly as possible.  When the timeout expires (or all objects are found) the scorecard and JSON result are printed. 
 
 ## Tests
 

@@ -263,7 +263,11 @@ class WorldGenerator:
         spawn: dict = {}
         if robots_cfg:
             sp = robots_cfg[0].get("spawn_pose", {})
-            spawn = {"x": float(sp.get("x", 1.0)), "y": float(sp.get("y", 1.0))}
+            spawn = {
+                "x": float(sp.get("x", 1.0)),
+                "y": float(sp.get("y", 1.0)),
+                "yaw": float(sp.get("yaw", 0.0)),
+            }
         pgm = self._root / "worlds" / "templates" / template_name / "ground_truth_map.pgm"
         state = {
             "label_map": self.label_map,

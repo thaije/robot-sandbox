@@ -22,10 +22,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Allow importing from src/ whether the package is installed or not.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from utils.gz_transport import gz_subscribe_robot_pose  # noqa: E402
-
 # Camera is mounted this far forward (x) from the robot centre in robot frame.
 # Must match the camera_joint origin x in robots/derpbot/urdf/derpbot.urdf.
 CAMERA_FORWARD_OFFSET: float = 0.05
@@ -90,13 +86,17 @@ class ObjectDetectionTracker:
         self._start_time: float = 0.0
         self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
+        self._odom_sub: Any = None
         # LOS state — camera world position (precomputed from robot pose + offset)
         self._robot_pose: tuple[float, float] | None = None  # camera world (x, y)
         self._pgm_pixels: list[list[int]] | None = None      # occupancy grid rows
         self._pgm_W: int = 0
         self._pgm_H: int = 0
         self._map_res: float = 0.5  # metres per grid cell
-        self._gz_pose_node: Any = None  # kept alive to keep subscription active
+        # Spawn offset (world frame) — loaded from world_state.json
+        self._spawn_x: float = 0.0
+        self._spawn_y: float = 0.0
+        self._spawn_yaw: float = 0.0  # kept alive to keep subscription active
 
     def start(self) -> None:
         """Subscribe to the detection topic and record start time."""
@@ -132,23 +132,41 @@ class ObjectDetectionTracker:
             pass
 
     def _start_pose_listener(self) -> None:
-        """Background gz-transport subscriber that keeps self._robot_pose current."""
+        """Subscribe to /odom and keep self._robot_pose (camera world pos) current."""
         try:
             state = json.loads(_WORLD_STATE_PATH.read_text())
-            world = Path(state["map_pgm"]).parent.name
-            # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
-            robot = self._topic.strip("/").split("/")[0]
-
-            def _cb(x: float, y: float, yaw: float) -> None:
-                # Track camera world position, not robot centre, for LOS checks.
-                self._robot_pose = (
-                    x + CAMERA_FORWARD_OFFSET * math.cos(yaw),
-                    y + CAMERA_FORWARD_OFFSET * math.sin(yaw),
-                )
-
-            self._gz_pose_node = gz_subscribe_robot_pose(robot, world, _cb)
+            sp = state.get("spawn_pose", {})
+            self._spawn_x = float(sp.get("x", 0.0))
+            self._spawn_y = float(sp.get("y", 0.0))
+            self._spawn_yaw = float(sp.get("yaw", 0.0))
         except Exception:
             pass
+
+        # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
+        robot = self._topic.strip("/").split("/")[0]
+        odom_topic = f"/{robot}/odom"
+
+        from nav_msgs.msg import Odometry  # noqa: PLC0415
+
+        def _on_odom(msg: Any) -> None:
+            ox = msg.pose.pose.position.x
+            oy = msg.pose.pose.position.y
+            q = msg.pose.pose.orientation
+            yaw = math.atan2(
+                2.0 * (q.w * q.z + q.x * q.y),
+                1.0 - 2.0 * (q.y * q.y + q.z * q.z),
+            )
+            sy, cy = math.sin(self._spawn_yaw), math.cos(self._spawn_yaw)
+            wx = self._spawn_x + cy * ox - sy * oy
+            wy = self._spawn_y + sy * ox + cy * oy
+            wyaw = self._spawn_yaw + yaw
+            # Track camera world position (robot centre + forward offset along heading)
+            self._robot_pose = (
+                wx + CAMERA_FORWARD_OFFSET * math.cos(wyaw),
+                wy + CAMERA_FORWARD_OFFSET * math.sin(wyaw),
+            )
+
+        self._odom_sub = self._node.create_subscription(Odometry, odom_topic, _on_odom, 10)
 
     def _has_line_of_sight(self, class_id: str) -> bool:
         """Return True if a clear sightline exists from camera to the object.

@@ -36,6 +36,10 @@ export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
 echo "[run_scenario] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
 
 cd "$REPO_ROOT"
+
+# source python
+source .venv/bin/activate 
+
 # python3 on this machine may resolve to a non-system venv (e.g. text-generation-webui).
 # ROS 2 Jazzy's rclpy C extension is compiled for Python 3.12 — use it explicitly.
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
