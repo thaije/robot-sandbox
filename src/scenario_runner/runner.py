@@ -31,6 +31,7 @@ from scenario_runner.flicker_controller import FlickerController
 from metrics.evaluator import evaluate_criteria
 from metrics.scoring import ScoringEngine
 from metrics.reporter import render_scorecard, write_results
+from scenario_runner.mission_server import MissionServer, build_mission_data, render_mission_brief
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ class ScenarioRunner:
         robots_cfg = self._cfg["robots"]
 
         timeout = float(scenario["timeout_seconds"])
+        mission_server: MissionServer | None = None
 
         # ── 1. Generate world SDF (robots embedded inside) ────────────────────
         log.info("Generating world SDF …")
@@ -78,6 +80,12 @@ class ScenarioRunner:
         world_sdf = gen.generate(self._cfg)
         label_map = gen.label_map   # {str_label: {"type": str, "instance": int}}
         log.info("Generated world: %s  (%d labelled objects)", world_sdf, len(label_map))
+
+        # ── 1b. Start mission server ──────────────────────────────────────────
+        mission_data   = build_mission_data(self._cfg)
+        mission_server = MissionServer(mission_data)
+        print(render_mission_brief(mission_data))
+        mission_server.start()
 
         # ── 2. Launch Gazebo + robot bridges (no spawn — model in world SDF) ──
         log.info("Launching simulation …")
@@ -160,6 +168,8 @@ class ScenarioRunner:
             scorecard.elapsed_seconds = elapsed
             scorecard.random_seed     = int(scenario.get("random_seed", 0))
 
+            mission_server.update_status("completed", outcome=status)
+            print(render_mission_brief(mission_server.snapshot()))
             print(render_scorecard(scorecard))
 
             result_path = write_results(scorecard, self._output_dir)
@@ -170,6 +180,8 @@ class ScenarioRunner:
 
         finally:
             # ── 8. Cleanup — always runs even on Ctrl-C ────────────────────────
+            if mission_server is not None:
+                mission_server.stop()
             flicker_ctrl.stop()
             node.destroy_node()
             try:

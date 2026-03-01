@@ -64,6 +64,7 @@ ScenarioRunner.run()
   ├── rclpy metrics node (thread)  # MetersTraveled, CollisionCount, RevisitRatio per robot
   ├── _run_until_done()            # poll success criteria every 2s
   ├── ScoringEngine.compute()      # Speed / Accuracy / Safety / Efficiency
+  ├── MissionServer.start()        # HTTP :7400/mission — mission brief + live status
   ├── render_scorecard()
   └── write_results()              # JSON to results/
 ```
@@ -101,11 +102,12 @@ src/
   metrics/                      # base_metric, evaluator, reporter, scoring, meters_traveled,
                                 #   collision_count, revisit_ratio, detection_metrics,
                                 #   object_detection_tracker, exploration_coverage, near_miss_tracker
-  scenario_runner/              # launcher, runner, __main__
+  scenario_runner/              # launcher, runner, __main__, mission_server
   world_manager/                # world_generator, object_placer, template_loader
   utils/                        # config_loader, ros_helpers, logging_setup
 docs/
   ARST_Project_Plan.md          # vision, requirements, remaining steps, scoring reference
+  AUTONOMOUS_AGENT_GUIDE.md     # external guide for autonomous agent developers (sensors, topics, mission endpoint)
   environment_variations.md     # robustness variation designs + priority order
 config/scenarios/tests/         # isolated test scenarios (smoke_test.yaml, …)
 ```

@@ -4,6 +4,8 @@
 
 Build a modular Gazebo simulation testbed for testing robot autonomy across diverse scenarios. Phase 1: DerpBot explores an indoor office and locates target objects, evaluated by configurable metrics and composite scoring (Speed / Accuracy / Safety / Efficiency). Teleoperation only in Phase 1; autonomy stack deferred.
 
+For the external autonomous agent interface (sensors, topics, mission endpoint), see [`docs/AUTONOMOUS_AGENT_GUIDE.md`](AUTONOMOUS_AGENT_GUIDE.md).
+
 **Current state:** See [`docs/AGENT_HANDOFF.md`](AGENT_HANDOFF.md).
 
 ---

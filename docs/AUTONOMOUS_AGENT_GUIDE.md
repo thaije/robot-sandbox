@@ -12,7 +12,7 @@ Scenarios come in multiple **difficulty tiers**. The environment may challenge y
 
 > **Design advice:** Build a general-purpose agent. Tiers, object types, and environment conditions may be extended or changed at any time. Agents that adapt to what they observe will hold up far better than those tuned to specific scenarios.
 
-**Success** = all required instances detected before the time limit.
+**Success** = all required instances detected before the time limit. Thorough exploration of the full environment earns bonus points regardless of outcome.
 
 ---
 
@@ -88,6 +88,35 @@ Available difficulty tiers (ascending): `easy` · `medium` · `hard` · `brutal`
 All YAML files are under `config/scenarios/office_explore_detect/`.
 
 Startup takes ~5 s. The scenario ends on `SUCCESS` or `TIME_LIMIT`; scorecard prints to stdout and JSON is written to `results/`.
+
+### Mission description endpoint
+
+Once the scenario is running, fetch the mission description from:
+
+```
+GET http://localhost:7400/mission
+```
+
+The response is JSON with both a **human-readable** `description` field and **structured** `targets` for rule-based consumption:
+
+```json
+{
+  "scenario": "office_medium_001",
+  "goal": "Explore the environment and locate all required target objects. Report detections before the time limit expires. Thorough exploration earns bonus points.",
+  "time_limit_seconds": 600,
+  "targets": [
+    {"type": "fire_extinguisher", "count": 3,   "count_exact": true},
+    {"type": "first_aid_kit",     "count": 2,   "count_exact": true},
+    {"type": "hazard_sign",       "count_exact": false, "min_count": 1}
+  ],
+  "status": "running",
+  "description": "Explore the environment and locate all target objects within 600s. Targets: exactly 3 fire extinguisher(s), exactly 2 first aid kit(s), at least 1 hazard sign(s) (exact count unknown). Status: running."
+}
+```
+
+`count_exact: false` means the scenario intentionally withholds the exact count — treat `min_count` as a lower bound. `status` transitions to `"completed"` with an `"outcome"` field (`SUCCESS` / `TIME_LIMIT`) after the run ends; the server stays up until the process exits.
+
+A mission brief is also printed to stdout at scenario start and again just before the scorecard.
 
 ### ROS 2 node requirements
 
