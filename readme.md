@@ -109,11 +109,8 @@ python3.12 -m pytest tests/
 
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
-- in brutal.yaml:
-  - robot moves, but moves to office A and then gets stuck. Let it patrol the corridor back and forth instead. 
-  - no flickering lights
-- in perception_stress.yaml:
-  - robot not moving 
-  - smoke are moving black squares
-  - The furniture in the large office is completely black
+
+to test: 
+- no flickering lights
+- smoke in correct yaml
   

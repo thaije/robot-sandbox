@@ -51,7 +51,7 @@ Navigation → invoke the `/arst-nav` skill. It has all documentation.
 ## Development guidelines
 
 Try to test new features as much as possible before deeming them complete. Preferably use Python tests. 
-If not possible, e.g. for visual features (smoke, lights, materials, furniture), use this flow: create a minimal scenario in `config/scenarios/tests/` with fixed lighting, open doors, and an impossible success condition so it runs to timeout; find a seed that places objects in the target zone by sampling `ObjectPlacer` directly; launch headless in tmux; navigate with `robot_control.py` and snapshot the camera; iterate kill → edit → relaunch → snapshot. Use `world_state.py` to confirm object positions and robot pose at each step.
+If not possible, e.g. for visual features (smoke, lights, materials, furniture), use this flow: create a minimal scenario in `config/scenarios/tests/` with fixed lighting, open doors, and an impossible success condition so it runs to timeout; find a seed that places objects in the target zone by sampling `ObjectPlacer` directly; launch headless in tmux with a long timeout; navigate with `robot_control.py` and snapshot the camera; iterate kill → edit → relaunch → snapshot. Use `world_state.py` to confirm object positions and robot pose at each step.
 
 ---
 

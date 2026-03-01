@@ -109,9 +109,16 @@ class FlickerController:
     # ── Internal ────────────────────────────────────────────────────────────────
 
     def _run(self) -> None:
-        # Brief startup delay: give Gazebo time to fully register the
-        # light_config service before we start calling it.
+        # Brief startup delay: give Gazebo time to fully register services.
         self._stop_event.wait(timeout=3.0)
+        if self._stop_event.is_set():
+            return
+
+        # gz-sim 8.10.0 bug: the light_config service cannot find lights that
+        # were baked into the world SDF at load time.  The workaround is to
+        # (re-)create each flickerable light via EntityFactory so it gets a
+        # proper entity registration that the service handler CAN find.
+        self._recreate_lights()
 
         while not self._stop_event.is_set():
             for spec in self._specs:
@@ -128,6 +135,69 @@ class FlickerController:
                 self._call_service(spec["name"], spec["on_diffuse"])
 
             self._stop_event.wait(timeout=half)
+
+    def _recreate_lights(self) -> None:
+        """Re-create each flicker light via EntityFactory so light_config service can find it.
+
+        gz-sim 8.10.0 bug: the light_config service only works on lights that
+        were created dynamically (via the /world/<world>/create service), not on
+        lights baked into the world SDF at load time.  Calling this once per
+        scenario run registers the light entities so the toggle loop works.
+        """
+        if self._gz_node is None:
+            return
+        try:
+            from gz.msgs10.entity_factory_pb2 import EntityFactory as _EF  # type: ignore[import]
+            from gz.msgs10.boolean_pb2 import Boolean as _Boolean  # type: ignore[import]
+        except Exception as exc:
+            log.warning("FlickerController: cannot import EntityFactory: %s", exc)
+            return
+
+        create_svc = self._service.replace("light_config", "create")
+        for spec in self._specs:
+            rl = spec.get("light_cfg", {})
+            if not rl:
+                log.warning("FlickerController: no light_cfg for '%s', skip recreate", spec["name"])
+                continue
+            name = spec["name"]
+            light_type = rl.get("type", "point")
+            pose = rl.get("pose", [0, 0, 3, 0, 0, 0])
+            pose_str = " ".join(str(float(v)) for v in pose)
+            diffuse = spec["on_diffuse"]
+            specular = rl.get("specular", [d * 0.3 for d in diffuse])
+            att_range = float(rl.get("range", 10.0))
+            constant = float(rl.get("constant", 0.5))
+            linear = float(rl.get("linear", 0.05))
+            quadratic = float(rl.get("quadratic", 0.005))
+
+            sdf = (
+                f'<sdf version="1.9">'
+                f'<light type="{light_type}" name="{name}">'
+                f'<cast_shadows>false</cast_shadows>'
+                f'<pose>{pose_str}</pose>'
+                f'<diffuse>{diffuse[0]} {diffuse[1]} {diffuse[2]} {diffuse[3]}</diffuse>'
+                f'<specular>{specular[0]} {specular[1]} {specular[2]} 1.0</specular>'
+                f'<attenuation>'
+                f'<range>{att_range}</range>'
+                f'<constant>{constant}</constant>'
+                f'<linear>{linear}</linear>'
+                f'<quadratic>{quadratic}</quadratic>'
+                f'</attenuation>'
+                f'</light>'
+                f'</sdf>'
+            )
+            try:
+                factory = _EF()
+                factory.sdf = sdf
+                result, rep = self._gz_node.request(
+                    create_svc, factory, _EF, _Boolean, 3000
+                )
+                log.debug(
+                    "FlickerController: (re)created light '%s': result=%s rep=%s",
+                    name, result, rep.data,
+                )
+            except Exception as exc:
+                log.warning("FlickerController: failed to recreate light '%s': %s", name, exc)
 
     def _call_service(self, name: str, diffuse: list[float]) -> None:
         """Call the light_config service — gz.transport13 preferred, CLI fallback."""
@@ -181,15 +251,16 @@ class FlickerController:
     def _resolve_specs(
         flicker_specs: list[dict], lighting_preset: dict
     ) -> list[dict]:
-        """Merge flicker YAML entries with on_diffuse values from the lighting preset."""
-        room_light_map: dict[str, list] = {}
+        """Merge flicker YAML entries with on_diffuse values and full light config from the preset."""
+        room_light_map: dict[str, dict] = {}
         for rl in lighting_preset.get("room_lights", []):
-            room_light_map[rl["name"]] = rl.get("diffuse", [1.0, 1.0, 1.0, 1.0])
+            room_light_map[rl["name"]] = rl
 
         resolved = []
         for spec in flicker_specs:
             name = spec["name"]
-            on_diffuse = spec.get("on_diffuse") or room_light_map.get(name, [1.0, 1.0, 1.0, 1.0])
+            rl = room_light_map.get(name, {})
+            on_diffuse = spec.get("on_diffuse") or rl.get("diffuse", [1.0, 1.0, 1.0, 1.0])
             off_diffuse = spec.get("off_diffuse", [0.0, 0.0, 0.0, 1.0])
             period_s = float(spec.get("period_s", 1.0))
             resolved.append({
@@ -197,5 +268,7 @@ class FlickerController:
                 "period_s": period_s,
                 "on_diffuse": [float(v) for v in on_diffuse],
                 "off_diffuse": [float(v) for v in off_diffuse],
+                # Full physical config needed to (re-)create the light entity at runtime.
+                "light_cfg": rl,
             })
         return resolved

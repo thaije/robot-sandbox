@@ -39,7 +39,10 @@ world:
       turn_speed: 0.8
     - model: "smoke_emitter"
       name: "smoke_corridor"
-      spawn: [9.5, 8.5, 0.5]
+      spawn: [9.5, 8.2, 0.8]
+      rate: 15
+      lifetime: 5.0
+      size: [1.5, 2.0, 1.0]
 
 robots:
   - platform: "derpbot"

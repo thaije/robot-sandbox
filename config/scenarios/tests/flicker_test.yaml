@@ -1,0 +1,57 @@
+scenario:
+  name: "flicker_test_001"
+  description: "Minimal flickering light test — robot in corridor under emergency light"
+  timeout_seconds: 300
+
+world:
+  template: "indoor_office"
+  variations:
+    lighting: "flicker_red_emergency"
+    door_states: "open"
+    flicker:
+      - name: "light_corridor_emergency"
+        period_s: 1.0
+
+robots:
+  - platform: "derpbot"
+    name: "derpbot_0"
+    spawn_pose:
+      x: 9.5
+      y: 8.0
+      z: 0.0
+      yaw: 0.0
+
+metrics:
+  collect:
+    - meters_traveled
+
+success_criteria:
+  mode: "any_of"
+  conditions:
+    - metric: "meters_traveled"
+      operator: ">="
+      value: 9999
+
+scoring:
+  category_weights:
+    speed: 1.0
+    accuracy: 0.0
+    safety: 0.0
+    efficiency: 0.0
+    effectiveness: 0.0
+  par_values: {}
+  collision_thresholds: [0]
+  collision_scores: [100]
+  grade_thresholds:
+    S: 95
+    A: 85
+    B: 70
+    C: 55
+    D: 40
+
+output:
+  format: "json"
+  directory: "./results/"
+  include_trajectory: false
+  include_detection_log: false
+  include_scorecard: false

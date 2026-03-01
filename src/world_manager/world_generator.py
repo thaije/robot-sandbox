@@ -107,12 +107,17 @@ class WorldGenerator:
         if world_elem is None:
             raise ValueError(f"No <world> element found in {sdf_path}")
 
-        # Apply lighting variation
+        # Apply lighting variation (skip lights that FlickerController will create at runtime)
         lighting_preset = world_cfg.get("variations", {}).get("lighting", "normal")
+        flicker_names = {
+            s["name"]
+            for s in world_cfg.get("variations", {}).get("flicker", [])
+        }
         self._apply_lighting(
             world_elem,
             lighting_preset,
             template_cfg.get("lighting_presets", {}),
+            flicker_names=flicker_names,
         )
 
         # Apply door states (pass spawn zone for connectivity guarantee).
@@ -158,6 +163,7 @@ class WorldGenerator:
         world_elem: ET.Element,
         preset: str,
         lighting_presets: dict,
+        flicker_names: set[str] | None = None,
     ) -> None:
         """Modify ambient/diffuse values in-place for the given lighting preset.
 
@@ -166,9 +172,10 @@ class WorldGenerator:
           - ``<world><light><diffuse>``   — every directional/point/spot light
 
         If the preset defines ``room_lights``, those are injected as new
-        ``<light>`` elements in the world.  This is used by localized presets
-        that kill the global directional light (diffuse → 0) and replace it
-        with per-room point/spot lights.
+        ``<light>`` elements in the world.  Lights whose names appear in
+        ``flicker_names`` are intentionally skipped: the FlickerController
+        creates them dynamically at runtime via EntityFactory so the
+        light_config service can find and modify them.
         """
         if preset not in lighting_presets:
             return  # unknown preset → leave template defaults unchanged
@@ -213,7 +220,10 @@ class WorldGenerator:
                 if bg is not None:
                     bg.text = _rgba_str(background)
 
+        _skip = flicker_names or set()
         for rl in cfg.get("room_lights", []):
+            if rl["name"] in _skip:
+                continue  # FlickerController will create this light dynamically
             world_elem.append(_build_room_light(rl))
 
     def _resolve_spawn_poses(
