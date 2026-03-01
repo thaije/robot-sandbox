@@ -87,6 +87,7 @@ class ScenarioRunner:
             world_sdf=world_sdf,
             world_name=world_cfg["template"],
             robots_cfg=robots_cfg,
+            dynamic_obstacles=world_cfg.get("dynamic_obstacles", []),
         )
         robot_names = [r.get("name", f"{r['platform']}_0") for r in robots_cfg]
         log.info("Simulation ready — robots: %s", robot_names)

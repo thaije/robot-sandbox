@@ -7,7 +7,9 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 
 ## What works (verified)
 
-- **Full scenario pipeline**: `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless`
+- **Full scenario pipeline**: `./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless`
+  - Difficulty tiers: `easy` / `medium` / `hard` / `brutal` / `perception_stress` — all under `config/scenarios/office_explore_detect/`
+  - Each tier YAML sets lighting, door states, dynamic obstacles, and timeout. Change `random_seed` for a different layout at the same difficulty.
   - WorldGenerator assigns unique per-instance labels (1..N); exposes `label_map` to metrics
   - Live metrics: `meters_traveled`, `collision_count` (rising-edge, not debounce), `revisit_ratio`, detection metrics
   - Scorecard: Speed / Accuracy / Safety / Efficiency / **Effectiveness** (per-type weights)
@@ -20,7 +22,7 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 - **IMU**: `/derpbot_0/imu` → `sensor_msgs/Imu` @ 100 Hz, `frame_id=imu_link`, **BEST_EFFORT QoS** (subscribe with `ReliabilityPolicy.BEST_EFFORT`)
 - **Exploration coverage** (MET-06): `ExplorationCoverage` in `src/metrics/exploration_coverage.py` — LiDAR raycasting + odom-based pose (world frame = spawn offset + odom transform), Bresenham cells onto 40×30 binary grid, coverage % against PGM free-space mask. Registered in `_build_metrics` / `_avg_metrics`.
 
-**Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300` (startup ~5s).
+**Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --timeout 300` (startup ~5s).
 Navigation → invoke the `/arst-nav` skill. It has all documentation.
 
 ---
@@ -38,7 +40,7 @@ Navigation → invoke the `/arst-nav` skill. It has all documentation.
 - **Process cleanup**: `SimulationLauncher.shutdown()` captures pgids *before* SIGTERM (process may exit before SIGKILL). Uses `os.killpg()` to kill entire process groups. Runner wrapped in `try/finally` so shutdown always runs.
 - **Scenario config schema**: `robots:` is a list (not `robot:`). Each entry: `{platform, name, spawn_pose: {x,y,z,yaw}}`.
 - **Parallel sessions**: Isolate with `ROS_DOMAIN_ID=N ./scripts/run_scenario.sh ...`. gz transport is isolated per process; only ROS DDS needs the domain ID.
-- **Door states**: `door_states` YAML field is a stub — not implemented. Doors are always open (physical wall gaps, no door models). Closed doors require injecting box panels at generation time.
+- **Door states**: `door_states: open | closed | random` is fully implemented. Closed doors are injected as static box panels at SDF generation time. BFS connectivity check ensures the scenario stays solvable (max 1 door closes in the 4-room/4-door topology).
 - **IMU system plugin**: IMU is a physics-based sensor — it needs `gz-sim-imu-system` in `world.sdf` in addition to `gz-sim-sensors-system` (which handles GPU-rendered sensors like LiDAR). Missing it → IMU sensor initialises but never publishes.
 - **IMU QoS**: `ros_gz_bridge` bridges IMU as **BEST_EFFORT**. Subscribers must use `ReliabilityPolicy.BEST_EFFORT` or they receive no messages.
 
@@ -81,7 +83,8 @@ scripts/
 robots/derpbot/urdf/derpbot.urdf  # ROBOT_NAME placeholder; contact sensor; LiDAR; boundingbox camera
 config/
   robots/derpbot.yaml           # robot platform config
-  scenarios/office_explore_detect.yaml  # main scenario; see also environment_variations.md
+  scenarios/office_explore_detect.yaml  # legacy base scenario
+  scenarios/office_explore_detect/      # difficulty tiers: easy / medium / hard / brutal / perception_stress
 worlds/
   templates/indoor_office/      # world.sdf + config.yaml + ground_truth_map.pgm/.yaml
   models/                       # fire_extinguisher, first_aid_kit, hazard_sign SDF models

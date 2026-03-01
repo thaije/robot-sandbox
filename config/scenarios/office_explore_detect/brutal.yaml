@@ -1,0 +1,105 @@
+scenario:
+  name: "office_brutal_001"
+  description: "Brutal office exploration — flickering dim lights, closed doors, patrol bot, vertical objects, tight timeout"
+  timeout_seconds: 180
+  random_seed: 300
+
+world:
+  template: "indoor_office"
+  variations:
+    lighting: "dim_localized"
+    door_states: "closed"
+    flicker:
+      - name: "light_corridor"
+        period_s: 1.5
+  objects:
+    - type: "fire_extinguisher"
+      count: 2
+      placement: "random"
+      surface: "desk"
+    - type: "fire_extinguisher"
+      count: 1
+      placement: "random"
+    - type: "first_aid_kit"
+      count: 1
+      placement: "random"
+      surface: "cabinet"
+    - type: "first_aid_kit"
+      count: 1
+      placement: "random"
+    - type: "hazard_sign"
+      count: 1
+      placement: "random"
+      z_offset: 0.9
+    - type: "hazard_sign"
+      count: 3
+      placement: "random"
+  dynamic_obstacles:
+    - model: "patrol_bot"
+      name: "patrol_bot_0"
+      spawn: [9.5, 8.0, 0.0]
+      patrol: [[9.5, 8.0], [3.0, 8.0], [3.0, 5.0], [9.5, 5.0]]
+      speed: 0.4
+      turn_speed: 0.6
+
+robots:
+  - platform: "derpbot"
+    name: "derpbot_0"
+    spawn_pose:
+      x: 18.0
+      y: 13.0
+      z: 0.0
+      yaw: 0.0
+
+metrics:
+  collect:
+    - meters_traveled
+    - time_to_all_detections
+    - task_completion_time
+    - average_time_per_detection
+    - exploration_coverage
+    - object_detection_rate
+    - false_positive_rate
+    - collision_count
+    - near_miss_count
+    - revisit_ratio
+
+success_criteria:
+  mode: "all_of"
+  conditions:
+    - metric: "object_detection_rate"
+      operator: ">="
+      value: 1.0
+      description: "All target objects must be detected"
+
+scoring:
+  category_weights:
+    speed: 0.30
+    accuracy: 0.25
+    safety: 0.20
+    efficiency: 0.10
+    effectiveness: 0.15
+  effectiveness_weights:
+    fire_extinguisher: 40
+    first_aid_kit: 40
+    hazard_sign: 20
+  par_values:
+    time_per_detection_par: 150.0
+    coverage_rate_par: 1.2
+    coverage_per_meter_par: 1.0
+    near_miss_threshold: 0.3
+  collision_thresholds: [0, 1, 3, 6]
+  collision_scores: [100, 80, 60, 40, 20]
+  grade_thresholds:
+    S: 95
+    A: 85
+    B: 70
+    C: 55
+    D: 40
+
+output:
+  format: "json"
+  directory: "./results/"
+  include_trajectory: true
+  include_detection_log: true
+  include_scorecard: true

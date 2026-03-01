@@ -42,6 +42,7 @@ class SimulationLauncher:
         world_sdf: Path,
         world_name: str,
         robots_cfg: list[dict],
+        dynamic_obstacles: list[dict] | None = None,
         gazebo_timeout: float = 90.0,
         robot_timeout: float = 30.0,
     ) -> None:
@@ -76,6 +77,9 @@ class SimulationLauncher:
             self._launch_robot_bridges(platform, name, world_name)
 
         self._wait_for_robots(robot_names, timeout=robot_timeout)
+
+        for obs in (dynamic_obstacles or []):
+            self._launch_patrol_controller(obs)
 
     # ── Private: launch ────────────────────────────────────────────────────────
 
@@ -120,6 +124,38 @@ class SimulationLauncher:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             start_new_session=True,  # own process group → bridges killed with parent
+        )
+        self._processes.append(proc)
+        return proc
+
+    def _launch_patrol_controller(self, obs: dict) -> subprocess.Popen:
+        """Start patrol_bot_controller.py for a dynamic obstacle entry.
+
+        The controller is a standalone Python script that uses gz-transport
+        directly (no ROS 2 bridge).  It runs in its own process group so
+        ``shutdown()`` can kill it along with the other child processes.
+        """
+        import json
+        name = obs.get("name", obs.get("model", "patrol_bot") + "_0")
+        waypoints = obs.get("patrol", [])
+        if not waypoints:
+            return  # no patrol configured — model is static in the world
+        speed = float(obs.get("speed", 0.4))
+        turn_speed = float(obs.get("turn_speed", 0.6))
+        controller = _REPO_ROOT / "src" / "scenario_runner" / "patrol_bot_controller.py"
+        cmd = [
+            "python3.12",
+            str(controller),
+            "--name", name,
+            "--waypoints", json.dumps(waypoints),
+            "--speed", str(speed),
+            "--turn_speed", str(turn_speed),
+        ]
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
         )
         self._processes.append(proc)
         return proc

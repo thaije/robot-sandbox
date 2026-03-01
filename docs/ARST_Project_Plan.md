@@ -12,7 +12,7 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 
 | ID | Requirement | Notes |
 |----|-------------|-------|
-| SIM-09 | Configurable environment variations (lighting, door states, dynamic obstacles) | Lighting only; door_states/dynamic obstacles not implemented — see [`docs/environment_variations.md`](environment_variations.md) |
+| SIM-09 | Configurable environment variations (lighting, door states, dynamic obstacles) | **Done** — door states (connected-graph guaranteed), localized lighting (4 presets + 2 compound), vertical/surface placement, flickering lights, patrol bot, smoke emitters, 5 tier YAMLs |
 | SIM-12 | Multiple simulator instances in parallel | Future |
 | SIM-13 | Deterministic replay (same seed = same scenario) | Not verified |
 | MET-13 | Calibrated par values | After first working run |
@@ -21,9 +21,11 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 
 ## Remaining implementation steps
 
-### Step 3.14 — Environment variations (all features before calibration)
+### ~~Step 3.14~~ — Environment variations ✅ COMPLETE
 
-Build all variation features before calibrating par values, so calibration covers the full difficulty range in one pass.
+All features implemented. See `docs/environment_variations.md` and tier YAMLs in `config/scenarios/`.
+
+Summary of what was built:
 
 **Door states** (prerequisite for `medium`/`hard`/`brutal` tiers):
 - `WorldGenerator._apply_door_states()`: inject static box panels at the 4 gap coordinates when `door_states: closed` or `random` (per-door coin flip using scenario seed). `random` is already in scenario YAML but ignored.

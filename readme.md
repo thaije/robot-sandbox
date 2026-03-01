@@ -16,10 +16,31 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md) · Agent sta
 ## Run a scenario (automated)
 
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless [--timeout N] [--gui]
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless [--timeout N] [--gui]
 ```
 
 Handles full lifecycle: generates world SDF (with robot embedded), starts Gazebo, collects metrics, prints scorecard, cleans up. Results → `results/<scenario_name>.json`.
+
+## Difficulty tiers — office_explore_detect
+
+All tiers use the same indoor office map and object set; difficulty is controlled by lighting, door states, obstacles, and time limit.
+
+| Tier | YAML | Lighting | Doors | Extras | Timeout |
+|------|------|----------|-------|--------|---------|
+| Easy | `office_explore_detect/easy.yaml` | bright | open | — | 900 s |
+| Medium | `office_explore_detect/medium.yaml` | normal | random | — | 600 s |
+| Hard | `office_explore_detect/hard.yaml` | dim + localized | closed | elevated objects | 300 s |
+| Brutal | `office_explore_detect/brutal.yaml` | dim + flicker | closed | patrol bot + elevated | 180 s |
+| Perception stress | `office_explore_detect/perception_stress.yaml` | flicker + red emergency | random | patrol bot + smoke | 600 s |
+
+```bash
+# Run a specific tier (all accept --headless / --gui / --timeout):
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/hard.yaml --headless
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/brutal.yaml --headless
+```
+
+The `random_seed` field in each YAML controls placement. Change it for a different layout at the same difficulty.
 
 ## Interactive dev session (GUI + teleoperation)
 

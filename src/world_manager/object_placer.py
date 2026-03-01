@@ -87,9 +87,15 @@ class ObjectPlacer:
         for spec in objects:
             model_type: str = spec["type"]
             count: int = int(spec.get("count", 1))
-            for _ in range(count):
-                obj = self._place_one(model_type, rng, placed, spec)
-                placed.append(obj)
+            strategy: str = spec.get("placement", "random")
+            if strategy == "clustered":
+                # Place all instances of this type as a cluster together
+                cluster = self._place_clustered(model_type, rng, placed, spec, count)
+                placed.extend(cluster)
+            else:
+                for _ in range(count):
+                    obj = self._place_one_strategy(model_type, rng, placed, spec)
+                    placed.append(obj)
 
         return placed
 
@@ -151,6 +157,210 @@ class ObjectPlacer:
             f"Could not place {model_type!r} after {self.MAX_ATTEMPTS} attempts. "
             "Consider reducing object count or placement_clearance."
         )
+
+    # ── Strategy dispatcher ───────────────────────────────────────────────────
+
+    def _place_one_strategy(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+    ) -> PlacedObject:
+        """Dispatch to the placement strategy named in *spec['placement']*."""
+        strategy = spec.get("placement", "random")
+        if strategy == "random":
+            return self._place_one(model_type, rng, already, spec)
+        elif strategy == "spread":
+            return self._place_spread(model_type, rng, already, spec)
+        elif strategy == "cornered":
+            return self._place_cornered(model_type, rng, already, spec)
+        elif strategy == "elevated":
+            return self._place_elevated(model_type, rng, already, spec)
+        else:
+            # Unknown strategy: fall back to random
+            return self._place_one(model_type, rng, already, spec)
+
+    # ── Strategy implementations ──────────────────────────────────────────────
+
+    def _place_clustered(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+        count: int,
+    ) -> list[PlacedObject]:
+        """Place *count* instances within 2.5 m of a randomly chosen anchor.
+
+        Retries the whole cluster up to MAX_ATTEMPTS times.  Falls back to
+        placing each instance independently with the ``random`` strategy if no
+        cluster fits.
+        """
+        CLUSTER_RADIUS = 2.5
+        z_offset = float(spec.get("z_offset", 0.0))
+
+        for _ in range(self.MAX_ATTEMPTS):
+            # Pick a random zone and a random anchor within it
+            zone = rng.choices(self._zones, weights=self._zone_weights, k=1)[0]
+            ax = rng.uniform(zone["x_min"], zone["x_max"])
+            ay = rng.uniform(zone["y_min"], zone["y_max"])
+
+            # Try to place all instances within cluster radius of anchor
+            cluster: list[PlacedObject] = []
+            cluster_valid = True
+            for _ in range(count):
+                placed_ok = False
+                for _ in range(self.MAX_ATTEMPTS // count + 1):
+                    # Sample uniformly within a circle using rejection sampling
+                    dx = rng.uniform(-CLUSTER_RADIUS, CLUSTER_RADIUS)
+                    dy = rng.uniform(-CLUSTER_RADIUS, CLUSTER_RADIUS)
+                    if dx * dx + dy * dy > CLUSTER_RADIUS * CLUSTER_RADIUS:
+                        continue
+                    cx, cy = ax + dx, ay + dy
+                    if self._is_valid(cx, cy, already + cluster):
+                        yaw = rng.choice([0.0, math.pi / 2, math.pi, 3 * math.pi / 2])
+                        cluster.append(
+                            PlacedObject(model_type=model_type, x=cx, y=cy, yaw=yaw, z=z_offset)
+                        )
+                        placed_ok = True
+                        break
+                if not placed_ok:
+                    cluster_valid = False
+                    break
+
+            if cluster_valid and len(cluster) == count:
+                return cluster
+
+        # Fall back: place each independently using random strategy
+        fallback_spec = dict(spec)
+        fallback_spec["placement"] = "random"
+        result: list[PlacedObject] = []
+        for _ in range(count):
+            obj = self._place_one(model_type, rng, already + result, fallback_spec)
+            result.append(obj)
+        return result
+
+    def _place_spread(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+    ) -> PlacedObject:
+        """Maximise minimum distance to all previously placed objects.
+
+        Samples N=50 candidate positions, returns the one furthest from all
+        already-placed objects.  Falls back to random if no valid candidate is
+        found.
+        """
+        N_CANDIDATES = 50
+
+        best: PlacedObject | None = None
+        best_min_dist = -1.0
+
+        for _ in range(N_CANDIDATES):
+            # Sample a candidate using the standard floor placement
+            try:
+                candidate = self._place_one(model_type, rng, already, spec)
+            except PlacementError:
+                continue
+
+            if not already:
+                # No existing placements — just take the first valid candidate
+                return candidate
+
+            min_dist = min(
+                math.hypot(candidate.x - p.x, candidate.y - p.y) for p in already
+            )
+            if min_dist > best_min_dist:
+                best_min_dist = min_dist
+                best = candidate
+
+        if best is not None:
+            return best
+
+        # Last resort: standard random placement
+        return self._place_one(model_type, rng, already, spec)
+
+    def _place_cornered(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+    ) -> PlacedObject:
+        """Bias placement toward zone boundary edges (within ~1.0 m of an edge).
+
+        Samples x/y from a Gaussian centred on the nearest edge of a randomly
+        chosen zone, with σ=0.5 m, clipped to zone bounds.  Retries up to
+        MAX_ATTEMPTS times before raising PlacementError.
+        """
+        SIGMA = 0.5
+        z_offset = float(spec.get("z_offset", 0.0))
+
+        for _ in range(self.MAX_ATTEMPTS):
+            zone = rng.choices(self._zones, weights=self._zone_weights, k=1)[0]
+            x_min, x_max = zone["x_min"], zone["x_max"]
+            y_min, y_max = zone["y_min"], zone["y_max"]
+
+            # Choose a random edge to bias toward: 0=left, 1=right, 2=bottom, 3=top
+            edge = rng.randint(0, 3)
+            if edge == 0:   # left (x_min)
+                x_center = x_min
+                x = rng.gauss(x_center, SIGMA)
+                y = rng.uniform(y_min, y_max)
+            elif edge == 1: # right (x_max)
+                x_center = x_max
+                x = rng.gauss(x_center, SIGMA)
+                y = rng.uniform(y_min, y_max)
+            elif edge == 2: # bottom (y_min)
+                y_center = y_min
+                y = rng.gauss(y_center, SIGMA)
+                x = rng.uniform(x_min, x_max)
+            else:           # top (y_max)
+                y_center = y_max
+                y = rng.gauss(y_center, SIGMA)
+                x = rng.uniform(x_min, x_max)
+
+            # Clip to zone bounds
+            x = max(x_min, min(x_max, x))
+            y = max(y_min, min(y_max, y))
+
+            if self._is_valid(x, y, already):
+                yaw = rng.choice([0.0, math.pi / 2, math.pi, 3 * math.pi / 2])
+                return PlacedObject(model_type=model_type, x=x, y=y, yaw=yaw, z=z_offset)
+
+        raise PlacementError(
+            f"Could not place {model_type!r} with strategy=cornered after "
+            f"{self.MAX_ATTEMPTS} attempts."
+        )
+
+    def _place_elevated(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+    ) -> PlacedObject:
+        """Place on a desk surface (surface_class='desk').
+
+        Equivalent to surface='desk' with z_offset=0.  Falls back to random
+        floor placement if no desk-class surface exists in the template.
+        """
+        desk_candidates = [
+            obs for obs in self._obstacles
+            if obs.get("surface_class", "") == "desk"
+               and obs.get("surface_height", 0.0) > 0.0
+        ]
+        if not desk_candidates:
+            # No desks in template — fall back to random
+            return self._place_one(model_type, rng, already, spec)
+
+        elevated_spec = dict(spec)
+        elevated_spec["surface"] = "desk"
+        elevated_spec["z_offset"] = 0.0
+        return self._place_one(model_type, rng, already, elevated_spec)
 
     def _is_valid(
         self, x: float, y: float, placed: list[PlacedObject], skip_pgm: bool = False

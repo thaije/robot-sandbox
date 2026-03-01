@@ -1,33 +1,39 @@
 scenario:
-  name: "office_explore_detect_001"
-  description: "Explore an office environment and find all target objects"
-  timeout_seconds: 600
-  random_seed: 42
+  name: "office_hard_001"
+  description: "Hard office exploration — dim localized lighting, closed doors, vertical objects, far spawn"
+  timeout_seconds: 300
+  random_seed: 200
 
 world:
   template: "indoor_office"
-  variant: "medium_clutter"
-  size: "20x15"  # meters
+  variations:
+    lighting: "dim_localized"
+    door_states: "closed"
   objects:
     - type: "fire_extinguisher"
-      count: 3
+      count: 2
+      placement: "random"
+      surface: "desk"
+    - type: "fire_extinguisher"
+      count: 1
       placement: "random"
     - type: "first_aid_kit"
       count: 2
       placement: "random"
     - type: "hazard_sign"
-      count: 4
+      count: 1
       placement: "random"
-  variations:
-    lighting: "normal"       # normal | dim | bright
-    door_states: "random"    # open | closed | random
+      z_offset: 0.9
+    - type: "hazard_sign"
+      count: 3
+      placement: "random"
 
 robots:
   - platform: "derpbot"
     name: "derpbot_0"
     spawn_pose:
-      x: 2.5
-      y: 1.0
+      x: 18.0
+      y: 13.0
       z: 0.0
       yaw: 0.0
 
@@ -56,18 +62,18 @@ scoring:
   category_weights:
     speed: 0.25
     accuracy: 0.30
-    safety: 0.25
-    efficiency: 0.25
-    effectiveness: 0.20
+    safety: 0.20
+    efficiency: 0.10
+    effectiveness: 0.15
   effectiveness_weights:
     fire_extinguisher: 40
     first_aid_kit: 40
     hazard_sign: 20
   par_values:
-    time_per_detection_par: 60.0     # seconds per object
-    coverage_rate_par: 2.0           # percent per second
-    coverage_per_meter_par: 1.5      # percent per meter
-    near_miss_threshold: 0.3         # meters
+    time_per_detection_par: 90.0
+    coverage_rate_par: 1.5
+    coverage_per_meter_par: 1.2
+    near_miss_threshold: 0.3
   collision_thresholds: [0, 2, 5, 10]
   collision_scores: [100, 80, 60, 40, 20]
   grade_thresholds:

@@ -128,6 +128,10 @@ class WorldGenerator:
         # Inject placed objects before </world>
         self._inject_objects(world_elem, placements)
 
+        # Inject dynamic obstacles (patrol bots etc.)
+        dynamic_obstacles = world_cfg.get("dynamic_obstacles", [])
+        self._inject_dynamic_obstacles(world_elem, dynamic_obstacles)
+
         # Embed robots — convert each URDF to SDF and add as <model>
         robots_cfg = scenario_config.get("robots", [])
         self._save_world_state(template_name, robots_cfg, template_cfg)
@@ -326,6 +330,88 @@ class WorldGenerator:
             }
             world_elem.append(self._load_model_element(mt, idx, obj, label_counter))
             label_counter += 1
+
+    def _inject_dynamic_obstacles(
+        self,
+        world_elem: ET.Element,
+        dynamic_obstacles: list[dict],
+    ) -> None:
+        """Embed dynamic obstacle models (e.g. patrol bots) into *world_elem*.
+
+        Each entry in *dynamic_obstacles* must have:
+          - ``model``: model directory name under ``worlds/models/``
+          - ``name``: unique model name in the world (e.g. ``patrol_bot_0``)
+          - ``spawn``: ``[x, y, yaw]`` world-frame spawn pose
+        Optional:
+          - ``patrol``: list of ``[x, y]`` waypoints (passed to the controller)
+        """
+        for i, obs in enumerate(dynamic_obstacles):
+            model_type = obs.get("model", obs.get("type", ""))
+            name = obs.get("name", f"{model_type}_{i}")
+            spawn = obs.get("spawn", [1.0, 1.0, 0.0])
+            x, y = float(spawn[0]), float(spawn[1])
+            z = float(spawn[2]) if len(spawn) > 2 else 0.0
+            yaw = float(spawn[3]) if len(spawn) > 3 else 0.0
+
+            # ── Smoke / particle emitter (inline SDF — no model file) ──────────
+            if model_type == "smoke_emitter":
+                rate = float(obs.get("rate", 10))
+                lifetime = float(obs.get("lifetime", 3.0))
+                size_cfg = obs.get("size", [0.3, 0.3, 0.3])
+                sx, sy, sz_box = (
+                    float(size_cfg[0]),
+                    float(size_cfg[1]),
+                    float(size_cfg[2]),
+                )
+                emitter_xml = (
+                    f'<model name="{name}">'
+                    f'<static>true</static>'
+                    f'<pose>{x} {y} {z} 0 0 0</pose>'
+                    f'<link name="link">'
+                    f'<particle_emitter name="smoke" type="box">'
+                    f'<emitting>true</emitting>'
+                    f'<size>{sx} {sy} {sz_box}</size>'
+                    f'<particle_size>0.1 0.1 0.1</particle_size>'
+                    f'<lifetime>{lifetime}</lifetime>'
+                    f'<rate>{rate}</rate>'
+                    f'<min_velocity>0.1</min_velocity>'
+                    f'<max_velocity>0.3</max_velocity>'
+                    f'<color_start>0.8 0.8 0.8 0.3</color_start>'
+                    f'<color_end>0.6 0.6 0.6 0.0</color_end>'
+                    f'<scale_rate>0.5</scale_rate>'
+                    f'<material>'
+                    f'<script>'
+                    f'<name>ParticleEmitterPoint</name>'
+                    f'<uri>file://media/materials/scripts/gazebo.material</uri>'
+                    f'</script>'
+                    f'</material>'
+                    f'</particle_emitter>'
+                    f'</link>'
+                    f'</model>'
+                )
+                world_elem.append(ET.fromstring(emitter_xml))
+                continue
+            # ──────────────────────────────────────────────────────────────────
+
+            model_path = self._root / self.MODELS_DIR / model_type / "model.sdf"
+            if not model_path.exists():
+                raise FileNotFoundError(
+                    f"Dynamic obstacle model SDF not found: {model_path}"
+                )
+
+            root = ET.parse(model_path).getroot()
+            model = root.find("model")
+            if model is None:
+                raise ValueError(f"No <model> element in {model_path}")
+
+            model = copy.deepcopy(model)
+            model.set("name", name)
+
+            pose = ET.Element("pose")
+            pose.text = f"{x:.4f} {y:.4f} 0.10 0 0 {yaw:.4f}"
+            model.insert(0, pose)
+
+            world_elem.append(model)
 
     def _embed_robots(
         self,

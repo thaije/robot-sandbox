@@ -13,10 +13,13 @@
 #
 # Examples:
 #   # Single robot, default domain:
-#   ./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml
+#   ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml
+#
+#   # Run a specific difficulty tier:
+#   ./scripts/run_scenario.sh config/scenarios/office_explore_detect/hard.yaml
 #
 #   # Parallel run on domain 1 (separate terminal):
-#   ROS_DOMAIN_ID=1 ./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml
+#   ROS_DOMAIN_ID=1 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml
 #
 #   # Auto-assign a free domain ID (for scripted parallel runs):
 #   ROS_DOMAIN_ID=$(( RANDOM % 200 + 10 )) ./scripts/run_scenario.sh ...
