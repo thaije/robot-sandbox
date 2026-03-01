@@ -47,15 +47,6 @@ def _bresenham(x0: int, y0: int, x1: int, y1: int):
             err += dx
             y0 += sy
 
-# Maps gz-sim-label-system integer labels → human-readable class names.
-# Must match the <label> values in worlds/models/*/model.sdf.
-LABEL_NAMES: dict[str, str] = {
-    "1": "fire_extinguisher",
-    "2": "first_aid_kit",
-    "3": "hazard_sign",
-}
-
-
 class ObjectDetectionTracker:
     """Track first-detection events per object label.
 
@@ -71,7 +62,7 @@ class ObjectDetectionTracker:
         Optional dict mapping string label IDs to ``{"type": str, "instance": int}``
         dicts, as produced by ``WorldGenerator.label_map``.  When provided,
         each detected label is resolved to a human-readable name like
-        ``"fire_extinguisher #1"``.  Falls back to ``LABEL_NAMES`` if absent.
+        ``"fire_extinguisher #1"``.  Falls back to ``label_<id>`` if absent.
     """
 
     def __init__(
@@ -233,13 +224,13 @@ class ObjectDetectionTracker:
 
         When a ``label_map`` was provided, ``class_name`` is resolved to
         ``"<type> #<1-based-instance>"`` (e.g. ``"fire_extinguisher #2"``).
-        Falls back to ``LABEL_NAMES`` for type-level labels.
+        Falls back to ``label_<id>`` for type-level labels.
         """
         def _resolve(cid: str) -> str:
             if cid in self._label_map:
                 entry = self._label_map[cid]
                 return f"{entry['type']} #{entry['instance'] + 1}"
-            return LABEL_NAMES.get(cid, f"label_{cid}")
+            return f"label_{cid}"
 
         return [
             {

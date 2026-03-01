@@ -24,5 +24,3 @@ class TemplateLoader:
     def sdf_path(self, template_name: str) -> Path:
         return self._dir / template_name / "world.sdf"
 
-    def gt_map_yaml(self, template_name: str) -> Path:
-        return self._dir / template_name / "ground_truth_map.yaml"

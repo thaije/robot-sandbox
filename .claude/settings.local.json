@@ -75,7 +75,10 @@
       "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_scenario_config.py -v --tb=short)",
       "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py tests/test_scoring.py tests/test_scenario_config.py -q --tb=short)",
       "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_world_generator.py tests/test_flicker_controller.py -q --tb=short)",
-      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py tests/test_scoring.py tests/test_scenario_config.py tests/test_world_generator.py tests/test_object_placer.py tests/test_flicker_controller.py -q --tb=short)"
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py tests/test_scoring.py tests/test_scenario_config.py tests/test_world_generator.py tests/test_object_placer.py tests/test_flicker_controller.py -q --tb=short)",
+      "Bash(.venv/bin/python -m pytest tests/test_flicker_controller.py tests/test_metrics.py tests/test_scenario_config.py tests/test_scoring.py tests/test_world_generator.py tests/test_world_generation.py tests/test_object_placer.py -q)",
+      "Bash(cat agent-scripts/*.sh)",
+      "Bash(PYTHONPATH=src .venv/bin/python -m pytest tests/test_flicker_controller.py tests/test_metrics.py tests/test_scenario_config.py tests/test_scoring.py tests/test_world_generator.py tests/test_world_generation.py tests/test_object_placer.py -q -p no:launch)"
     ]
   },
   "hooks": {

@@ -18,8 +18,3 @@ def wait_for_topic(topic: str, timeout: float = 30.0, poll_interval: float = 0.5
         time.sleep(poll_interval)
     return False
 
-
-def kill_ros_processes(node_names: list[str]) -> None:
-    """Send SIGINT to named ROS 2 nodes via `ros2 node kill`."""
-    for name in node_names:
-        subprocess.run(["ros2", "node", "kill", name], capture_output=True)

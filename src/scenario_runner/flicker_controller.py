@@ -17,7 +17,6 @@ process exits without calling stop().
 """
 from __future__ import annotations
 
-import subprocess
 import sys
 import threading
 import time
@@ -242,34 +241,6 @@ class FlickerController:
                 return
             except Exception as exc:
                 log.debug("FlickerController gz.transport service error: %s", exc)
-
-        # ── Slow fallback: gz service CLI ─────────────────────────────────────
-        req_str = (
-            f'name: "{name}" '
-            f'diffuse {{r: {r} g: {g} b: {b} a: {a}}} '
-            f'specular {{r: {r * 0.3:.3f} g: {g * 0.3:.3f} b: {b * 0.3:.3f} a: 1.0}} '
-            f'range: {att_range} '
-            f'attenuation_constant: {constant} '
-            f'attenuation_linear: {linear} '
-            f'attenuation_quadratic: {quadratic} '
-            f'is_light_off: {"true" if is_off else "false"} '
-            f'intensity: 1.0'
-        )
-        try:
-            subprocess.run(
-                [
-                    "gz", "service",
-                    "-s", self._service,
-                    "--reqtype", "gz.msgs.Light",
-                    "--reptype", "gz.msgs.Boolean",
-                    "--timeout", "1000",
-                    "--req", req_str,
-                ],
-                timeout=2.0,
-                capture_output=True,
-            )
-        except Exception as exc:
-            log.debug("FlickerController CLI service error: %s", exc)
 
     @staticmethod
     def _resolve_specs(

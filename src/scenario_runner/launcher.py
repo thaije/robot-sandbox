@@ -37,9 +37,6 @@ class SimulationLauncher:
     def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._processes: list[subprocess.Popen] = []
-        # Daemon threads for patrol-bot controllers (no explicit stop needed —
-        # they die when the process exits, or when shutdown() is called).
-        self._patrol_threads: list[threading.Thread] = []
 
     def launch(
         self,
@@ -148,19 +145,17 @@ class SimulationLauncher:
             return None  # no patrol configured — model is static
 
         speed = float(obs.get("speed", 0.4))
-        turn_speed = float(obs.get("turn_speed", 0.6))
 
         # Import here so the module's path-setup runs in the correct context.
         from scenario_runner.patrol_bot_controller import run as _patrol_run  # noqa: PLC0415
 
         t = threading.Thread(
             target=_patrol_run,
-            args=(name, waypoints, speed, turn_speed, world_name),
+            args=(name, waypoints, speed, world_name),
             daemon=True,
             name=f"patrol_{name}",
         )
         t.start()
-        self._patrol_threads.append(t)
         return t
 
     # ── Private: readiness checks ──────────────────────────────────────────────

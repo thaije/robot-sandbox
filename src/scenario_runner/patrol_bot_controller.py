@@ -35,7 +35,6 @@ def run(
     name: str,
     waypoints: list[list[float]],
     speed: float,
-    turn_speed: float,  # kept for API compatibility; not used
     world_name: str = "indoor_office",
 ) -> None:
     _SYS_PKG = "/usr/lib/python3/dist-packages"
@@ -113,7 +112,7 @@ def main() -> None:
     if len(waypoints) < 2:
         sys.exit("Need at least 2 waypoints.")
 
-    run(args.name, waypoints, args.speed, turn_speed=0.0, world_name=args.world)
+    run(args.name, waypoints, args.speed, world_name=args.world)
 
 
 if __name__ == "__main__":

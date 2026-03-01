@@ -25,10 +25,8 @@ from pathlib import Path
 from typing import Any
 
 from utils.config_loader import load_scenario
-from utils.logging_setup import setup_logging
 from world_manager.world_generator import WorldGenerator
 from scenario_runner.launcher import SimulationLauncher
-from scenario_runner.reset import ScenarioResetter
 from scenario_runner.flicker_controller import FlickerController
 from metrics.evaluator import evaluate_criteria
 from metrics.scoring import ScoringEngine
