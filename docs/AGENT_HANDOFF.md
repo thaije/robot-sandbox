@@ -44,7 +44,7 @@ Navigation → invoke the `/arst-nav` skill. It has all documentation.
 - **Patrol bot spawn = first waypoint**: Controller drives for `distance/speed` seconds from waypoint[0]→[1]. Spawn must match waypoint[0] exactly or the bot overshoots and hits a wall.
 - **Patrol bot drive+teleport**: Pure diff-drive dead-reckoning for multi-waypoint patrol quickly goes off-route — heading drift per turn pushes the bot into walls and rooms. Solved by driving straight for a fixed time then teleporting back to waypoint[0] via `/world/<world>/set_pose`. No turns, no drift.
 - **Particle emitter plugin**: `gz-sim-particle-emitter-system` must be in `world.sdf` or emitters silently do nothing. Use PBR `<albedo_map>` / `<diffuse>` — NOT `<material><script>` (ogre1 syntax, renders black in ogre2).
-- **FlickerController**: `/world/<world>/light_config` is a **SERVICE**, not a topic — use `node.request()`, not `advertise()`+`publish()`. Add a 3-second startup delay before the first call.
+- **FlickerController**: `/world/<world>/light_config` is a **SERVICE**, not a topic — use `node.request()`. gz-sim 8.10.0 bug: service only works on lights created dynamically via EntityFactory (`/world/<world>/create`), not SDF-baked lights. `FlickerController._recreate_lights()` handles this at startup; flicker lights are excluded from the SDF by `WorldGenerator._apply_lighting()`. The `light_config` request must send all light fields (diffuse, attenuation, `is_light_off`, intensity) — partial updates are ignored.
 
 ---
 

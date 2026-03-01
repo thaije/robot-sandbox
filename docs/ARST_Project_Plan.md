@@ -21,47 +21,6 @@ Build a modular Gazebo simulation testbed for testing robot autonomy across dive
 
 ## Remaining implementation steps
 
-### ~~Step 3.14~~ — Environment variations ✅ COMPLETE
-
-All features implemented. See `docs/environment_variations.md` and tier YAMLs in `config/scenarios/`.
-
-Summary of what was built:
-
-**Door states** (prerequisite for `medium`/`hard`/`brutal` tiers):
-- `WorldGenerator._apply_door_states()`: inject static box panels at the 4 gap coordinates when `door_states: closed` or `random` (per-door coin flip using scenario seed). `random` is already in scenario YAML but ignored.
-
-**Localized lighting**:
-- Replace global directional light with per-room point/spot lights. Named presets in `config.yaml`; `WorldGenerator` injects matching block. Low baseline ambient so unlit rooms are dark.
-
-**Vertical object placement**:
-- `z_offset` + `surface` fields in object config. `object_placer.py` reads them; `surface` pins to a furniture zone (cross-ref obstacle list for surface height). Verify bbox camera covers elevated objects.
-
-**Flickering lights** (requires localized lighting):
-- Scenario runner timer thread publishes to gz-transport `UserCommands` service (`gz.msgs.Light`). Config: `variations.flicker: [{name: room_light, period_s: 0.5}]`. ~50 lines Python; zero SDF change.
-
-**Patrol bot**:
-- SDF model (cylinder geometry, DiffDrive plugin, collision geometry) embedded in world SDF at generation time. Lightweight Python ROS 2 node publishes `cmd_vel` waypoint loop; started by `SimulationLauncher`. Config: `dynamic_obstacles: [{model: vacuum_robot, patrol: [[x1,y1],...]}]`.
-
-**Object distribution strategies** (placer strategy dispatch):
-- `object_placer.py` strategy pattern: `random` (current), `clustered`, `spread`, `cornered`, `elevated`.
-
-**Smoke / particle emitters** (forward-looking; zero current metric impact):
-- SDF `<particle_emitter>` block. Wire up now; metric impact follows once visual detection lands.
-
-**Compound scenario YAMLs** (after all features above are built):
-
-Each tier YAML defines the **variation set** (which features are active + their parameters). The `random_seed` controls all geometry decisions (object placement, spawn offset, which room flickers, which door closes). This means:
-- Tiers are reproducible and clearly described
-- Individual runs are not memorizable — different seed = different layout
-- Batch sweeps trivial: same YAML, N seeds
-
-| File | Lighting | Doors | Extras | Timeout | Spawn |
-|---|---|---|---|---|---|
-| `easy.yaml` | bright, uniform | open | — | 900 s | (1,1) |
-| `medium.yaml` *(current)* | normal | random | — | 600 s | (1,1) |
-| `hard.yaml` | dim + localized | closed | vertical objects | 300 s | (18,13) |
-| `brutal.yaml` | flickering + dim | closed | patrol bot + vertical | 180 s | (18,13) |
-| `perception_stress.yaml` | flicker + red emergency | random | smoke + human patrol | 600 s | (1,1) |
 
 ### Step 3.15 — Calibrate par values (after all tiers are built)
 
@@ -91,6 +50,18 @@ Run each tier 3–5× with teleoperation (or a reference agent), take median per
 - **Additional use cases**: search & rescue, inspection, security patrol, multi-robot relay
 - **Parallel simulation**: Docker + `GZ_PARTITION` for GPU isolation
 - **Isaac Sim**: parallel operation for RL training and photorealistic data (not migration — no reliable SDF→USD pipeline)
+
+---
+
+## Difficulty tiers reference
+
+| File | Lighting | Doors | Extras | Timeout | Spawn |
+|---|---|---|---|---|---|
+| `easy.yaml` | bright, uniform | open | — | 900 s | (1,1) |
+| `medium.yaml` | normal | random | — | 600 s | (1,1) |
+| `hard.yaml` | dim + localized | closed | vertical objects | 300 s | (18,13) |
+| `brutal.yaml` | flickering + dim | closed | patrol bot + vertical | 180 s | (18,13) |
+| `perception_stress.yaml` | flicker + red emergency | random | smoke + patrol | 600 s | (1,1) |
 
 ---
 
