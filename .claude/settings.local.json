@@ -62,7 +62,10 @@
       "Bash(do sleep 7)",
       "Bash(for seed in 2 3 4 5 6)",
       "Bash(grep -h \"timeout\" /home/plip/Projects/robot-sandbox/config/scenarios/office_explore_detect/*.yaml)",
-      "Bash(grep -l \"light\" /usr/share/gz/gz-sim8/worlds/*.sdf)"
+      "Bash(grep -l \"light\" /usr/share/gz/gz-sim8/worlds/*.sdf)",
+      "Bash(python agent-scripts/snapshot.py)",
+      "Bash(python scripts/robot_control.py snapshot)",
+      "Bash(tmux list-sessions)"
     ]
   },
   "hooks": {

@@ -104,7 +104,7 @@ class FlickerController:
             self._thread.join(timeout=3.0)
         # Restore all lights to ON
         for spec in self._specs:
-            self._call_service(spec["name"], spec["on_diffuse"])
+            self._call_service(spec, is_off=False)
 
     # ── Internal ────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ class FlickerController:
             for spec in self._specs:
                 if self._stop_event.is_set():
                     break
-                self._call_service(spec["name"], spec["off_diffuse"])
+                self._call_service(spec, is_off=True)
 
             half = min(s["period_s"] for s in self._specs) / 2.0
             self._stop_event.wait(timeout=half)
@@ -132,7 +132,7 @@ class FlickerController:
             for spec in self._specs:
                 if self._stop_event.is_set():
                     break
-                self._call_service(spec["name"], spec["on_diffuse"])
+                self._call_service(spec, is_off=False)
 
             self._stop_event.wait(timeout=half)
 
@@ -199,9 +199,17 @@ class FlickerController:
             except Exception as exc:
                 log.warning("FlickerController: failed to recreate light '%s': %s", name, exc)
 
-    def _call_service(self, name: str, diffuse: list[float]) -> None:
+    def _call_service(self, spec: dict, is_off: bool) -> None:
         """Call the light_config service — gz.transport13 preferred, CLI fallback."""
+        name = spec["name"]
+        diffuse = spec["off_diffuse"] if is_off else spec["on_diffuse"]
         r, g, b, a = diffuse
+
+        rl = spec.get("light_cfg", {})
+        att_range = float(rl.get("range", 10.0))
+        constant = float(rl.get("constant", 0.5))
+        linear = float(rl.get("linear", 0.05))
+        quadratic = float(rl.get("quadratic", 0.005))
 
         # ── Fast path: gz.transport13 service call ────────────────────────────
         if self._gz_node is not None and self._Light is not None and self._Boolean is not None:
@@ -218,18 +226,14 @@ class FlickerController:
                 req.specular.b = float(b * 0.3)
                 req.specular.a = 1.0
                 req.type = 0
-                req.cast_shadows = False 
-                # TODO: these below also need to be fetched from the spec and set for the light to turn on again
-                req.attenuation_constant = constant 
-                req.range = att_range 
-                req.attenuation_linear = linear 
+                req.cast_shadows = False
+                req.attenuation_constant = constant
+                req.range = att_range
+                req.attenuation_linear = linear
                 req.attenuation_quadratic = quadratic
-                # TODO: should be either True or False
-                req.is_light_off = False 
+                req.is_light_off = is_off
                 req.intensity = 1.0
                 req.visualize_visual = True
-                # Async service call (timeout=1000ms); result ignored —
-                # fire-and-forget is sufficient for visual flickering.
                 self._gz_node.request(
                     self._service, req, self._Light, self._Boolean, 1000
                 )
@@ -241,7 +245,13 @@ class FlickerController:
         req_str = (
             f'name: "{name}" '
             f'diffuse {{r: {r} g: {g} b: {b} a: {a}}} '
-            f'specular {{r: {r * 0.3:.3f} g: {g * 0.3:.3f} b: {b * 0.3:.3f} a: 1.0}}'
+            f'specular {{r: {r * 0.3:.3f} g: {g * 0.3:.3f} b: {b * 0.3:.3f} a: 1.0}} '
+            f'range: {att_range} '
+            f'attenuation_constant: {constant} '
+            f'attenuation_linear: {linear} '
+            f'attenuation_quadratic: {quadratic} '
+            f'is_light_off: {"true" if is_off else "false"} '
+            f'intensity: 1.0'
         )
         try:
             subprocess.run(
