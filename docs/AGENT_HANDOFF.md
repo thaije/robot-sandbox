@@ -30,30 +30,28 @@ Navigation → invoke the `/arst-nav` skill. It has all documentation.
 ## Key gotchas
 
 - **Python interpreter**: Always `python3.12`. `python3` may resolve to another venv. `run_scenario.sh` handles this.
-- **gz-transport Python bindings**: `gz.transport13` in `/usr/lib/python3/dist-packages/` (system). `src/utils/gz_transport.py` now appends this path so ground-truth pose works even with venv active. Metrics still use ROS odom (intentionally — odom is available without gz-transport and sufficient for coverage/distance; world_state.py prefers ground-truth via gz_get_robot_pose).
+- **gz-transport Python bindings**: `gz.transport13` is in `/usr/lib/python3/dist-packages/` (system). `src/utils/gz_transport.py` appends this path so it works with venv active.
 - **`use_sim_time`**: rclpy metrics node must be created with `use_sim_time=True` or messages are silently dropped as future-dated.
-- **Contact sensor topic**: `<contact><topic>` (NOT `<sensor><topic>`) controls what gz transport publishes. Must be `/ROBOT_NAME/bumper_contact` inside the `<contact>` block. If absent, `gz sdf -p` sets it to a scoped default that doesn't match the bridge.
-- **URDF→SDF joint lumping**: `gz sdf -p` lumps `base_footprint→base_link`. Collision name becomes `base_footprint_fixed_joint_lump__base_link_collision_collision`. Contact sensor reference must use the post-lumping name.
-- **Dual casters**: Robot has front caster (x=+0.13) AND rear caster (x=-0.13) — required for pitch stability under acceleration. Removing either causes the robot to tilt when driving.
-- **Camera wall-clipping**: camera at x=+0.05 m (10 cm behind front face). Near clip set to **0.05 m** (was 0.12 m). With 0.12 m the wall face (only 0.10 m away when pressed against it) was inside the blind zone and objects behind the wall were rendered. 0.05 m ensures walls render before the clip plane. LOS check in `ObjectDetectionTracker` and `world_state.py` adds defence-in-depth.
+- **Contact sensor topic**: Use `<contact><topic>` (NOT `<sensor><topic>`) inside the `<contact>` block, or gz-transport publishes to an unmatched scoped default topic.
+- **URDF→SDF joint lumping**: `gz sdf -p` lumps `base_footprint→base_link`. Contact sensor collision reference must use the post-lump name: `base_footprint_fixed_joint_lump__base_link_collision_collision`.
+- **Dual casters**: Both DerpBot (x=±0.13) and PatrolBot (x=±0.20) need front AND rear casters for pitch stability. Without the rear caster the robot pitches forward under acceleration, causing inaccurate turns.
+- **Camera: robot body in frame**: Do not lower the DerpBot camera below z=0.18 m or the chassis re-enters the frame and blocks the lower portion of the image.
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Fixed by embedding robots in world SDF at generation time — already implemented in `WorldGenerator._embed_robots()`.
-- **Process cleanup**: `SimulationLauncher.shutdown()` captures pgids *before* SIGTERM (process may exit before SIGKILL). Uses `os.killpg()` to kill entire process groups. Runner wrapped in `try/finally` so shutdown always runs.
-- **Scenario config schema**: `robots:` is a list (not `robot:`). Each entry: `{platform, name, spawn_pose: {x,y,z,yaw}}`.
 - **Parallel sessions**: Isolate with `ROS_DOMAIN_ID=N ./scripts/run_scenario.sh ...`. gz transport is isolated per process; only ROS DDS needs the domain ID.
-- **Door states**: `door_states: open | closed | random` is fully implemented. Closed doors are injected as static box panels at SDF generation time. BFS connectivity check ensures the scenario stays solvable. Connectivity uses `rooms` (full room extents in config.yaml) not placement_zones — spawns anywhere in a room are correctly tracked.
-- **Spawn randomization**: `spawn_pose: {random: true, zones: [...]}` in scenario YAML. `WorldGenerator._resolve_spawn_poses()` picks a zone then a pre-validated pose from `config.yaml:spawn_poses`. Resolved before door-state assignment so connectivity guarantee uses the actual spawn. Easy: office_a only; medium: office_a/b; hard/brutal/perception_stress: any room.
-- **Ceiling**: static flat model at z=3.0 m added to `world.sdf`. `_apply_lighting` sets `ceiling_color` + scene `background` from each lighting preset. dim_localized (hard/brutal): near-black ceiling [0.03,0.03,0.03], background [0.02,0.02,0.02]. Rooms now have visible contrast: office_a moderate warm, office_b very dim blue, corridor bright red emergency, meeting_room bright neutral.
-- **IMU system plugin**: IMU is a physics-based sensor — it needs `gz-sim-imu-system` in `world.sdf` in addition to `gz-sim-sensors-system` (which handles GPU-rendered sensors like LiDAR). Missing it → IMU sensor initialises but never publishes.
-- **IMU QoS**: `ros_gz_bridge` bridges IMU as **BEST_EFFORT**. Subscribers must use `ReliabilityPolicy.BEST_EFFORT` or they receive no messages.
-- **Camera FOV / body in frame**: DerpBot camera is at z=0.20 from `base_link` (body top = 0.10). With horizontal_fov=90° and 640×480, the bottom FOV edge is −36.87°. At z=0.20 the bottom-centre ray exits the body x-extent (±0.15 m) at x=0.183 m. Do NOT lower the camera below z=0.18 or the robot body re-enters frame. Prior value was 0.15 → caused lower 25% of image to show blue chassis.
-- **Patrol bot controller**: Runs as a **daemon thread** inside the launcher process (not a subprocess). `patrol_bot_controller.run()` imports gz.transport13 lazily inside the function (not at module level) so the module is safely importable. The thread uses the same network context as the Gazebo process — no discovery delay.
-- **Patrol bot DiffDrive topic**: Do NOT set `<topic>cmd_vel</topic>` in the DiffDrive plugin SDF. That resolves to the global `/cmd_vel`, not `/model/<name>/cmd_vel`. Without a `<topic>` element, DiffDrive defaults to `/model/<model_name>/cmd_vel`, which matches what `patrol_bot_controller.py` publishes to. This was the root cause of patrol bot never moving.
-- **Patrol bot spawn = first waypoint**: `patrol_bot_controller.py` drives for `distance/speed` seconds computed from waypoint[0]→waypoint[1]. Spawn must match waypoint[0] or the bot overshoots and hits a wall. Always set `spawn: [wp0_x, wp0_y, z]`.
-- **Patrol bot dual casters**: PatrolBot needs both front (x=+0.20) and rear (x=-0.20) casters for pitch stability. With only front caster, bot pitches −19° → inaccurate turns → y drift. Rear caster reduces pitch to −5.8°.
-- **Patrol bot drive+teleport**: Controller drives forward for `dist/speed` seconds then calls `/world/<world>/set_pose` to teleport back to waypoint[0]. No turns = zero heading drift. y stays exactly on path. `world_name` is passed from launcher → controller via `_launch_patrol_controller(obs, world_name)`.
-- **Patrol bot waypoints must stay in one room**: Dead-reckoning drives straight; cannot open doors or avoid walls. Corridor patrol: keep all points within y=6.7–9.3.
-- **Particle emitter plugin**: `gz-sim-particle-emitter-system` must be in world.sdf plugins for `<particle_emitter>` elements to work. Without it the emitter silently does nothing. Material format for Gazebo Harmonic: `<material><diffuse>r g b a</diffuse><specular>r g b a</specular></material>` (no `<script>` — that's Gazebo Classic/ogre1 syntax and renders as black in ogre2).
-- **FlickerController**: `/world/<world>/light_config` is a **SERVICE** (not a pub/sub topic) provided by the UserCommands system. Using `advertise()`+`publish()` sends to a topic nobody subscribes to. Use `node.request(service, req, Light, Boolean, timeout_ms)` to call the service. Falls back to `gz service` CLI if transport init fails. 3-second startup delay in the flicker thread avoids calling the service before Gazebo registers it.
+- **Door states**: `door_states: open | closed | random`. Closed doors are injected as static panels at SDF generation time; BFS connectivity check ensures the scenario stays solvable.
+- **IMU**: Needs `gz-sim-imu-system` plugin in `world.sdf` (separate from `gz-sim-sensors-system`); bridge publishes **BEST_EFFORT** QoS — subscribe with `ReliabilityPolicy.BEST_EFFORT` or receive nothing.
+- **Patrol bot DiffDrive topic**: Do NOT set `<topic>cmd_vel</topic>` in the DiffDrive plugin SDF — it resolves to the global `/cmd_vel`. Omit it and DiffDrive defaults to `/model/<name>/cmd_vel`.
+- **Patrol bot spawn = first waypoint**: Controller drives for `distance/speed` seconds from waypoint[0]→[1]. Spawn must match waypoint[0] exactly or the bot overshoots and hits a wall.
+- **Patrol bot drive+teleport**: Pure diff-drive dead-reckoning for multi-waypoint patrol quickly goes off-route — heading drift per turn pushes the bot into walls and rooms. Solved by driving straight for a fixed time then teleporting back to waypoint[0] via `/world/<world>/set_pose`. No turns, no drift.
+- **Particle emitter plugin**: `gz-sim-particle-emitter-system` must be in `world.sdf` or emitters silently do nothing. Use PBR `<albedo_map>` / `<diffuse>` — NOT `<material><script>` (ogre1 syntax, renders black in ogre2).
+- **FlickerController**: `/world/<world>/light_config` is a **SERVICE**, not a topic — use `node.request()`, not `advertise()`+`publish()`. Add a 3-second startup delay before the first call.
+
+---
+
+## Development guidelines
+
+Try to test new features as much as possible before deeming them complete. Preferably use Python tests. 
+If not possible, e.g. for visual features (smoke, lights, materials, furniture), use this flow: create a minimal scenario in `config/scenarios/tests/` with fixed lighting, open doors, and an impossible success condition so it runs to timeout; find a seed that places objects in the target zone by sampling `ObjectPlacer` directly; launch headless in tmux; navigate with `robot_control.py` and snapshot the camera; iterate kill → edit → relaunch → snapshot. Use `world_state.py` to confirm object positions and robot pose at each step.
 
 ---
 
@@ -109,4 +107,5 @@ src/
 docs/
   ARST_Project_Plan.md          # vision, requirements, remaining steps, scoring reference
   environment_variations.md     # robustness variation designs + priority order
+config/scenarios/tests/         # isolated test scenarios (smoke_test.yaml, …)
 ```
