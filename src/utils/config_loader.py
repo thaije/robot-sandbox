@@ -34,9 +34,10 @@ def load_scenario(path: str | Path) -> dict:
 
 
 def _validate_scenario(s: dict) -> None:
-    for key in ("name", "timeout_seconds", "random_seed"):
+    for key in ("name", "timeout_seconds"):
         if key not in s:
             raise ConfigError(f"scenario.{key} is required")
+    # random_seed is optional — omit it to get a fresh random layout each run.
     if s["timeout_seconds"] <= 0:
         raise ConfigError("scenario.timeout_seconds must be positive")
 

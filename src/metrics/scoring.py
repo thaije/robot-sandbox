@@ -49,6 +49,7 @@ class Scorecard:
     status: str                    # "SUCCESS" | "FAILURE" | "TIMEOUT"
     elapsed_seconds: float
     timeout_seconds: float
+    random_seed: int = 0
     categories: list[CategoryScore] = field(default_factory=list)
     overall_score: float = 0.0
     overall_grade: str = "F"

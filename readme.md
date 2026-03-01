@@ -16,7 +16,7 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md) · Agent sta
 ## Run a scenario (automated)
 
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless [--timeout N] [--gui]
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless [--timeout N] [--gui] [--seed N]
 ```
 
 Handles full lifecycle: generates world SDF (with robot embedded), starts Gazebo, collects metrics, prints scorecard, cleans up. Results → `results/<scenario_name>.json`.
@@ -34,13 +34,11 @@ All tiers use the same indoor office map and object set; difficulty is controlle
 | Perception stress | `office_explore_detect/perception_stress.yaml` | flicker + red emergency | random | patrol bot + smoke | 600 s |
 
 ```bash
-# Run a specific tier (all accept --headless / --gui / --timeout):
+# Run a specific tier (all accept --headless / --gui / --timeout / --seed):
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/hard.yaml --headless
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/brutal.yaml --headless
 ```
 
-The `random_seed` field in each YAML controls placement. Change it for a different layout at the same difficulty.
+Pass `--seed N` to pin a specific layout; omit for a fresh random layout each run.
 
 ## Interactive dev session (GUI + teleoperation)
 
@@ -107,3 +105,10 @@ Navigate the four rooms and locate all objects as quickly as possible.  When the
 ```bash
 python3.12 -m pytest tests/
 ```
+
+- collisions don't seem to count correctly? Hitting door 3 times, only one detected.
+- robot drifts in map
+- camera clips through wall
+- hard level with seed 1315040488 > door closed
+- hard level, ceiling is light (there is no ceiling?) Make dark with actual ceiling.
+- hard level, how are spawn locations defined? Also randomized? 

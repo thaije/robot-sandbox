@@ -2,7 +2,6 @@ scenario:
   name: "office_medium_001"
   description: "Medium office exploration — calibrated baseline, normal lighting, random doors"
   timeout_seconds: 600
-  random_seed: 42
 
 world:
   template: "indoor_office"

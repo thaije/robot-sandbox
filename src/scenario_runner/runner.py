@@ -160,6 +160,7 @@ class ScenarioRunner:
             scorecard = engine.compute(raw, self._cfg)
             scorecard.status          = status
             scorecard.elapsed_seconds = elapsed
+            scorecard.random_seed     = int(scenario.get("random_seed", 0))
 
             print(render_scorecard(scorecard))
 

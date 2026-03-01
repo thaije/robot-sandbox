@@ -7,6 +7,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import random
 import sys
 from pathlib import Path
 
@@ -38,6 +39,10 @@ def main() -> None:
 
     if args.seed is not None:
         config["scenario"]["random_seed"] = args.seed
+    elif config["scenario"].get("random_seed") is None:
+        seed = random.randint(0, 2**31 - 1)
+        config["scenario"]["random_seed"] = seed
+        print(f"[arst] No seed specified — using random seed: {seed}  (replay with --seed {seed})")
     if args.timeout is not None:
         config["scenario"]["timeout_seconds"] = args.timeout
 

@@ -2,7 +2,6 @@ scenario:
   name: "office_perception_stress_001"
   description: "Perception stress test — flicker red emergency lighting, smoke, fast patrol bot, cornered hazard signs"
   timeout_seconds: 600
-  random_seed: 400
 
 world:
   template: "indoor_office"

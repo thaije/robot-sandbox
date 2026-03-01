@@ -2,7 +2,6 @@ scenario:
   name: "office_brutal_001"
   description: "Brutal office exploration — flickering dim lights, closed doors, patrol bot, vertical objects, tight timeout"
   timeout_seconds: 180
-  random_seed: 300
 
 world:
   template: "indoor_office"

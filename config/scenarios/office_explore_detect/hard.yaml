@@ -2,7 +2,6 @@ scenario:
   name: "office_hard_001"
   description: "Hard office exploration — dim localized lighting, closed doors, vertical objects, far spawn"
   timeout_seconds: 300
-  random_seed: 200
 
 world:
   template: "indoor_office"

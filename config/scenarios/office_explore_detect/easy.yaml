@@ -2,7 +2,6 @@ scenario:
   name: "office_easy_001"
   description: "Easy office exploration — bright lighting, open doors, comfortable timeout"
   timeout_seconds: 900
-  random_seed: 100
 
 world:
   template: "indoor_office"

@@ -56,7 +56,8 @@
       "Bash(timeout*)",
       "Bash(bash -c \"source*)",
       "Bash(./scripts/:*)",
-      "Bash(tmux ls)"
+      "Bash(tmux ls)",
+      "Bash(grep -n \"random_seed\" /home/plip/Projects/robot-sandbox/config/scenarios/office_explore_detect/*.yaml)"
     ]
   },
   "hooks": {

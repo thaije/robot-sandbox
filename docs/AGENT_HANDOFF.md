@@ -9,7 +9,7 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 
 - **Full scenario pipeline**: `./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless`
   - Difficulty tiers: `easy` / `medium` / `hard` / `brutal` / `perception_stress` — all under `config/scenarios/office_explore_detect/`
-  - Each tier YAML sets lighting, door states, dynamic obstacles, and timeout. Change `random_seed` for a different layout at the same difficulty.
+  - Each tier YAML sets lighting, door states, dynamic obstacles, and timeout. Pass `--seed N` to pin a layout; omit for a fresh random layout each run.
   - WorldGenerator assigns unique per-instance labels (1..N); exposes `label_map` to metrics
   - Live metrics: `meters_traveled`, `collision_count` (rising-edge, not debounce), `revisit_ratio`, detection metrics
   - Scorecard: Speed / Accuracy / Safety / Efficiency / **Effectiveness** (per-type weights)
@@ -22,7 +22,7 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 - **IMU**: `/derpbot_0/imu` → `sensor_msgs/Imu` @ 100 Hz, `frame_id=imu_link`, **BEST_EFFORT QoS** (subscribe with `ReliabilityPolicy.BEST_EFFORT`)
 - **Exploration coverage** (MET-06): `ExplorationCoverage` in `src/metrics/exploration_coverage.py` — LiDAR raycasting + odom-based pose (world frame = spawn offset + odom transform), Bresenham cells onto 40×30 binary grid, coverage % against PGM free-space mask. Registered in `_build_metrics` / `_avg_metrics`.
 
-**Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --timeout 300` (startup ~5s).
+**Running as agent:** `./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --timeout 300 [--seed N]` (startup ~5s).
 Navigation → invoke the `/arst-nav` skill. It has all documentation.
 
 ---
