@@ -23,10 +23,8 @@ robots:
   - platform: "derpbot"
     name: "derpbot_0"
     spawn_pose:
-      x: 1.0
-      y: 1.0
-      z: 0.0
-      yaw: 0.0
+      random: true
+      zones: ["office_a", "office_b"]   # medium: either office
 
 metrics:
   collect:

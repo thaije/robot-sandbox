@@ -89,6 +89,10 @@ class WorldGenerator:
         # Resolve it to absolute so placer works regardless of CWD.
         _resolve_pgm_path(template_cfg, self._root)
 
+        # ── Resolve robot spawn poses (may be randomized) ─────────────────────
+        robots_cfg = scenario_config.get("robots", [])
+        self._resolve_spawn_poses(robots_cfg, template_cfg, seed)
+
         # ── Place objects ──────────────────────────────────────────────────────
         objects = world_cfg.get("objects", [])
         placer = ObjectPlacer(template_cfg)
@@ -111,11 +115,14 @@ class WorldGenerator:
             template_cfg.get("lighting_presets", {}),
         )
 
-        # Apply door states (pass spawn zone for connectivity guarantee)
+        # Apply door states (pass spawn zone for connectivity guarantee).
+        # Prefer 'rooms' (full room extents) over 'placement_zones' for the
+        # spawn-zone lookup so spawns outside placement zones (e.g. far corners)
+        # still trigger the connectivity guarantee.
         door_state = world_cfg.get("variations", {}).get("door_states", "open")
         spawn_zone = _find_spawn_zone(
-            scenario_config.get("robots", []),
-            template_cfg.get("placement_zones", []),
+            robots_cfg,
+            template_cfg.get("rooms", template_cfg.get("placement_zones", [])),
         )
         self._apply_door_states(
             world_elem,
@@ -133,7 +140,6 @@ class WorldGenerator:
         self._inject_dynamic_obstacles(world_elem, dynamic_obstacles)
 
         # Embed robots — convert each URDF to SDF and add as <model>
-        robots_cfg = scenario_config.get("robots", [])
         self._save_world_state(template_name, robots_cfg, template_cfg)
         self._embed_robots(world_elem, robots_cfg)
 
@@ -184,8 +190,74 @@ class WorldGenerator:
                 if d is not None:
                     d.text = _rgba_str(diffuse_val)
 
+        # Update ceiling material so it matches the lighting mood
+        ceiling_color = cfg.get("ceiling_color")
+        if ceiling_color:
+            for model in world_elem.findall("model"):
+                if model.get("name") == "ceiling":
+                    for vis in model.iter("visual"):
+                        for mat in vis.findall("material"):
+                            amb = mat.find("ambient")
+                            dif = mat.find("diffuse")
+                            if amb is not None:
+                                amb.text = _rgba_str(ceiling_color)
+                            if dif is not None:
+                                dif.text = _rgba_str(ceiling_color)
+
+        # Update scene background colour
+        background = cfg.get("background")
+        if background:
+            scene = world_elem.find("scene")
+            if scene is not None:
+                bg = scene.find("background")
+                if bg is not None:
+                    bg.text = _rgba_str(background)
+
         for rl in cfg.get("room_lights", []):
             world_elem.append(_build_room_light(rl))
+
+    def _resolve_spawn_poses(
+        self,
+        robots_cfg: list[dict],
+        template_cfg: dict,
+        seed: int,
+    ) -> None:
+        """Resolve random spawn poses in-place.
+
+        If a robot's ``spawn_pose`` contains ``random: true``, pick a pose at
+        random from ``template_cfg['spawn_poses'][zone]``.  The zone is chosen
+        randomly from the robot's ``zones`` list (defaults to all zones defined
+        in ``spawn_poses``).  Uses a fixed seed offset so the chosen spawn is
+        independent of object-placement RNG.
+        """
+        import random as _random
+        rng = _random.Random(seed + 7777)
+
+        spawn_poses = template_cfg.get("spawn_poses", {})
+        if not spawn_poses:
+            return
+
+        for robot in robots_cfg:
+            sp = robot.get("spawn_pose", {})
+            if not sp.get("random", False):
+                continue  # fixed spawn — leave as-is
+
+            zones = sp.get("zones", list(spawn_poses.keys()))
+            if not zones:
+                continue
+
+            zone = rng.choice(zones)
+            candidates = spawn_poses.get(zone, [])
+            if not candidates:
+                continue
+
+            chosen = rng.choice(candidates)
+            robot["spawn_pose"] = {
+                "x":   float(chosen["x"]),
+                "y":   float(chosen["y"]),
+                "z":   0.0,
+                "yaw": float(chosen.get("yaw", 0.0)),
+            }
 
     def _apply_door_states(
         self,

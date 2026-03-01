@@ -20,8 +20,15 @@ Continuous  (for long-running processes that track pose live):
 from __future__ import annotations
 
 import math
+import sys
 import threading
 from typing import Any, Callable
+
+# gz.transport13 lives in system dist-packages, excluded when a project venv is
+# active.  Insert it so ground-truth pose works regardless of venv activation.
+_SYS_PKG = "/usr/lib/python3/dist-packages"
+if _SYS_PKG not in sys.path:
+    sys.path.append(_SYS_PKG)
 
 
 def gz_get_robot_pose(

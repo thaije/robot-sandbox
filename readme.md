@@ -107,8 +107,11 @@ python3.12 -m pytest tests/
 ```
 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
+
+To fix: 
+- lower 30% of camera view is blue. Seeing the frame of the robot itself? 
+- robot not moving
+- no flickering lights
+
+To check:
 - robot drifts in map
-- camera clips through wall
-- hard level with seed 1315040488 > door closed
-- hard level, ceiling is light (there is no ceiling?) Make dark with actual ceiling.
-- hard level, how are spawn locations defined? Also randomized? 

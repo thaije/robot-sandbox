@@ -45,10 +45,8 @@ robots:
   - platform: "derpbot"
     name: "derpbot_0"
     spawn_pose:
-      x: 18.0
-      y: 13.0
-      z: 0.0
-      yaw: 0.0
+      random: true
+      zones: ["office_a", "office_b", "corridor", "meeting_room"]  # brutal: any room
 
 metrics:
   collect:

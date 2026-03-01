@@ -334,7 +334,9 @@
           <format>R8G8B8</format>
         </image>
         <clip>
-          <near>0.12</near>
+          <!-- near=0.05: camera is 0.10 m from front face; wall face renders at
+               0.10 m > 0.05 m so walls always occlude objects behind them. -->
+          <near>0.05</near>
           <far>100.0</far>
         </clip>
       </camera>
@@ -355,7 +357,7 @@
           <format>R8G8B8</format>
         </image>
         <clip>
-          <near>0.12</near>
+          <near>0.05</near>
           <far>100.0</far>
         </clip>
       </camera>
