@@ -32,7 +32,8 @@ world:
   dynamic_obstacles:
     - model: "patrol_bot"
       name: "patrol_bot_0"
-      spawn: [9.5, 8.0, 0.14]
+      # spawn at first waypoint so dead-reckoning leg lengths are correct
+      spawn: [2.0, 8.0, 0.14]
       patrol: [[2.0, 8.0], [18.0, 8.0]]
       speed: 0.5
       turn_speed: 0.8

@@ -1,21 +1,26 @@
-"""Patrol bot waypoint controller — Step 3.14.
+"""Patrol bot controller — drive-and-teleport approach.
 
-Drives a patrol_bot model through a closed waypoint loop using gz-transport
-(no ROS 2 bridge required).
+Drives the patrol_bot from waypoint[0] toward waypoint[1] for a fixed time,
+then teleports it back to waypoint[0] facing the original direction.
+Repeats indefinitely.
+
+This avoids the dead-reckoning accumulation error that caused the bot to drift
+out of the corridor when using turn-based navigation.
 
 SimulationLauncher calls ``run()`` in a daemon thread.
-Can also be run standalone as a script:
+Can also be run standalone::
 
     python3 patrol_bot_controller.py \\
         --name patrol_bot_0 \\
-        --waypoints "[[5,8],[15,8],[15,3],[5,3]]" \\
-        --speed 0.4 \\
-        --turn_speed 0.6
+        --waypoints "[[2,8],[18,8]]" \\
+        --speed 0.5 \\
+        --world indoor_office
 
-Algorithm: dead-reckoning only (no feedback). Between each waypoint pair:
-    1. Rotate in place to face the target heading.
-    2. Drive straight to the target.
-    Waypoints loop indefinitely.
+Algorithm:
+    1. Compute heading and drive time from waypoint[0] → waypoint[1].
+    2. Drive forward at *speed* for *drive_time* seconds.
+    3. Teleport back to waypoint[0] with the same heading.
+    4. Wait briefly, then repeat.
 """
 from __future__ import annotations
 
@@ -26,94 +31,89 @@ import sys
 import time
 
 
-def _clamp_angle(a: float) -> float:
-    """Normalise *a* to (-π, π]."""
-    while a > math.pi:
-        a -= 2 * math.pi
-    while a <= -math.pi:
-        a += 2 * math.pi
-    return a
-
-
-def run(name: str, waypoints: list[list[float]], speed: float, turn_speed: float) -> None:
-    # gz.transport13 lives in the system Python path, not in the project venv.
-    # Import here (not at module level) so this file is safely importable as a
-    # module for the daemon-thread path in SimulationLauncher.
+def run(
+    name: str,
+    waypoints: list[list[float]],
+    speed: float,
+    turn_speed: float,  # kept for API compatibility; not used
+    world_name: str = "indoor_office",
+) -> None:
     _SYS_PKG = "/usr/lib/python3/dist-packages"
     if _SYS_PKG not in sys.path:
         sys.path.insert(0, _SYS_PKG)
 
     from gz.transport13 import Node  # type: ignore[import]
     from gz.msgs10.twist_pb2 import Twist  # type: ignore[import]
+    from gz.msgs10.pose_pb2 import Pose  # type: ignore[import]
+    from gz.msgs10.boolean_pb2 import Boolean  # type: ignore[import]
 
     node = Node()
-    topic = f"/model/{name}/cmd_vel"
-    pub = node.advertise(topic, Twist)
+    cmd_topic = f"/model/{name}/cmd_vel"
+    pub = node.advertise(cmd_topic, Twist)
+    set_pose_svc = f"/world/{world_name}/set_pose"
 
-    def publish(linear_x: float, angular_z: float) -> None:
+    wp0 = waypoints[0]
+    wp1 = waypoints[1]
+    dx = wp1[0] - wp0[0]
+    dy = wp1[1] - wp0[1]
+    distance = math.hypot(dx, dy)
+    drive_time = distance / speed
+
+    # Quaternion for yaw = atan2(dy, dx), pitch=0, roll=0
+    yaw = math.atan2(dy, dx)
+    qz = math.sin(yaw / 2.0)
+    qw = math.cos(yaw / 2.0)
+
+    def _send_vel(linear_x: float) -> None:
         msg = Twist()
         msg.linear.x = linear_x
-        msg.angular.z = angular_z
         pub.publish(msg)
 
-    def stop() -> None:
-        publish(0.0, 0.0)
+    def _teleport() -> None:
+        req = Pose()
+        req.name = name
+        req.position.x = float(wp0[0])
+        req.position.y = float(wp0[1])
+        req.position.z = 0.14
+        req.orientation.w = float(qw)
+        req.orientation.x = 0.0
+        req.orientation.y = 0.0
+        req.orientation.z = float(qz)
+        try:
+            node.request(set_pose_svc, req, Pose, Boolean, 1000)
+        except Exception:
+            pass  # fire-and-forget; Gazebo logs any error
 
-    # Allow gz-sim to discover the topic before publishing
+    # Allow Gazebo to discover the cmd_vel topic before publishing.
     time.sleep(2.0)
 
-    heading = 0.0     # current heading (radians), starts aligned with +X
-    wp_idx = 0
-    n = len(waypoints)
-
     while True:
-        wp_curr = waypoints[wp_idx % n]
-        wp_next = waypoints[(wp_idx + 1) % n]
+        # Drive toward wp1 for the calculated time
+        t_end = time.monotonic() + drive_time
+        while time.monotonic() < t_end:
+            _send_vel(speed)
+            time.sleep(0.05)
 
-        dx = wp_next[0] - wp_curr[0]
-        dy = wp_next[1] - wp_curr[1]
-        distance = math.hypot(dx, dy)
-        target_heading = math.atan2(dy, dx)
-
-        # ── Step 1: rotate in place ──────────────────────────────────────────
-        turn = _clamp_angle(target_heading - heading)
-        if abs(turn) > 0.05:  # skip tiny turns
-            direction = 1.0 if turn > 0 else -1.0
-            turn_time = abs(turn) / turn_speed
-            t_end = time.monotonic() + turn_time
-            while time.monotonic() < t_end:
-                publish(0.0, direction * turn_speed)
-                time.sleep(0.05)
-            stop()
-            time.sleep(0.1)
-            heading = target_heading
-
-        # ── Step 2: drive straight ───────────────────────────────────────────
-        if distance > 0.05:
-            drive_time = distance / speed
-            t_end = time.monotonic() + drive_time
-            while time.monotonic() < t_end:
-                publish(speed, 0.0)
-                time.sleep(0.05)
-            stop()
-            time.sleep(0.1)
-
-        wp_idx += 1
+        # Stop, then snap back to wp0
+        _send_vel(0.0)
+        time.sleep(0.1)
+        _teleport()
+        time.sleep(0.5)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Patrol bot waypoint controller")
-    parser.add_argument("--name",       required=True,  help="gz model name (e.g. patrol_bot_0)")
-    parser.add_argument("--waypoints",  required=True,  help='JSON list of [x,y] pairs')
-    parser.add_argument("--speed",      type=float, default=0.4, help="Linear speed (m/s)")
-    parser.add_argument("--turn_speed", type=float, default=0.6, help="Angular speed (rad/s)")
+    parser = argparse.ArgumentParser(description="Patrol bot drive+teleport controller")
+    parser.add_argument("--name",       required=True, help="gz model name")
+    parser.add_argument("--waypoints",  required=True, help='JSON list of [x,y] pairs')
+    parser.add_argument("--speed",      type=float, default=0.5)
+    parser.add_argument("--world",      default="indoor_office", help="Gazebo world name")
     args = parser.parse_args()
 
     waypoints = json.loads(args.waypoints)
     if len(waypoints) < 2:
         sys.exit("Need at least 2 waypoints.")
 
-    run(args.name, waypoints, args.speed, args.turn_speed)
+    run(args.name, waypoints, args.speed, turn_speed=0.0, world_name=args.world)
 
 
 if __name__ == "__main__":

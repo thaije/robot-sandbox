@@ -83,7 +83,7 @@ class SimulationLauncher:
         self._wait_for_robots(robot_names, timeout=robot_timeout)
 
         for obs in (dynamic_obstacles or []):
-            self._launch_patrol_controller(obs)
+            self._launch_patrol_controller(obs, world_name=world_name)
 
     # ── Private: launch ────────────────────────────────────────────────────────
 
@@ -132,7 +132,9 @@ class SimulationLauncher:
         self._processes.append(proc)
         return proc
 
-    def _launch_patrol_controller(self, obs: dict) -> threading.Thread | None:
+    def _launch_patrol_controller(
+        self, obs: dict, world_name: str = "indoor_office"
+    ) -> threading.Thread | None:
         """Start a patrol-bot controller as a daemon thread.
 
         Runs ``patrol_bot_controller.run()`` in-process (no subprocess) so
@@ -153,7 +155,7 @@ class SimulationLauncher:
 
         t = threading.Thread(
             target=_patrol_run,
-            args=(name, waypoints, speed, turn_speed),
+            args=(name, waypoints, speed, turn_speed, world_name),
             daemon=True,
             name=f"patrol_{name}",
         )

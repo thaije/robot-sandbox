@@ -44,6 +44,8 @@
     </plugin>
     <!-- IMU: physics-based sensor, needs its own system (separate from Sensors/ogre2) -->
     <plugin name="gz::sim::systems::Imu"             filename="gz-sim-imu-system"/>
+    <!-- Particle emitter: required for smoke/fog particle_emitter elements in the world -->
+    <plugin name="gz::sim::systems::ParticleEmitter" filename="gz-sim-particle-emitter-system"/>
 
     <!-- ═══════════════════════════════ SCENE ════════════════════════════════ -->
     <scene>

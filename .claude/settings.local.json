@@ -57,7 +57,10 @@
       "Bash(bash -c \"source*)",
       "Bash(./scripts/:*)",
       "Bash(tmux ls)",
-      "Bash(grep -n \"random_seed\" /home/plip/Projects/robot-sandbox/config/scenarios/office_explore_detect/*.yaml)"
+      "Bash(grep -n \"random_seed\" /home/plip/Projects/robot-sandbox/config/scenarios/office_explore_detect/*.yaml)",
+      "Bash(for i in 1 2 3 4 5)",
+      "Bash(do sleep 7)",
+      "Bash(for seed in 2 3 4 5 6)"
     ]
   },
   "hooks": {

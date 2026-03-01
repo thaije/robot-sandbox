@@ -435,6 +435,12 @@ class WorldGenerator:
                     float(size_cfg[1]),
                     float(size_cfg[2]),
                 )
+                # Smoke texture: soft Gaussian smoke puff (RGBA PNG) in our
+                # project media directory.  Absolute path required for inline SDF.
+                smoke_tex = str(
+                    (self._root / "worlds" / "media" / "textures" / "smoke.png")
+                    .resolve()
+                )
                 emitter_xml = (
                     f'<model name="{name}">'
                     f'<static>true</static>'
@@ -443,14 +449,21 @@ class WorldGenerator:
                     f'<particle_emitter name="smoke" type="box">'
                     f'<emitting>true</emitting>'
                     f'<size>{sx} {sy} {sz_box}</size>'
-                    f'<particle_size>0.1 0.1 0.1</particle_size>'
+                    f'<particle_size>0.4 0.4 0.4</particle_size>'
                     f'<lifetime>{lifetime}</lifetime>'
                     f'<rate>{rate}</rate>'
-                    f'<min_velocity>0.1</min_velocity>'
-                    f'<max_velocity>0.3</max_velocity>'
-                    f'<color_start>0.8 0.8 0.8 0.3</color_start>'
-                    f'<color_end>0.6 0.6 0.6 0.0</color_end>'
-                    f'<scale_rate>0.5</scale_rate>'
+                    f'<min_velocity>0.05</min_velocity>'
+                    f'<max_velocity>0.15</max_velocity>'
+                    f'<color_start>0.9 0.9 0.9 0.025</color_start>'
+                    f'<color_end>0.8 0.8 0.8 0.0</color_end>'
+                    f'<scale_rate>0.20</scale_rate>'
+                    f'<material>'
+                    f'<diffuse>1.0 1.0 1.0 1.0</diffuse>'
+                    f'<specular>0.0 0.0 0.0 1.0</specular>'
+                    f'<pbr><metal>'
+                    f'<albedo_map>file://{smoke_tex}</albedo_map>'
+                    f'</metal></pbr>'
+                    f'</material>'
                     f'</particle_emitter>'
                     f'</link>'
                     f'</model>'
