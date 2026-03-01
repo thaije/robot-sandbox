@@ -206,6 +206,7 @@ class FlickerController:
         # ── Fast path: gz.transport13 service call ────────────────────────────
         if self._gz_node is not None and self._Light is not None and self._Boolean is not None:
             try:
+                # see light message here: https://github.com/gazebosim/gz-msgs/blob/main/proto/gz/msgs/light.proto
                 req = self._Light()
                 req.name = name
                 req.diffuse.r = float(r)
@@ -216,6 +217,17 @@ class FlickerController:
                 req.specular.g = float(g * 0.3)
                 req.specular.b = float(b * 0.3)
                 req.specular.a = 1.0
+                req.type = 0
+                req.cast_shadows = False 
+                # TODO: these below also need to be fetched from the spec and set for the light to turn on again
+                req.attenuation_constant = constant 
+                req.range = att_range 
+                req.attenuation_linear = linear 
+                req.attenuation_quadratic = quadratic
+                # TODO: should be either True or False
+                req.is_light_off = False 
+                req.intensity = 1.0
+                req.visualize_visual = True
                 # Async service call (timeout=1000ms); result ignored —
                 # fire-and-forget is sufficient for visual flickering.
                 self._gz_node.request(
