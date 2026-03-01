@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import threading
 import time
 from pathlib import Path
 
@@ -36,6 +37,9 @@ class SimulationLauncher:
     def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._processes: list[subprocess.Popen] = []
+        # Daemon threads for patrol-bot controllers (no explicit stop needed —
+        # they die when the process exits, or when shutdown() is called).
+        self._patrol_threads: list[threading.Thread] = []
 
     def launch(
         self,
@@ -128,37 +132,34 @@ class SimulationLauncher:
         self._processes.append(proc)
         return proc
 
-    def _launch_patrol_controller(self, obs: dict) -> subprocess.Popen:
-        """Start patrol_bot_controller.py for a dynamic obstacle entry.
+    def _launch_patrol_controller(self, obs: dict) -> threading.Thread | None:
+        """Start a patrol-bot controller as a daemon thread.
 
-        The controller is a standalone Python script that uses gz-transport
-        directly (no ROS 2 bridge).  It runs in its own process group so
-        ``shutdown()`` can kill it along with the other child processes.
+        Runs ``patrol_bot_controller.run()`` in-process (no subprocess) so
+        gz-transport discovery happens in the same network context as Gazebo.
+        The thread is a daemon so it is automatically reaped when the process
+        exits; ``shutdown()`` doesn't need to kill it explicitly.
         """
-        import json
         name = obs.get("name", obs.get("model", "patrol_bot") + "_0")
         waypoints = obs.get("patrol", [])
         if not waypoints:
-            return  # no patrol configured — model is static in the world
+            return None  # no patrol configured — model is static
+
         speed = float(obs.get("speed", 0.4))
         turn_speed = float(obs.get("turn_speed", 0.6))
-        controller = _REPO_ROOT / "src" / "scenario_runner" / "patrol_bot_controller.py"
-        cmd = [
-            "python3.12",
-            str(controller),
-            "--name", name,
-            "--waypoints", json.dumps(waypoints),
-            "--speed", str(speed),
-            "--turn_speed", str(turn_speed),
-        ]
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
+
+        # Import here so the module's path-setup runs in the correct context.
+        from scenario_runner.patrol_bot_controller import run as _patrol_run  # noqa: PLC0415
+
+        t = threading.Thread(
+            target=_patrol_run,
+            args=(name, waypoints, speed, turn_speed),
+            daemon=True,
+            name=f"patrol_{name}",
         )
-        self._processes.append(proc)
-        return proc
+        t.start()
+        self._patrol_threads.append(t)
+        return t
 
     # ── Private: readiness checks ──────────────────────────────────────────────
 

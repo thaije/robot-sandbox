@@ -36,8 +36,9 @@ world:
   dynamic_obstacles:
     - model: "patrol_bot"
       name: "patrol_bot_0"
-      spawn: [9.5, 8.0, 0.0]
-      patrol: [[9.5, 8.0], [3.0, 8.0], [3.0, 5.0], [9.5, 5.0]]
+      # z=0.14: wheels at z=-0.04 from model origin, radius 0.10 m → bottom at z=0
+      spawn: [9.5, 8.0, 0.14]
+      patrol: [[2.0, 8.0], [18.0, 8.0]]
       speed: 0.4
       turn_speed: 0.6
 

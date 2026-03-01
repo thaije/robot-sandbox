@@ -451,12 +451,6 @@ class WorldGenerator:
                     f'<color_start>0.8 0.8 0.8 0.3</color_start>'
                     f'<color_end>0.6 0.6 0.6 0.0</color_end>'
                     f'<scale_rate>0.5</scale_rate>'
-                    f'<material>'
-                    f'<script>'
-                    f'<name>ParticleEmitterPoint</name>'
-                    f'<uri>file://media/materials/scripts/gazebo.material</uri>'
-                    f'</script>'
-                    f'</material>'
                     f'</particle_emitter>'
                     f'</link>'
                     f'</model>'
@@ -480,7 +474,10 @@ class WorldGenerator:
             model.set("name", name)
 
             pose = ET.Element("pose")
-            pose.text = f"{x:.4f} {y:.4f} 0.10 0 0 {yaw:.4f}"
+            # Use the z from the scenario spawn field — the caller must specify
+            # the correct ground-contact height for each model.
+            # For patrol_bot: wheels at z=-0.04, radius=0.10 → spawn z = 0.14.
+            pose.text = f"{x:.4f} {y:.4f} {z:.4f} 0 0 {yaw:.4f}"
             model.insert(0, pose)
 
             world_elem.append(model)

@@ -77,7 +77,7 @@
         <!-- Wheel spin axis = Y in model frame (left-right), expressed in model frame -->
         <xyz expressed_in="__model__">0 1 0</xyz>
         <dynamics><friction>0.01</friction><damping>0.01</damping></dynamics>
-        <limit><lower>-1e9</lower><upper>1e9</upper></limit>
+        <limit><lower>-1e9</lower><upper>1e9</upper><effort>1e6</effort></limit>
       </axis>
     </joint>
 
@@ -116,7 +116,7 @@
       <axis>
         <xyz expressed_in="__model__">0 1 0</xyz>
         <dynamics><friction>0.01</friction><damping>0.01</damping></dynamics>
-        <limit><lower>-1e9</lower><upper>1e9</upper></limit>
+        <limit><lower>-1e9</lower><upper>1e9</upper><effort>1e6</effort></limit>
       </axis>
     </joint>
 
@@ -151,15 +151,16 @@
     </joint>
 
     <!-- ── DiffDrive plugin ───────────────────────────────────────────────── -->
-    <!-- Topic is model-scoped: resolves to /model/<name>/cmd_vel in gz-transport -->
+    <!-- No <topic> element: DiffDrive defaults to /model/<name>/cmd_vel.
+         This matches what patrol_bot_controller.py publishes to.
+         Specifying <topic>cmd_vel</topic> would resolve to /cmd_vel (global),
+         which is the wrong topic and why the bot never moved. -->
     <plugin filename="gz-sim-diff-drive-system"
             name="gz::sim::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint>
       <right_joint>right_wheel_joint</right_joint>
       <wheel_separation>0.56</wheel_separation>
       <wheel_radius>0.10</wheel_radius>
-      <topic>cmd_vel</topic>
-      <odom_topic>odom</odom_topic>
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
       <max_linear_acceleration>1.0</max_linear_acceleration>

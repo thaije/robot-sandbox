@@ -1,11 +1,12 @@
 """Patrol bot waypoint controller — Step 3.14.
 
-Standalone script: drives a patrol_bot model through a closed waypoint loop
-using gz-transport (no ROS 2 bridge required).
+Drives a patrol_bot model through a closed waypoint loop using gz-transport
+(no ROS 2 bridge required).
 
-Run by SimulationLauncher as a subprocess:
+SimulationLauncher calls ``run()`` in a daemon thread.
+Can also be run standalone as a script:
 
-    python3.12 patrol_bot_controller.py \\
+    python3 patrol_bot_controller.py \\
         --name patrol_bot_0 \\
         --waypoints "[[5,8],[15,8],[15,3],[5,3]]" \\
         --speed 0.4 \\
@@ -24,12 +25,6 @@ import math
 import sys
 import time
 
-# gz.transport13 lives in the system Python path, not in the project venv.
-sys.path.insert(0, "/usr/lib/python3/dist-packages")
-
-from gz.transport13 import Node  # type: ignore[import]
-from gz.msgs10.twist_pb2 import Twist  # type: ignore[import]
-
 
 def _clamp_angle(a: float) -> float:
     """Normalise *a* to (-π, π]."""
@@ -41,6 +36,16 @@ def _clamp_angle(a: float) -> float:
 
 
 def run(name: str, waypoints: list[list[float]], speed: float, turn_speed: float) -> None:
+    # gz.transport13 lives in the system Python path, not in the project venv.
+    # Import here (not at module level) so this file is safely importable as a
+    # module for the daemon-thread path in SimulationLauncher.
+    _SYS_PKG = "/usr/lib/python3/dist-packages"
+    if _SYS_PKG not in sys.path:
+        sys.path.insert(0, _SYS_PKG)
+
+    from gz.transport13 import Node  # type: ignore[import]
+    from gz.msgs10.twist_pb2 import Twist  # type: ignore[import]
+
     node = Node()
     topic = f"/model/{name}/cmd_vel"
     pub = node.advertise(topic, Twist)

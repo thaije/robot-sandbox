@@ -232,7 +232,12 @@
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="camera_link"/>
-    <origin xyz="0.05 0 0.15" rpy="0 0 0"/>
+    <!-- z=0.20: camera is 10 cm above body top (body top = 0.10 from base_link).
+         At bottom FOV edge (−36.87°) the ray hits body-top plane at x=0.183 m
+         from base_link, which is outside the body's ±0.15 m x-extent — body
+         invisible in frame.  Previously z=0.15 put the ray at x=0.117 (inside
+         body), causing the lower ~25 % of the image to show the blue chassis. -->
+    <origin xyz="0.05 0 0.20" rpy="0 0 0"/>
   </joint>
 
   <link name="camera_link">
