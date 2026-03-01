@@ -73,12 +73,12 @@ def test_evaluate_any_of():
 # --- detection metrics ---
 
 def test_detection_metrics_all_found():
-    dm = DetectionMetrics(total_targets=3)
-    dm.ingest_events([
-        {"class": "fire_extinguisher", "timestamp": 30.0, "distance": 2.0},
-        {"class": "first_aid_kit",     "timestamp": 60.0, "distance": 1.5},
-        {"class": "hazard_sign",       "timestamp": 90.0, "distance": 3.0},
-    ])
+    dm = DetectionMetrics("/test/detections", node=None, total_targets=3)
+    dm._tracker.get_events = lambda: [
+        {"class_id": "1", "class_name": "fire_extinguisher #1", "timestamp": 30.0},
+        {"class_id": "2", "class_name": "first_aid_kit #1",     "timestamp": 60.0},
+        {"class_id": "3", "class_name": "hazard_sign #1",       "timestamp": 90.0},
+    ]
     result = dm.get_result()
     assert result["object_detection_rate"] == 1.0
     assert result["time_to_all_detections"] == 90.0
@@ -142,7 +142,7 @@ def test_smoke_exploration_coverage():
     assert m.get_result() == {"exploration_coverage": 0.0}
 
 def test_smoke_detection_metrics():
-    m = DetectionMetrics(total_targets=0)
+    m = DetectionMetrics("/test/detections", node=None, total_targets=0)
     result = m.get_result()
     assert "object_detection_rate" in result
 
@@ -161,20 +161,23 @@ def test_collision_empty_contacts_ignored():
     assert cc.get_result()["collision_count"] == 0
 
 def test_collision_counts_event():
-    cc = CollisionCount(debounce_seconds=0.5)
+    cc = CollisionCount()
     with patch("metrics.collision_count.time.monotonic", return_value=1.0):
         cc._on_contact(_contact_msg())
     assert cc.get_result()["collision_count"] == 1
 
-def test_collision_debounce_suppresses_rapid_repeat():
-    cc = CollisionCount(debounce_seconds=0.5)
+def test_collision_clusters_rapid_events():
+    """Events within 0.5 s of each other cluster into one collision."""
+    cc = CollisionCount()
     with patch("metrics.collision_count.time.monotonic") as mock_t:
-        mock_t.return_value = 1.0
-        cc._on_contact(_contact_msg())   # counted (1)
-        mock_t.return_value = 1.3        # within debounce
-        cc._on_contact(_contact_msg())   # suppressed
-        mock_t.return_value = 1.6        # past debounce
-        cc._on_contact(_contact_msg())   # counted (2)
+        mock_t.return_value = 0.0
+        cc._on_contact(_contact_msg())    # event at t=0.0
+        cc._on_contact(_contact_msg(0))   # off
+        mock_t.return_value = 0.3
+        cc._on_contact(_contact_msg())    # event at t=0.3 → same cluster (gap 0.3s < 0.5s)
+        cc._on_contact(_contact_msg(0))   # off
+        mock_t.return_value = 1.1
+        cc._on_contact(_contact_msg())    # event at t=1.1 → new cluster (gap 0.8s > 0.5s)
     assert cc.get_result()["collision_count"] == 2
 
 def test_collision_reset():

@@ -210,6 +210,8 @@ class FlickerController:
         constant = float(rl.get("constant", 0.5))
         linear = float(rl.get("linear", 0.05))
         quadratic = float(rl.get("quadratic", 0.005))
+        _type_map = {"point": 0, "spot": 1, "directional": 2}
+        light_type_int = _type_map.get(rl.get("type", "point"), 0)
 
         # ── Fast path: gz.transport13 service call ────────────────────────────
         if self._gz_node is not None and self._Light is not None and self._Boolean is not None:
@@ -225,7 +227,7 @@ class FlickerController:
                 req.specular.g = float(g * 0.3)
                 req.specular.b = float(b * 0.3)
                 req.specular.a = 1.0
-                req.type = 0
+                req.type = light_type_int
                 req.cast_shadows = False
                 req.attenuation_constant = constant
                 req.range = att_range

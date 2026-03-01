@@ -65,7 +65,17 @@
       "Bash(grep -l \"light\" /usr/share/gz/gz-sim8/worlds/*.sdf)",
       "Bash(python agent-scripts/snapshot.py)",
       "Bash(python scripts/robot_control.py snapshot)",
-      "Bash(tmux list-sessions)"
+      "Bash(tmux list-sessions)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_object_placer.py tests/test_scoring.py -q --tb=short --override-ini=\"python_paths=\")",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_world_generator.py tests/test_scenario_config.py tests/test_metrics.py -q --tb=no)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_world_generator.py tests/test_scenario_config.py -q --tb=no)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_world_generator.py -v --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py -v --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py::test_collision_counts_event tests/test_metrics.py::test_detection_metrics_all_found tests/test_scoring.py::test_compute_returns_scorecard --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_scenario_config.py -v --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py tests/test_scoring.py tests/test_scenario_config.py -q --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_world_generator.py tests/test_flicker_controller.py -q --tb=short)",
+      "Bash(PYTHONPATH=src python3.12 -m pytest tests/test_metrics.py tests/test_scoring.py tests/test_scenario_config.py tests/test_world_generator.py tests/test_object_placer.py tests/test_flicker_controller.py -q --tb=short)"
     ]
   },
   "hooks": {

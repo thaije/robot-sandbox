@@ -97,7 +97,7 @@ def test_compute_returns_scorecard():
     }
     sc = engine.compute(metrics, SCENARIO_CFG)
     assert sc.scenario_name == "test"
-    assert len(sc.categories) == 4
+    assert len(sc.categories) == 5
     assert 0 <= sc.overall_score <= 100
     # Zero collisions → safety = 100
     safety_cat = next(c for c in sc.categories if c.name == "safety")

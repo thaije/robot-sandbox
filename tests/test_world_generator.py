@@ -152,3 +152,116 @@ def test_generate_missing_urdf_raises(tmp_path):
     gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
     with pytest.raises(FileNotFoundError, match="nonexistent_bot"):
         gen.generate(cfg)
+
+
+# ── _apply_lighting — flicker_names exclusion ─────────────────────────────────
+
+_LIGHTING_PRESETS_TEST = {
+    "test_preset": {
+        "ambient": [0.5, 0.5, 0.5, 1.0],
+        "room_lights": [
+            {"name": "light_a", "type": "point", "pose": [1, 2, 3, 0, 0, 0], "diffuse": [1, 0, 0, 1]},
+            {"name": "light_b", "type": "point", "pose": [4, 5, 3, 0, 0, 0], "diffuse": [0, 1, 0, 1]},
+        ],
+    }
+}
+
+
+def _world_with_scene():
+    return ET.fromstring('<world><scene><ambient>1 1 1 1</ambient></scene></world>')
+
+
+def test_apply_lighting_includes_all_lights_by_default(tmp_path):
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = _world_with_scene()
+    gen._apply_lighting(world, "test_preset", _LIGHTING_PRESETS_TEST)
+    names = [el.get("name") for el in world.findall("light")]
+    assert "light_a" in names
+    assert "light_b" in names
+
+
+def test_apply_lighting_skips_flicker_lights(tmp_path):
+    """Lights in flicker_names must be absent from the SDF — EntityFactory creates them."""
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = _world_with_scene()
+    gen._apply_lighting(world, "test_preset", _LIGHTING_PRESETS_TEST, flicker_names={"light_a"})
+    names = [el.get("name") for el in world.findall("light")]
+    assert "light_a" not in names
+    assert "light_b" in names
+
+
+def test_apply_lighting_unknown_preset_is_noop(tmp_path):
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = _world_with_scene()
+    original = world.find("scene/ambient").text
+    gen._apply_lighting(world, "nonexistent_preset", _LIGHTING_PRESETS_TEST)
+    assert world.find("scene/ambient").text == original
+    assert world.findall("light") == []
+
+
+# ── _apply_door_states ────────────────────────────────────────────────────────
+
+_DOORS_TEST = [
+    {"id": "door_1", "x": 5.0, "y": 2.0, "orientation": "ew", "width": 1.2},
+    {"id": "door_2", "x": 10.0, "y": 7.0, "orientation": "ns", "width": 1.0},
+]
+
+
+def test_apply_door_states_open_adds_no_panels(tmp_path):
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = ET.fromstring("<world></world>")
+    gen._apply_door_states(world, "open", _DOORS_TEST, seed=42)
+    assert world.findall("model") == []
+
+
+def test_apply_door_states_closed_adds_all_panels(tmp_path):
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = ET.fromstring("<world></world>")
+    gen._apply_door_states(world, "closed", _DOORS_TEST, seed=42)
+    panel_names = {m.get("name") for m in world.findall("model")}
+    assert "door_panel_door_1" in panel_names
+    assert "door_panel_door_2" in panel_names
+
+
+def test_apply_door_states_panel_ew_geometry(tmp_path):
+    """EW door: panel wide in x (door width), thin in y (PANEL_T=0.15)."""
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = ET.fromstring("<world></world>")
+    gen._apply_door_states(world, "closed", [_DOORS_TEST[0]], seed=42)
+    model = world.find("model[@name='door_panel_door_1']")
+    sx, sy, _ = [float(v) for v in model.find(".//box/size").text.split()]
+    assert sx == pytest.approx(1.2)   # door width
+    assert sy == pytest.approx(0.15)  # panel thickness
+
+
+def test_apply_door_states_panel_ns_geometry(tmp_path):
+    """NS door: panel thin in x (PANEL_T), wide in y (door width)."""
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = ET.fromstring("<world></world>")
+    gen._apply_door_states(world, "closed", [_DOORS_TEST[1]], seed=42)
+    model = world.find("model[@name='door_panel_door_2']")
+    sx, sy, _ = [float(v) for v in model.find(".//box/size").text.split()]
+    assert sx == pytest.approx(0.15)  # panel thickness
+    assert sy == pytest.approx(1.0)   # door width
+
+
+# ── _inject_dynamic_obstacles — smoke emitter ─────────────────────────────────
+
+def test_inject_smoke_emitter_creates_particle_emitter(tmp_path):
+    gen = WorldGenerator(output_dir=tmp_path, project_root=PROJECT_ROOT)
+    world = ET.fromstring("<world></world>")
+    obs = [{
+        "model": "smoke_emitter",
+        "name": "test_smoke",
+        "spawn": [3.0, 4.0, 1.0],
+        "rate": 15,
+        "size": [1.5, 2.0, 0.5],
+    }]
+    gen._inject_dynamic_obstacles(world, obs)
+    model = world.find("model[@name='test_smoke']")
+    assert model is not None
+    emitter = model.find(".//particle_emitter")
+    assert emitter is not None
+    assert float(emitter.find("rate").text) == pytest.approx(15.0)
+    size_vals = [float(v) for v in emitter.find("size").text.split()]
+    assert size_vals == pytest.approx([1.5, 2.0, 0.5])
