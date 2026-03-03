@@ -38,20 +38,35 @@ def build_mission_data(cfg: dict) -> dict[str, Any]:
     scenario = cfg["scenario"]
     objects = cfg.get("world", {}).get("objects", [])
 
-    targets: list[dict[str, Any]] = []
+    # Group by type — scenarios may list the same type multiple times with
+    # different placement strategies (e.g. some on desk, some on floor).
+    # Merge so the mission brief shows one line per object type.
+    grouped: dict[str, dict[str, Any]] = {}
     for obj in objects:
+        obj_type = obj["type"]
         revealed = obj.get("count_revealed", True)
+        count = int(obj.get("count", 1))
+        if obj_type not in grouped:
+            grouped[obj_type] = {"total": 0, "revealed": 0, "all_revealed": True}
+        grouped[obj_type]["total"] += count
         if revealed:
+            grouped[obj_type]["revealed"] += count
+        else:
+            grouped[obj_type]["all_revealed"] = False
+
+    targets: list[dict[str, Any]] = []
+    for obj_type, info in grouped.items():
+        if info["all_revealed"]:
             targets.append({
-                "type": obj["type"],
-                "count": obj.get("count", 1),
+                "type": obj_type,
+                "count": info["total"],
                 "count_exact": True,
             })
         else:
             targets.append({
-                "type": obj["type"],
+                "type": obj_type,
                 "count_exact": False,
-                "min_count": 1,
+                "min_count": max(1, info["revealed"]),
             })
 
     time_limit = int(scenario.get("timeout_seconds", 600))

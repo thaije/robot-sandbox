@@ -22,7 +22,6 @@ world:
     - type: "hazard_sign"
       count: 1
       placement: "random"
-      z_offset: 0.9
     - type: "hazard_sign"
       count: 3
       placement: "random"
