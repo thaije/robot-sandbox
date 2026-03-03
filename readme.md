@@ -109,6 +109,5 @@ python3.12 -m pytest tests/
 
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
-- add a location to detection topic (if not already done) that can be checked for category and location
 
   

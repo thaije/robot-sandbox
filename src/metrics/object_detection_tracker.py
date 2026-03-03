@@ -1,23 +1,29 @@
-"""Object detection tracker — Step 3.5 (support class).
+"""Object detection tracker.
 
-Subscribes to the bounding-box camera topic and records the first time each
-object class label is detected.  Used by DetectionMetrics.
+Subscribes to /robot/detections (vision_msgs/Detection2DArray) and classifies
+each incoming detection as TP, DP, FP, or IGN against the ground-truth label_map.
 
-The boundingbox_camera sensor (gz-sim-sensors-system, Gazebo Harmonic) emits
-gz.msgs.AnnotatedAxisAligned2DBox_V, bridged to
-vision_msgs/Detection2DArray via ros_gz_bridge.
+Detection2D message contract (required from agents):
+  class_id  (results[0].hypothesis.class_id) : object type, e.g. "fire_extinguisher"
+  id                                          : persistent per-instance tracking ID
+  results[0].pose.pose.position.{x,y}        : estimated world position (metres)
 
-Each Detection2D.results[0].hypothesis.class_id carries the integer label
-assigned by gz-sim-label-system as a string ("1", "2", "3").
-  1 = fire_extinguisher
-  2 = first_aid_kit
-  3 = hazard_sign
+Oracle compatibility (dev/cheat tool):
+  Numeric class_id that resolves in label_map is accepted as oracle format.
+  World position and type are taken from label_map; no tracking ID needed.
+
+Event taxonomy:
+  TP  – first confirmed detection of a physical object: correct type, within
+        match_threshold metres of a real object, line-of-sight clear.
+  DP  – duplicate positive: correct type + location but that physical object
+        is already confirmed, OR the tracking ID was already seen.
+  FP  – known type, but no matching object within threshold or no line of sight.
+  IGN – unknown / background type; silently dropped, not penalised.
 """
 from __future__ import annotations
 
 import json
 import math
-import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -47,22 +53,23 @@ def _bresenham(x0: int, y0: int, x1: int, y1: int):
             err += dx
             y0 += sy
 
+
 class ObjectDetectionTracker:
-    """Track first-detection events per object label.
+    """Track TP/DP/FP detection events against the ground-truth label map.
 
     Parameters
     ----------
     detections_topic:
         ROS 2 topic, e.g. ``/derpbot_0/detections``.
     node:
-        An ``rclpy.node.Node`` instance.  Must be provided before calling
-        ``start()``.  Kept as ``Any`` to avoid a hard rclpy import at module
-        load time.
+        An ``rclpy.node.Node`` instance. Must be provided before ``start()``.
     label_map:
-        Optional dict mapping string label IDs to ``{"type": str, "instance": int}``
-        dicts, as produced by ``WorldGenerator.label_map``.  When provided,
-        each detected label is resolved to a human-readable name like
-        ``"fire_extinguisher #1"``.  Falls back to ``label_<id>`` if absent.
+        Dict mapping string label IDs to
+        ``{"type": str, "instance": int, "x": float, "y": float}`` dicts,
+        as produced by ``WorldGenerator.label_map``.
+    match_threshold:
+        Max xy distance (metres) between claimed and actual object position
+        for a detection to qualify as a TP. Default 1.5 m.
     """
 
     def __init__(
@@ -70,25 +77,38 @@ class ObjectDetectionTracker:
         detections_topic: str,
         node: Any,
         label_map: dict[str, dict] | None = None,
+        match_threshold: float = 1.5,
     ) -> None:
         self._topic = detections_topic
         self._node = node
         self._label_map = label_map or {}
+        self._match_threshold = match_threshold
         self._start_time: float = 0.0
-        self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
-        self._odom_sub: Any = None   # fallback only; kept alive while subscribed
-        self._gz_node: Any = None    # gz-transport node; kept alive to maintain subscription
-        # LOS state — camera world position (precomputed from robot pose + offset)
-        self._robot_pose: tuple[float, float] | None = None  # camera world (x, y)
-        self._pgm_pixels: list[list[int]] | None = None      # occupancy grid rows
+        self._odom_sub: Any = None
+        self._gz_node: Any = None
+
+        # Valid object types derived from label_map
+        self._valid_types: set[str] = {e["type"] for e in self._label_map.values()}
+
+        # Detection state
+        self._confirmed_objects: dict[str, dict] = {}  # label_key → TP data
+        self._seen_tracking_ids: set[str] = set()
+        self._tp_events: list[dict] = []
+        self._fp_count: int = 0
+        self._dp_count: int = 0
+        self._location_errors: list[float] = []  # metres error per TP (non-oracle only)
+
+        # LOS state — camera world position
+        self._robot_pose: tuple[float, float] | None = None
+        self._pgm_pixels: list[list[int]] | None = None
         self._pgm_W: int = 0
         self._pgm_H: int = 0
-        self._map_res: float = 0.5  # metres per grid cell
-        # Spawn offset — only used for the odom fallback path
+        self._map_res: float = 0.5
+        # Spawn offset for odom fallback
         self._spawn_x: float = 0.0
         self._spawn_y: float = 0.0
-        self._spawn_yaw: float = 0.0  # kept alive to keep subscription active
+        self._spawn_yaw: float = 0.0
 
     def start(self) -> None:
         """Subscribe to the detection topic and record start time."""
@@ -115,7 +135,6 @@ class ObjectDetectionTracker:
             self._map_res = float(state.get("map_resolution", 0.5))
             pgm_path = state["map_pgm"]
             raw = open(pgm_path, "rb").read()  # noqa: WPS515
-            # Parse P5 (binary) PGM header — same logic as exploration_coverage.py
             lines: list[str] = []
             idx = 0
             while len(lines) < 3:
@@ -130,7 +149,6 @@ class ObjectDetectionTracker:
             W, H = map(int, lines[1].split())
             grid = np.frombuffer(raw[idx:], dtype=np.uint8).reshape((H, W))
             self._pgm_H, self._pgm_W = grid.shape
-            # Store as list-of-lists (row-major, row 0 = top of map = max world-y)
             self._pgm_pixels = grid.tolist()
         except Exception:
             pass
@@ -138,13 +156,10 @@ class ObjectDetectionTracker:
     def _start_pose_listener(self) -> None:
         """Track camera world position for LOS checks.
 
-        Primary: gz-transport ground-truth pose (accurate, no drift).
-        Fallback: ROS /odom (used only if gz-transport is unavailable).
+        Primary: gz-transport ground-truth pose.
+        Fallback: ROS /odom with spawn-offset correction.
         """
-        # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
         robot = self._topic.strip("/").split("/")[0]
-
-        # ── Read world_state.json for world_name + spawn offset (odom fallback) ──
         world_name: str = ""
         try:
             state = json.loads(_WORLD_STATE_PATH.read_text())
@@ -156,7 +171,6 @@ class ObjectDetectionTracker:
         except Exception:
             pass
 
-        # ── Primary: gz-transport ground-truth pose ────────────────────────────
         if world_name:
             try:
                 from utils.gz_transport import gz_subscribe_robot_pose  # noqa: PLC0415
@@ -171,7 +185,6 @@ class ObjectDetectionTracker:
             except Exception:
                 self._gz_node = None
 
-        # ── Fallback: ROS /odom (spawn-offset corrected) ───────────────────────
         if self._gz_node is None:
             odom_topic = f"/{robot}/odom"
             from nav_msgs.msg import Odometry  # noqa: PLC0415
@@ -195,88 +208,154 @@ class ObjectDetectionTracker:
 
             self._odom_sub = self._node.create_subscription(Odometry, odom_topic, _on_odom, 10)
 
-    def _has_line_of_sight(self, class_id: str) -> bool:
-        """Return True if a clear sightline exists from camera to the object.
+    def _has_line_of_sight(self, ox: float, oy: float) -> bool:
+        """Return True if a clear sightline exists from camera to (ox, oy).
 
-        Uses Bresenham ray-casting on the PGM occupancy grid.  A cell with
-        value < 128 is considered a wall.  The ray origin is the camera's world
-        position (robot centre + CAMERA_FORWARD_OFFSET along heading), not the
-        robot centre, so the check works correctly when the robot is pressed
-        against a wall.  Returns True (allow detection) when the grid or pose
-        is unavailable so failures are non-blocking.
+        Uses Bresenham ray-casting on the PGM occupancy grid.
+        Returns True (allow) when grid or robot pose is unavailable.
         """
         if self._pgm_pixels is None or self._robot_pose is None:
-            return True  # data not ready — allow
-        if class_id not in self._label_map:
-            return True  # unknown object — allow
-
+            return True
         res = self._map_res
         H = self._pgm_H
-        rx, ry = self._robot_pose  # camera world position
-        obj = self._label_map[class_id]
-        ox, oy = float(obj["x"]), float(obj["y"])
-
-        # World → grid cell.  Row 0 is the top of the map (highest world-y).
+        rx, ry = self._robot_pose
         c0, r0 = int(rx / res), H - 1 - int(ry / res)
         c1, r1 = int(ox / res), H - 1 - int(oy / res)
-
         pixels = self._pgm_pixels
         for c, r in _bresenham(c0, r0, c1, r1):
             if r < 0 or r >= H or c < 0 or c >= self._pgm_W:
                 continue
-            if pixels[r][c] < 128:  # wall cell
+            if pixels[r][c] < 128:
                 return False
         return True
 
+    def _find_nearest_object(
+        self, class_type: str, wx: float, wy: float
+    ) -> tuple[str | None, float]:
+        """Return (label_key, distance) for the nearest object of class_type.
+
+        Searches all label_map entries (confirmed and unconfirmed) so that
+        DP detection against an already-confirmed object is possible.
+        Returns (None, inf) if no objects of that type exist in the map.
+        """
+        best_key: str | None = None
+        best_dist = math.inf
+        for key, entry in self._label_map.items():
+            if entry["type"] != class_type:
+                continue
+            d = math.hypot(wx - float(entry["x"]), wy - float(entry["y"]))
+            if d < best_dist:
+                best_dist = d
+                best_key = key
+        return best_key, best_dist
+
+    # ── Core subscription handler ──────────────────────────────────────────────
+
     def _on_detections(self, msg: Any) -> None:
         elapsed = time.monotonic() - self._start_time
-        new_find = False
+        new_tp = False
+
         for det in msg.detections:
-            for hyp in det.results:
-                class_id = hyp.hypothesis.class_id
-                # Ignore empty or background label ("0")
-                if class_id and class_id != "0" and class_id not in self._first_detections:
-                    if not self._has_line_of_sight(class_id):
-                        continue  # through-wall clip — reject
-                    self._first_detections[class_id] = elapsed
-                    new_find = True
-        if new_find:
+            if not det.results:
+                continue
+            hyp = det.results[0]
+            raw_class_id: str = hyp.hypothesis.class_id
+            if not raw_class_id or raw_class_id == "0":
+                continue
+
+            # ── Resolve oracle vs real-agent format ───────────────────────────
+            if raw_class_id in self._label_map:
+                # Oracle format: numeric label → translate using label_map
+                entry = self._label_map[raw_class_id]
+                class_type = entry["type"]
+                wx = float(entry["x"])
+                wy = float(entry["y"])
+                tracking_id = raw_class_id   # numeric label is its own stable UID
+                is_oracle = True
+            else:
+                # Real-agent format: class_id is type name; pose is world position
+                class_type = raw_class_id
+                wx = float(hyp.pose.pose.position.x)
+                wy = float(hyp.pose.pose.position.y)
+                tracking_id = det.id or ""
+                is_oracle = False
+
+            # 1. Unknown type → IGN (silently dropped, not penalised)
+            if class_type not in self._valid_types:
+                continue
+
+            # 2. Already-seen tracking ID → no-op (prevents same detection spamming)
+            if tracking_id and tracking_id in self._seen_tracking_ids:
+                continue
+            if tracking_id:
+                self._seen_tracking_ids.add(tracking_id)
+
+            # 3. Find nearest physical object of this type
+            label_key, dist = self._find_nearest_object(class_type, wx, wy)
+
+            if label_key is not None and dist <= self._match_threshold:
+                actual = self._label_map[label_key]
+                if not self._has_line_of_sight(float(actual["x"]), float(actual["y"])):
+                    self._fp_count += 1
+                    continue
+
+                if label_key in self._confirmed_objects:
+                    # Physical object already confirmed → duplicate positive
+                    self._dp_count += 1
+                else:
+                    # True positive
+                    location_error = 0.0 if is_oracle else dist
+                    self._confirmed_objects[label_key] = {
+                        "timestamp": elapsed,
+                        "tracking_id": tracking_id,
+                        "location_error": location_error,
+                    }
+                    if not is_oracle:
+                        self._location_errors.append(dist)
+                    self._tp_events.append({
+                        "label_key": label_key,
+                        "class_type": class_type,
+                        "class_name": f"{class_type} #{actual['instance'] + 1}",
+                        "timestamp": round(elapsed, 2),
+                        "location_error": round(location_error, 3),
+                    })
+                    new_tp = True
+            else:
+                # Nothing within threshold → false positive
+                self._fp_count += 1
+
+        if new_tp:
             self._write_live_state()
 
     def _write_live_state(self) -> None:
-        """Write found class_ids to disk so agent tools can show live progress."""
         try:
             _LIVE_DETECTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            _LIVE_DETECTIONS_PATH.write_text(
-                json.dumps({"found": list(self._first_detections.keys())})
-            )
+            found = [{"type": e["class_type"], "name": e["class_name"]} for e in self._tp_events]
+            _LIVE_DETECTIONS_PATH.write_text(json.dumps({"found": found}))
         except Exception:
             pass
 
-    def get_events(self) -> list[dict]:
-        """Return first-detection events, one entry per detected instance.
+    # ── Public API ─────────────────────────────────────────────────────────────
 
-        Each event: ``{"class_id": str, "class_name": str, "timestamp": float}``
+    def get_tp_events(self) -> list[dict]:
+        """TP events sorted by timestamp."""
+        return sorted(self._tp_events, key=lambda e: e["timestamp"])
 
-        When a ``label_map`` was provided, ``class_name`` is resolved to
-        ``"<type> #<1-based-instance>"`` (e.g. ``"fire_extinguisher #2"``).
-        Falls back to ``label_<id>`` for type-level labels.
-        """
-        def _resolve(cid: str) -> str:
-            if cid in self._label_map:
-                entry = self._label_map[cid]
-                return f"{entry['type']} #{entry['instance'] + 1}"
-            return f"label_{cid}"
+    def get_fp_count(self) -> int:
+        return self._fp_count
 
-        return [
-            {
-                "class_id": cid,
-                "class_name": _resolve(cid),
-                "timestamp": round(ts, 2),
-            }
-            for cid, ts in sorted(self._first_detections.items(), key=lambda x: int(x[0]))
-        ]
+    def get_dp_count(self) -> int:
+        return self._dp_count
+
+    def get_location_errors(self) -> list[float]:
+        """XY distance errors (metres) for TP detections; empty for oracle-only runs."""
+        return list(self._location_errors)
 
     def reset(self) -> None:
-        self._first_detections = {}
+        self._confirmed_objects = {}
+        self._seen_tracking_ids = set()
+        self._tp_events = []
+        self._fp_count = 0
+        self._dp_count = 0
+        self._location_errors = []
         self._start_time = 0.0

@@ -23,7 +23,7 @@ Runs are scored 0–100 across five categories, combined as a weighted sum.
 | Category | What it measures |
 |---|---|
 | **Speed** | Time-to-detect and exploration rate relative to par |
-| **Accuracy** | Detection rate, false-positive rate, path efficiency |
+| **Accuracy** | `found_ratio` (recall, 0.55) + `precision` (0.45) |
 | **Safety** | Collisions and near-misses |
 | **Efficiency** | Redundant traversal, area-per-metre coverage |
 | **Effectiveness** | Per-type detection completeness (types have configurable weights) |
@@ -63,9 +63,21 @@ Ground robot (differential drive — currently the only supported model).
 | `/derpbot_0/joint_states` | `sensor_msgs/JointState` |
 | TF tree | `odom → base_footprint → base_link` |
 
-### Detection output (ground-truth oracle)
+### Detection output
 
-`/derpbot_0/detections` publishes `vision_msgs/Detection2DArray` from a ground-truth bounding-box camera (same FOV/resolution as the RGB camera, handles occlusion). This is the reference output used for scoring. You may use your own vision pipeline on `/derpbot_0/image_raw` and remap to the detections topic; or consume the oracle directly and focus your autonomy on navigation and exploration.
+Publish your detections on `/derpbot_0/detections` as `vision_msgs/Detection2DArray`. The scoring system validates each detection against the ground truth.
+
+**Required fields per `Detection2D`:**
+
+| Field | Content |
+|---|---|
+| `results[0].hypothesis.class_id` | Object type string, e.g. `"fire_extinguisher"` |
+| `id` | Persistent per-instance tracking ID (e.g. `"track_23"`). Use a stable ID for the same physical object across frames. |
+| `results[0].pose.pose.position.{x,y}` | Estimated world position in metres (from robot pose + depth estimate) |
+
+**Validation logic:** a detection is a **true positive** if the class matches a known target type, the claimed position is within 1.5 m of a real object of that type, and there is line of sight. Detections of unknown classes are silently ignored (no penalty). False positives, duplicate positives and localization error reduce your score.
+
+**Note:** a ground-truth oracle is available at `/derpbot_0/detections` during development runs (see §6). For scored runs, deploy your own vision pipeline on `/derpbot_0/image_raw`.
 
 ---
 
@@ -130,7 +142,7 @@ A mission brief is also printed to stdout at scenario start and again just befor
 
 1. **Receive the mission** — fetch the mission description (see section 4) before or at run start.
 2. **Explore** the environment — no map is provided; build it from LiDAR and odometry.
-3. **Detect objects** — publish `vision_msgs/Detection2DArray` on `/derpbot_0/detections`, or rely on the oracle.
+3. **Detect objects** — publish `vision_msgs/Detection2DArray` on `/derpbot_0/detections` with class, tracking ID, and world position (see §3).
 4. **Navigate safely** — collisions and near-misses reduce your Safety score.
 5. **Stop or let the runner end the episode** — the runner polls detections and terminates automatically.
 

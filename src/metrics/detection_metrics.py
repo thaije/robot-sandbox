@@ -1,4 +1,4 @@
-"""Detection-derived metrics — Step 3.5."""
+"""Detection-derived metrics."""
 from __future__ import annotations
 
 from typing import Any
@@ -8,28 +8,35 @@ from metrics.object_detection_tracker import ObjectDetectionTracker
 
 
 class DetectionMetrics(BaseMetric):
-    """
-    Wraps ObjectDetectionTracker to compute:
-      - object_detection_rate       (detected_instances / total_instances)
-      - time_to_all_detections      (timestamp of last first-detection)
-      - average_time_per_detection
-      - false_positive_rate         (0.0 for ground-truth oracle)
-      - detection_by_type           ({type: {detected, total}} per object type)
+    """Computes detection quality metrics from ObjectDetectionTracker.
+
+    Metrics returned by get_result():
+      found_ratio              – TP instances / total instances (recall)
+      precision                – TP / (TP + FP); 1.0 when no detections published
+      duplicate_rate           – DP / (TP + DP); tracker quality indicator
+      mean_localization_error  – mean XY error (metres) for TP positions;
+                                 None when only oracle detections were received
+      time_to_all_detections   – elapsed seconds when last required TP confirmed
+      average_time_per_detection
+      false_positive_count
+      duplicate_count
+      detection_count          – number of confirmed TPs
+      detection_events         – list of TP event dicts
+      detection_by_type        – {type: {detected, total}}
 
     Parameters
     ----------
     detections_topic:
         ROS 2 topic, e.g. ``/derpbot_0/detections``.
     node:
-        An ``rclpy.node.Node`` instance.  Must be provided before calling
-        ``start()``.
+        An ``rclpy.node.Node`` instance.
     total_targets:
-        Total number of object *instances* in the scenario.  Used as the
-        denominator for object_detection_rate.
+        Total object instances in the scenario (denominator for found_ratio).
     label_map:
-        Optional dict mapping string label IDs → ``{"type": str, "instance": int}``
-        dicts, as produced by ``WorldGenerator.label_map``.  When provided,
-        enables instance-level detection tracking and ``detection_by_type``.
+        Dict mapping string label IDs → ``{"type": str, "instance": int,
+        "x": float, "y": float}`` dicts, as produced by WorldGenerator.
+    match_threshold:
+        Max XY distance (metres) for a detection to match a real object. Default 1.5 m.
     """
 
     name = "detection_metrics"
@@ -40,9 +47,12 @@ class DetectionMetrics(BaseMetric):
         node: Any,
         total_targets: int = 0,
         label_map: dict[str, dict] | None = None,
+        match_threshold: float = 1.5,
     ) -> None:
         self._label_map = label_map or {}
-        self._tracker = ObjectDetectionTracker(detections_topic, node, self._label_map)
+        self._tracker = ObjectDetectionTracker(
+            detections_topic, node, self._label_map, match_threshold
+        )
         self._total_targets = total_targets
 
     def start(self) -> None:
@@ -52,45 +62,49 @@ class DetectionMetrics(BaseMetric):
         pass  # reactive — fed by tracker subscription
 
     def get_result(self) -> dict[str, Any]:
-        events = self._tracker.get_events()
-        n_detected = len(events)
+        events = self._tracker.get_tp_events()
+        n_tp = len(events)
+        n_fp = self._tracker.get_fp_count()
+        n_dp = self._tracker.get_dp_count()
+        loc_errors = self._tracker.get_location_errors()
         timestamps = [e["timestamp"] for e in events]
 
-        detection_rate = n_detected / self._total_targets if self._total_targets else 0.0
+        found_ratio = n_tp / self._total_targets if self._total_targets else 0.0
+        precision = n_tp / (n_tp + n_fp) if (n_tp + n_fp) > 0 else 1.0
+        duplicate_rate = n_dp / (n_tp + n_dp) if (n_tp + n_dp) > 0 else 0.0
+        mean_loc_error = round(sum(loc_errors) / len(loc_errors), 3) if loc_errors else None
         time_to_all = max(timestamps) if timestamps else 0.0
-        avg_time = time_to_all / n_detected if n_detected else 0.0
+        avg_time = time_to_all / n_tp if n_tp else 0.0
 
         return {
-            "object_detection_rate": round(detection_rate, 4),
+            "found_ratio": round(found_ratio, 4),
+            "precision": round(precision, 4),
+            "duplicate_rate": round(duplicate_rate, 4),
+            "mean_localization_error": mean_loc_error,
             "time_to_all_detections": round(time_to_all, 2),
             "average_time_per_detection": round(avg_time, 2),
-            "false_positive_rate": 0.0,  # ground-truth oracle always 0
-            "detection_count": n_detected,
+            "false_positive_count": n_fp,
+            "duplicate_count": n_dp,
+            "detection_count": n_tp,
             "detection_events": events,
             "detection_by_type": self._compute_by_type(events),
         }
 
     def _compute_by_type(self, events: list[dict]) -> dict[str, dict]:
-        """Build per-type detection summary from events and label_map."""
-        # Count totals per type from label_map
         totals: dict[str, int] = {}
         for entry in self._label_map.values():
             t = entry["type"]
             totals[t] = totals.get(t, 0) + 1
 
-        # Count detected per type from events
         detected: dict[str, int] = {}
         for ev in events:
-            cid = ev["class_id"]
-            if cid in self._label_map:
-                t = self._label_map[cid]["type"]
-                detected[t] = detected.get(t, 0) + 1
+            t = ev["class_type"]
+            detected[t] = detected.get(t, 0) + 1
 
-        # Merge — include all known types even if nothing detected
-        result: dict[str, dict] = {}
-        for t, total in sorted(totals.items()):
-            result[t] = {"detected": detected.get(t, 0), "total": total}
-        return result
+        return {
+            t: {"detected": detected.get(t, 0), "total": total}
+            for t, total in sorted(totals.items())
+        }
 
     def reset(self) -> None:
         self._tracker.reset()

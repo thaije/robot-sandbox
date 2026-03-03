@@ -57,8 +57,10 @@ metrics:
     - task_completion_time
     - average_time_per_detection
     - exploration_coverage
-    - object_detection_rate
-    - false_positive_rate
+    - found_ratio
+    - precision
+    - duplicate_rate
+    - mean_localization_error
     - collision_count
     - near_miss_count
     - revisit_ratio
@@ -66,7 +68,7 @@ metrics:
 success_criteria:
   mode: "all_of"
   conditions:
-    - metric: "object_detection_rate"
+    - metric: "found_ratio"
       operator: ">="
       value: 1.0
       description: "All target objects must be detected"

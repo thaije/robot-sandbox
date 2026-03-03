@@ -31,8 +31,8 @@ def make_odom(x, y):
 
 def test_evaluate_condition_pass():
     passed, desc = evaluate_condition(
-        {"metric": "object_detection_rate", "operator": ">=", "value": 1.0},
-        {"object_detection_rate": 1.0},
+        {"metric": "found_ratio", "operator": ">=", "value": 1.0},
+        {"found_ratio": 1.0},
     )
     assert passed
     assert "PASS" in desc
@@ -40,8 +40,8 @@ def test_evaluate_condition_pass():
 
 def test_evaluate_condition_fail():
     passed, _ = evaluate_condition(
-        {"metric": "object_detection_rate", "operator": ">=", "value": 1.0},
-        {"object_detection_rate": 0.8},
+        {"metric": "found_ratio", "operator": ">=", "value": 1.0},
+        {"found_ratio": 0.8},
     )
     assert not passed
 
@@ -74,15 +74,18 @@ def test_evaluate_any_of():
 
 def test_detection_metrics_all_found():
     dm = DetectionMetrics("/test/detections", node=None, total_targets=3)
-    dm._tracker.get_events = lambda: [
-        {"class_id": "1", "class_name": "fire_extinguisher #1", "timestamp": 30.0},
-        {"class_id": "2", "class_name": "first_aid_kit #1",     "timestamp": 60.0},
-        {"class_id": "3", "class_name": "hazard_sign #1",       "timestamp": 90.0},
+    dm._tracker.get_tp_events = lambda: [
+        {"label_key": "1", "class_type": "fire_extinguisher", "class_name": "fire_extinguisher #1", "timestamp": 30.0, "location_error": 0.0},
+        {"label_key": "2", "class_type": "first_aid_kit",     "class_name": "first_aid_kit #1",     "timestamp": 60.0, "location_error": 0.0},
+        {"label_key": "3", "class_type": "hazard_sign",       "class_name": "hazard_sign #1",       "timestamp": 90.0, "location_error": 0.0},
     ]
+    dm._tracker.get_fp_count = lambda: 0
+    dm._tracker.get_dp_count = lambda: 0
+    dm._tracker.get_location_errors = lambda: []
     result = dm.get_result()
-    assert result["object_detection_rate"] == 1.0
+    assert result["found_ratio"] == 1.0
+    assert result["precision"] == 1.0
     assert result["time_to_all_detections"] == 90.0
-    assert result["false_positive_rate"] == 0.0
 
 
 # --- meters traveled ---
@@ -144,7 +147,9 @@ def test_smoke_exploration_coverage():
 def test_smoke_detection_metrics():
     m = DetectionMetrics("/test/detections", node=None, total_targets=0)
     result = m.get_result()
-    assert "object_detection_rate" in result
+    assert "found_ratio" in result
+    assert "precision" in result
+    assert "duplicate_rate" in result
 
 
 # ── CollisionCount ─────────────────────────────────────────────────────────────

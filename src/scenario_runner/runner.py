@@ -200,11 +200,10 @@ class ScenarioRunner:
         Keys in the returned dict use the format ``"{metric_name}__{robot_name}"``
         so that ``_collect_metrics`` can aggregate across robots.
 
-        Detection metrics (object_detection_rate, time_to_all_detections,
-        average_time_per_detection, false_positive_rate) are grouped into a
-        single DetectionMetrics instance per robot keyed as
+        Detection metrics (found_ratio, precision, duplicate_rate, etc.) are
+        grouped into a single DetectionMetrics instance per robot keyed as
         ``"detection_metrics__{robot_name}"``.  Its get_result() returns all
-        four keys at once.
+        detection keys at once.
 
         Only metrics with concrete implementations are created; unknown names
         are logged and skipped so the runner doesn't crash on stubs.
@@ -218,10 +217,14 @@ class ScenarioRunner:
 
         # All detection-related metric names served by one DetectionMetrics instance.
         _DETECTION_METRIC_NAMES = {
-            "object_detection_rate",
+            "found_ratio",
+            "precision",
+            "duplicate_rate",
+            "mean_localization_error",
             "time_to_all_detections",
             "average_time_per_detection",
-            "false_positive_rate",
+            "false_positive_count",
+            "duplicate_count",
         }
 
         _implemented = {
@@ -282,11 +285,17 @@ class ScenarioRunner:
 
             if needs_detection:
                 key = f"detection_metrics__{robot_name}"
+                match_threshold = float(
+                    self._cfg.get("scoring", {})
+                    .get("par_values", {})
+                    .get("detection_match_threshold", 1.5)
+                )
                 built[key] = DetectionMetrics(
                     detections_topic=f"/{robot_name}/detections",
                     node=node,
                     total_targets=total_targets,
                     label_map=label_map,
+                    match_threshold=match_threshold,
                 )
                 log.debug("Metric registered: %s", key)
 
@@ -314,8 +323,9 @@ class ScenarioRunner:
         # so they are averaged (not summed) across robots in multi-robot runs.
         _avg_metrics = {
             "revisit_ratio",
-            "object_detection_rate",
-            "false_positive_rate",
+            "found_ratio",
+            "precision",
+            "duplicate_rate",
             "average_time_per_detection",
             "exploration_coverage",
         }

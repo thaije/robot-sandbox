@@ -66,21 +66,20 @@ def test_safety_score(collisions, near_misses, expected):
 # ── Accuracy score ────────────────────────────────────────────────────────────
 
 def test_accuracy_perfect_detection():
-    metrics = {"object_detection_rate": 1.0, "false_positive_rate": 0.0}
-    # det=100*0.45, fp=100*0.30, path=0*0.25 → 75
-    assert engine._accuracy_score(metrics) == pytest.approx(75.0, abs=0.01)
+    # found_ratio=1.0 (recall 0.55) + precision=1.0 (0.45) → 100
+    metrics = {"found_ratio": 1.0, "precision": 1.0}
+    assert engine._accuracy_score(metrics) == pytest.approx(100.0, abs=0.01)
 
 def test_accuracy_no_detections():
-    # detection_rate=0 (0.45 weight) + false_positive_rate=0 so fp_score=100 (0.30 weight) + path=0
-    # = 0*0.45 + 100*0.30 + 0*0.25 = 30
+    # found_ratio missing → 0 (0.55 weight); precision missing → default 1.0 (0.45 weight) → 45
     metrics = {}
-    assert engine._accuracy_score(metrics) == pytest.approx(30.0, abs=0.01)
+    assert engine._accuracy_score(metrics) == pytest.approx(45.0, abs=0.01)
 
 def test_accuracy_partial():
-    metrics = {"object_detection_rate": 0.5, "false_positive_rate": 0.2}
-    det_score = 0.45 * 50.0
-    fp_score  = 0.30 * 80.0
-    assert engine._accuracy_score(metrics) == pytest.approx(det_score + fp_score, abs=0.01)
+    # found_ratio=0.5 → 50*0.55=27.5; precision=0.8 → 80*0.45=36 → 63.5
+    metrics = {"found_ratio": 0.5, "precision": 0.8}
+    expected = 0.55 * 50.0 + 0.45 * 80.0
+    assert engine._accuracy_score(metrics) == pytest.approx(expected, abs=0.01)
 
 
 # ── Full compute ──────────────────────────────────────────────────────────────
@@ -92,8 +91,8 @@ def test_compute_returns_scorecard():
         "collision_count": 0,
         "near_miss_count": 0,
         "revisit_ratio": 0.0,
-        "object_detection_rate": 1.0,
-        "false_positive_rate": 0.0,
+        "found_ratio": 1.0,
+        "precision": 1.0,
     }
     sc = engine.compute(metrics, SCENARIO_CFG)
     assert sc.scenario_name == "test"

@@ -74,7 +74,7 @@ class ScoringEngine:
             optional; missing keys score 0 for that component):
             ``meters_traveled``, ``task_completion_time``,
             ``average_time_per_detection``, ``exploration_coverage``,
-            ``object_detection_rate``, ``false_positive_rate``,
+            ``found_ratio``, ``precision``,
             ``collision_count``, ``near_miss_count``, ``revisit_ratio``.
         scenario_config:
             Full scenario YAML dict; used for ``timeout_seconds`` and
@@ -150,25 +150,14 @@ class ScoringEngine:
         return round(0.40 * time_score + 0.35 * detect_score + 0.25 * rate_score, 2)
 
     def _accuracy_score(self, metrics: dict) -> float:
-        """How precisely did the robot find what it needed to?
+        """Precision and recall of object detection.
 
-        Component 1 (weight 0.45) — object detection rate × 100
-        Component 2 (weight 0.30) — (1 − false_positive_rate) × 100
-        Component 3 (weight 0.25) — path efficiency (not yet implemented;
-            scores 0 in Phase 1 until optimal path calculation is added)
+        Component 1 (weight 0.55) — found_ratio (recall) × 100
+        Component 2 (weight 0.45) — precision × 100
         """
-        det_rate = float(metrics.get("object_detection_rate", 0.0))
-        det_score = min(100.0, det_rate * 100)
-
-        fp_rate = float(metrics.get("false_positive_rate", 0.0))
-        fp_score = max(0.0, (1.0 - fp_rate) * 100)
-
-        # Path efficiency: placeholder 0 until optimal-path calculation is
-        # implemented (Step 3.7 area).  The 0.25 weight drags accuracy down
-        # proportionally; once implemented it will reward efficient paths.
-        path_score = float(metrics.get("path_efficiency_ratio", 0.0)) * 100
-
-        return round(0.45 * det_score + 0.30 * fp_score + 0.25 * path_score, 2)
+        recall_score = min(100.0, float(metrics.get("found_ratio", 0.0)) * 100)
+        precision_score = min(100.0, float(metrics.get("precision", 1.0)) * 100)
+        return round(0.55 * recall_score + 0.45 * precision_score, 2)
 
     def _safety_score(self, metrics: dict, cfg: dict) -> float:
         """How carefully did the robot operate?
@@ -222,14 +211,12 @@ class ScoringEngine:
         score = Σ (type_weight / total_weight) × (detected / total) × 100
 
         If no weights are configured or no detection data is available, the
-        score falls back to the raw ``object_detection_rate × 100``.
+        score falls back to the raw ``found_ratio × 100``.
         """
         by_type: dict = metrics.get("detection_by_type", {})
 
         if not eff_weights or not by_type:
-            # Fallback to overall detection rate
-            det_rate = float(metrics.get("object_detection_rate", 0.0))
-            return round(det_rate * 100, 2)
+            return round(float(metrics.get("found_ratio", 0.0)) * 100, 2)
 
         total_weight = sum(float(w) for w in eff_weights.values()) or 1.0
         score = 0.0

@@ -11,9 +11,9 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
   - Difficulty tiers: `easy` / `medium` / `hard` / `brutal` / `perception_stress` — all under `config/scenarios/office_explore_detect/`
   - Each tier YAML sets lighting, door states, dynamic obstacles, and timeout. Pass `--seed N` to pin a layout; omit for a fresh random layout each run.
   - WorldGenerator assigns unique per-instance labels (1..N); exposes `label_map` to metrics
-  - Live metrics: `meters_traveled`, `collision_count` (rising-edge, not debounce), `revisit_ratio`, detection metrics
-  - Scorecard: Speed / Accuracy / Safety / Efficiency / **Effectiveness** (per-type weights)
-  - Ends on `SUCCESS` (all instances found) or `TIME_LIMIT` (600 s)
+  - Live metrics: `meters_traveled`, `collision_count` (rising-edge, not debounce), `revisit_ratio`, detection metrics (`found_ratio`, `precision`, `duplicate_rate`, `mean_localization_error`)
+  - Scorecard: Speed / Accuracy (`found_ratio` 0.55 + `precision` 0.45) / Safety / Efficiency / **Effectiveness** (per-type weights)
+  - Ends on `SUCCESS` (`found_ratio` = 1.0, all instances confirmed as TPs) or `TIME_LIMIT`
   - Scorecard printed + JSON written to `results/`
 - **Manual sim**: persistent Gazebo + `spawn_robot.launch.py` + teleoperation
 - **World**: indoor_office (20×15 m, 4 rooms, furniture, randomised object placement)
@@ -73,7 +73,7 @@ ScenarioRunner.run()
 - `ROBOT_NAME` placeholder in URDF replaced at SDF generation time → unique topics per instance
 - Robots embedded in world SDF (not dynamically spawned) — required for contact sensors
 - `spawn_robot.launch.py` with `spawn:=false` starts RSP + bridges only (used by automated runs; robot already in world SDF). True dynamic spawn works for teleop/odom/TF but contact sensor won't fire.
-- `boundingbox_camera` for ground-truth detection — handles occlusion, outputs `vision_msgs/Detection2DArray` (same as YOLO → easy swap later)
+- `boundingbox_camera` for ground-truth detection (dev/cheat only) — outputs `vision_msgs/Detection2DArray` with numeric class_ids; tracker auto-detects oracle format and translates via label_map
 - Coverage: raycasting at 0.5m res using `skimage.draw.line()` + odom pose converted to world frame via spawn offset (near-zero drift in sim)
 - TF frames unprefixed (`odom → base_footprint → base_link`) — fine for single robot
 
