@@ -22,11 +22,11 @@ Runs are scored 0–100 across five categories, combined as a weighted sum.
 
 | Category | What it measures |
 |---|---|
-| **Speed** | Time-to-detect and exploration rate relative to par |
-| **Accuracy** | Detections `found_ratio` (recall, 0.55) + `precision` (0.45) |
+| **Speed** | Task completion time relative to par (par → B grade) |
+| **Accuracy** | `found_ratio` (recall, 0.60) + `precision` (0.40) |
 | **Safety** | Collisions and near-misses |
-| **Efficiency** | Redundant traversal, area-per-metre coverage |
-| **Effectiveness** | Per-type detection completeness (types have configurable weights) |
+| **Efficiency** | Coverage-per-metre (0.60) + path length vs par (0.40) |
+| **Effectiveness** | Detection completeness (0.65) + exploration coverage % (0.35) |
 
 Grade thresholds: **S** ≥ 95 · **A** ≥ 85 · **B** ≥ 70 · **C** ≥ 55 · **D** ≥ 40 · **F** < 40.
 A B-grade means *competent performance for that difficulty level*.

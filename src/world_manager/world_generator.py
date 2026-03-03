@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import copy
 import io
-import math
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
@@ -101,20 +100,16 @@ class WorldGenerator:
             for r in robots_cfg
             if "x" in r.get("spawn_pose", {}) and "y" in r.get("spawn_pose", {})
         ]
-        # Sample points along each patrol segment so objects are never placed
-        # in the path of a moving patrol robot.
-        clearance = float(template_cfg.get("placement_clearance", 0.5))
+        # Build exact patrol path segments so ObjectPlacer can use perpendicular
+        # distance checks — no sampling gaps.
+        patrol_segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
         for obs in world_cfg.get("dynamic_obstacles", []):
             waypoints = obs.get("patrol", [])
             for i in range(len(waypoints) - 1):
-                x1, y1 = float(waypoints[i][0]), float(waypoints[i][1])
-                x2, y2 = float(waypoints[i + 1][0]), float(waypoints[i + 1][1])
-                seg_len = math.hypot(x2 - x1, y2 - y1)
-                n = max(1, int(seg_len / clearance))
-                for j in range(n + 1):
-                    t = j / n
-                    robot_spawns.append((x1 + t * (x2 - x1), y1 + t * (y2 - y1)))
-        placer = ObjectPlacer(template_cfg, robot_spawns=robot_spawns)
+                a = (float(waypoints[i][0]), float(waypoints[i][1]))
+                b = (float(waypoints[i + 1][0]), float(waypoints[i + 1][1]))
+                patrol_segments.append((a, b))
+        placer = ObjectPlacer(template_cfg, robot_spawns=robot_spawns, patrol_segments=patrol_segments)
         placements: list[PlacedObject] = placer.place(objects, seed) if objects else []
 
         # ── Build final SDF via XML manipulation ───────────────────────────────

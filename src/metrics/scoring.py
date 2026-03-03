@@ -73,9 +73,9 @@ class ScoringEngine:
             ``_collect_metrics()`` in the runner).  Expected keys (all
             optional; missing keys score 0 for that component):
             ``meters_traveled``, ``task_completion_time``,
-            ``average_time_per_detection``, ``exploration_coverage``,
-            ``found_ratio``, ``precision``,
-            ``collision_count``, ``near_miss_count``, ``revisit_ratio``.
+            ``exploration_coverage``, ``found_ratio``, ``precision``,
+            ``collision_count``, ``near_miss_count``,
+            ``detection_by_type``.
         scenario_config:
             Full scenario YAML dict; used for ``timeout_seconds`` and
             ``scenario.name``.
@@ -121,43 +121,34 @@ class ScoringEngine:
     def _speed_score(self, metrics: dict, par: dict, timeout: float) -> float:
         """How fast did the robot accomplish the mission?
 
-        Component 1 (weight 0.40) — task completion time
-            score = (timeout − elapsed) / timeout × 100, clamped 0–100.
-        Component 2 (weight 0.35) — avg time per detection
-            score = min(100, par_time / avg_time × 100).  Zero if no detections.
-        Component 3 (weight 0.25) — coverage rate (% / s)
-            score = min(100, rate / par_rate × 100).  Zero if no coverage data.
+        Score = min(100, par_completion_time / elapsed × 70)
+
+        par_completion_time → score 70 (B).  Faster → higher (capped 100).
+        Slower → proportionally lower.
         """
         elapsed = float(metrics.get("task_completion_time", timeout))
-
-        # Component 1 — task completion time
-        time_score = max(0.0, min(100.0, (timeout - elapsed) / timeout * 100))
-
-        # Component 2 — average time per detection
-        avg_detect = metrics.get("average_time_per_detection")
-        par_time = float(par.get("time_per_detection_par", 60.0))
-        if avg_detect and float(avg_detect) > 0:
-            detect_score = min(100.0, par_time / float(avg_detect) * 100)
-        else:
-            detect_score = 0.0
-
-        # Component 3 — coverage rate
-        coverage = float(metrics.get("exploration_coverage", 0.0))
-        par_rate = float(par.get("coverage_rate_par", 2.0))
-        rate = coverage / elapsed if elapsed > 0 else 0.0
-        rate_score = min(100.0, rate / par_rate * 100) if par_rate > 0 else 0.0
-
-        return round(0.40 * time_score + 0.35 * detect_score + 0.25 * rate_score, 2)
+        par_time = float(par.get("completion_time_par", timeout * 0.5))
+        if elapsed <= 0:
+            return 100.0
+        return round(min(100.0, par_time / elapsed * 70), 2)
 
     def _accuracy_score(self, metrics: dict) -> float:
         """Precision and recall of object detection.
 
-        Component 1 (weight 0.55) — found_ratio (recall) × 100
-        Component 2 (weight 0.45) — precision × 100
+        Component 1 (weight 0.60) — found_ratio (recall) × 100
+        Component 2 (weight 0.40) — precision × 100
+
+        Grade reference (for calibration):
+            S ≥ 95 | A ≥ 85 | B ≥ 70 | C ≥ 55 | D ≥ 40 | F < 40
+
+        found_ratio: S=1.0, A≥0.89 (8/9), B≥0.78 (7/9), C≥0.56, D≥0.33
+        precision:   S≥0.90, A≥0.75, B≥0.55, C≥0.40, D≥0.25
+
+        Note: oracle/cheat detector will score D on precision by design.
         """
-        recall_score = min(100.0, float(metrics.get("found_ratio", 0.0)) * 100)
-        precision_score = min(100.0, float(metrics.get("precision", 1.0)) * 100)
-        return round(0.55 * recall_score + 0.45 * precision_score, 2)
+        recall_score    = min(100.0, float(metrics.get("found_ratio", 0.0)) * 100)
+        precision_score = min(100.0, float(metrics.get("precision", 0.0)) * 100)
+        return round(0.60 * recall_score + 0.40 * precision_score, 2)
 
     def _safety_score(self, metrics: dict, cfg: dict) -> float:
         """How carefully did the robot operate?
@@ -182,52 +173,56 @@ class ScoringEngine:
     def _efficiency_score(self, metrics: dict, par: dict) -> float:
         """How smartly did the robot use its resources?
 
-        Component 1 (weight 0.35) — revisit ratio: (1 − ratio) × 100
-        Component 2 (weight 0.35) — coverage per meter: (cpm / par_cpm) × 100
-        Component 3 (weight 0.30) — exploration completeness: coverage %
+        Component 1 (weight 0.60) — coverage per meter vs par
+            score = min(100, (coverage/meters) / par_cpm × 70)
+            par_cpm → 70 (B).  Rewards tight, exploratory paths.
+        Component 2 (weight 0.40) — path length vs par
+            score = min(100, par_path / meters × 70)
+            par_path → 70 (B).  Penalises excessive wandering.
         """
-        revisit = float(metrics.get("revisit_ratio", 0.0))
-        revisit_score = max(0.0, (1.0 - revisit) * 100)
+        coverage  = float(metrics.get("exploration_coverage", 0.0))
+        meters    = float(metrics.get("meters_traveled", 0.0))
+        par_cpm   = float(par.get("coverage_per_meter_par", 2.0))
+        par_path  = float(par.get("path_length_par", 50.0))
 
-        coverage = float(metrics.get("exploration_coverage", 0.0))
-        meters   = float(metrics.get("meters_traveled", 0.0))
-        par_cpm  = float(par.get("coverage_per_meter_par", 1.5))
         if meters > 0 and par_cpm > 0:
-            cpm_score = min(100.0, (coverage / meters) / par_cpm * 100)
+            cpm_score  = min(100.0, (coverage / meters) / par_cpm * 70)
         else:
-            cpm_score = 0.0
+            cpm_score  = 0.0
 
-        completeness_score = min(100.0, coverage)
+        if meters > 0 and par_path > 0:
+            path_score = min(100.0, par_path / meters * 70)
+        else:
+            path_score = 0.0
 
-        return round(0.35 * revisit_score + 0.35 * cpm_score + 0.30 * completeness_score, 2)
+        return round(0.60 * cpm_score + 0.40 * path_score, 2)
 
     def _effectiveness_score(self, metrics: dict, eff_weights: dict) -> float:
-        """How effectively did the robot detect the highest-priority objects?
+        """How completely did the robot accomplish the mission?
 
-        Uses ``detection_by_type`` (a dict of ``{type: {detected, total}}``)
-        and per-type weights from ``scoring.effectiveness_weights`` in the
-        scenario YAML (e.g. ``fire_extinguisher: 40``).
-
-        score = Σ (type_weight / total_weight) × (detected / total) × 100
-
-        If no weights are configured or no detection data is available, the
-        score falls back to the raw ``found_ratio × 100``.
+        Component 1 (weight 0.65) — detection completeness
+            Per-type weighted found ratio (or plain found_ratio as fallback).
+        Component 2 (weight 0.35) — spatial completeness
+            Raw exploration_coverage percentage (0–100).
         """
+        # Component 1: per-type weighted detection completeness
         by_type: dict = metrics.get("detection_by_type", {})
-
         if not eff_weights or not by_type:
-            return round(float(metrics.get("found_ratio", 0.0)) * 100, 2)
+            detection_score = float(metrics.get("found_ratio", 0.0)) * 100
+        else:
+            total_weight = sum(float(w) for w in eff_weights.values()) or 1.0
+            detection_score = 0.0
+            for obj_type, w in eff_weights.items():
+                entry    = by_type.get(obj_type, {})
+                detected = int(entry.get("detected", 0))
+                total    = int(entry.get("total", 0))
+                frac     = detected / total if total > 0 else 0.0
+                detection_score += (float(w) / total_weight) * frac * 100
 
-        total_weight = sum(float(w) for w in eff_weights.values()) or 1.0
-        score = 0.0
-        for obj_type, w in eff_weights.items():
-            entry = by_type.get(obj_type, {})
-            detected = int(entry.get("detected", 0))
-            total    = int(entry.get("total", 0))
-            frac = detected / total if total > 0 else 0.0
-            score += (float(w) / total_weight) * frac * 100
+        # Component 2: spatial completeness
+        coverage_score = min(100.0, float(metrics.get("exploration_coverage", 0.0)))
 
-        return round(score, 2)
+        return round(0.65 * detection_score + 0.35 * coverage_score, 2)
 
     @staticmethod
     def _grade(score: float) -> tuple[str, str]:

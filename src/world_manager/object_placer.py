@@ -44,6 +44,7 @@ class ObjectPlacer:
         template_config: dict,
         clearance: float | None = None,
         robot_spawns: list[tuple[float, float]] | None = None,
+        patrol_segments: list[tuple[tuple[float, float], tuple[float, float]]] | None = None,
     ) -> None:
         """
         Parameters
@@ -55,6 +56,10 @@ class ObjectPlacer:
         robot_spawns:
             List of (x, y) world-frame positions where robots will spawn.
             Objects are kept at least *clearance* metres away from each.
+        patrol_segments:
+            List of ((x1, y1), (x2, y2)) line segments traversed by patrol
+            robots.  Objects are kept at least *clearance* metres from each
+            segment (exact perpendicular distance, not sample-point distance).
         """
         self._zones: list[dict] = template_config.get("placement_zones", [])
         self._clearance: float = clearance if clearance is not None else float(
@@ -64,6 +69,9 @@ class ObjectPlacer:
         self._zone_weights: list[float] = _zone_area_weights(self._zones)
         self._obstacles: list[dict] = template_config.get("obstacles", [])
         self._robot_spawns: list[tuple[float, float]] = list(robot_spawns or [])
+        self._patrol_segments: list[tuple[tuple[float, float], tuple[float, float]]] = list(
+            patrol_segments or []
+        )
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -410,10 +418,25 @@ class ObjectPlacer:
             if math.hypot(x - rx, y - ry) < self._clearance:
                 return False
 
+        # ── Patrol path clearance (exact perpendicular distance to segments) ──
+        for (ax, ay), (bx, by) in self._patrol_segments:
+            if _pt_to_seg_dist(x, y, ax, ay, bx, by) < self._clearance:
+                return False
+
         return True
 
 
 # ── Module-level helpers ──────────────────────────────────────────────────────
+
+def _pt_to_seg_dist(px: float, py: float, ax: float, ay: float, bx: float, by: float) -> float:
+    """Minimum distance from point (px, py) to segment (ax,ay)→(bx,by)."""
+    dx, dy = bx - ax, by - ay
+    seg_sq = dx * dx + dy * dy
+    if seg_sq == 0.0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / seg_sq))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
 
 def _load_gt_mask(template_config: dict) -> tuple[np.ndarray, float, float]:
     """Read the ground-truth PGM and return (mask, resolution, world_height).

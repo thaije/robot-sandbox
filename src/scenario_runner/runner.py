@@ -148,6 +148,8 @@ class ScenarioRunner:
             # ── 5. Collect final metric snapshot ──────────────────────────────
             raw = self._collect_metrics(metrics)
             raw["task_completion_time"] = round(elapsed, 2)
+            meters = float(raw.get("meters_traveled", 0.0))
+            raw["avg_speed_kmh"] = round(meters / elapsed * 3.6, 3) if elapsed > 0 else 0.0
 
             # ── 6. Evaluate success criteria ──────────────────────────────────
             success, descriptions = evaluate_criteria(self._cfg["success_criteria"], raw)
@@ -322,12 +324,12 @@ class ScenarioRunner:
         # NEW RATIO METRICS NOTE: add any new ratio/percentage metric names here
         # so they are averaged (not summed) across robots in multi-robot runs.
         _avg_metrics = {
-            "revisit_ratio",
             "found_ratio",
             "precision",
             "duplicate_rate",
             "average_time_per_detection",
             "exploration_coverage",
+            "avg_speed_kmh",
         }
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}

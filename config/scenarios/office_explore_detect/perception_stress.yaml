@@ -54,9 +54,7 @@ robots:
 metrics:
   collect:
     - meters_traveled
-    - time_to_all_detections
     - task_completion_time
-    - average_time_per_detection
     - exploration_coverage
     - found_ratio
     - precision
@@ -64,7 +62,6 @@ metrics:
     - mean_localization_error
     - collision_count
     - near_miss_count
-    - revisit_ratio
 
 success_criteria:
   mode: "all_of"
@@ -86,9 +83,9 @@ scoring:
     first_aid_kit: 40
     hazard_sign: 20
   par_values:
-    time_per_detection_par: 80.0
-    coverage_rate_par: 1.8
-    coverage_per_meter_par: 1.3
+    completion_time_par: 132.7  # baseline avg (n=2)
+    path_length_par: 54.3       # baseline avg (n=2)
+    coverage_per_meter_par: 1.7 # baseline avg (n=2)
     near_miss_threshold: 0.3
   collision_thresholds: [0, 2, 5, 10]
   collision_scores: [100, 80, 60, 40, 20]

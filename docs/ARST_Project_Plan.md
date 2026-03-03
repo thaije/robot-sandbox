@@ -15,26 +15,10 @@ For the external autonomous agent interface (sensors, topics, mission endpoint),
 | ID | Requirement | Notes |
 |----|-------------|-------|
 | SIM-12 | Multiple simulator instances in parallel | Future |
-| MET-13 | Calibrated par values | After first working run |
 
 ---
 
 ## Remaining implementation steps
-
-
-### Step 3.15 — Calibrate par values (after all tiers are built)
-
-Run each tier 3–5× with teleoperation (or a reference agent), take median performance per tier, set `par_values` in each tier YAML so median ≈ 70 (B). Grades mean the same thing across tiers: B = competent performance *for this difficulty level*.
-
-**What scales with difficulty** (tune per tier):
-- `time_per_detection_par` — higher for hard tiers (dim/closed-door runs take longer)
-- `timeout_seconds` — already tier-specific (see table above)
-- `category_weights` — based on reference performance.
-
-**What stays constant** (do not vary by tier):
-- `coverage_per_meter_par` — physics/geometry constant
-- `near_miss_threshold` — not difficulty-dependent
-- Grade thresholds (S/A/B/C/D) — same scale for all tiers
 
 ### Steps 4.6–4.7
 
@@ -72,11 +56,11 @@ Grades: S≥95, A≥85, B≥70, C≥55, D≥40, F<40.
 
 | Category        | Default weight | Formula |
 |-----------------|---------------|---------|
-| Speed           | 0.20 | `0.40 × (timeout−elapsed)/timeout + 0.35 × par_time/avg_detect_time + 0.25 × coverage_rate/par_rate` |
-| Accuracy        | 0.25 | `0.45 × detection_rate + 0.30 × (1−fp_rate) + 0.25 × path_efficiency` (path_efficiency=0 until implemented) |
+| Speed           | 0.20 | `min(100, completion_time_par / elapsed × 70)`; par → B (70) |
+| Accuracy        | 0.30 | `0.60 × found_ratio × 100 + 0.40 × precision × 100` |
 | Safety          | 0.20 | `0.70 × collision_tier + 0.30 × near_miss_tier`; tiers: 0→100, 1–2→80, 3–5→60, 6–10→40, 11+→20 |
-| Efficiency      | 0.20 | `0.35 × (1−revisit_ratio) + 0.35 × (coverage/meters)/par_cpm + 0.30 × coverage_pct` |
-| Effectiveness   | 0.15 | `Σ (type_weight / Σweights) × (detected_instances / total_instances) × 100`; per-type weights configurable |
+| Efficiency      | 0.10 | `0.60 × cpm_score + 0.40 × path_score`; each `min(100, par/actual × 70)` — par → B (70) |
+| Effectiveness   | 0.15 | `0.65 × detection_completeness + 0.35 × exploration_coverage%`; detection uses per-type weights |
 
 All weights are configurable per scenario via `scoring.category_weights` and `scoring.effectiveness_weights`.
 Full implementation in [src/metrics/scoring.py](../src/metrics/scoring.py).
