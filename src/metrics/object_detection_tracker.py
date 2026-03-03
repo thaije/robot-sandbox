@@ -264,7 +264,10 @@ class ObjectDetectionTracker:
                 continue
 
             # ── Resolve oracle vs real-agent format ───────────────────────────
-            if raw_class_id in self._label_map:
+            # Oracle keys are always pure integers ("1", "2", ...).
+            # Guard with isdigit() so a real agent using e.g. class_id="fire_extinguisher"
+            # never accidentally hits this path.
+            if raw_class_id.isdigit() and raw_class_id in self._label_map:
                 # Oracle format: numeric label → translate using label_map
                 entry = self._label_map[raw_class_id]
                 class_type = entry["type"]
@@ -330,7 +333,10 @@ class ObjectDetectionTracker:
     def _write_live_state(self) -> None:
         try:
             _LIVE_DETECTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            found = [{"type": e["class_type"], "name": e["class_name"]} for e in self._tp_events]
+            found = [
+                {"label_key": e["label_key"], "type": e["class_type"], "name": e["class_name"]}
+                for e in self._tp_events
+            ]
             _LIVE_DETECTIONS_PATH.write_text(json.dumps({"found": found}))
         except Exception:
             pass

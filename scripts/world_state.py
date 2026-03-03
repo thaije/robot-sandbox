@@ -483,7 +483,18 @@ def main() -> None:
     elif LIVE_DETECTIONS.exists():
         try:
             live = json.loads(LIVE_DETECTIONS.read_text())
-            found = set(str(x) for x in live.get("found", []))
+            # Build name→label_key lookup for legacy entries without label_key
+            _name_lbl = {
+                f"{v['type']} #{v['instance']+1}": k
+                for k, v in label_map.items()
+            }
+            for _x in live.get("found", []):
+                if isinstance(_x, dict):
+                    lk = _x.get("label_key") or _name_lbl.get(_x.get("name", ""))
+                    if lk:
+                        found.add(lk)
+                else:
+                    found.add(str(_x))
         except Exception:
             pass
 
