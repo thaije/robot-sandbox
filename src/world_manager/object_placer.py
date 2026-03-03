@@ -365,7 +365,7 @@ class ObjectPlacer:
     def _is_valid(
         self, x: float, y: float, placed: list[PlacedObject], skip_pgm: bool = False
     ) -> bool:
-        """True iff (x, y) is free, wall-clear (unless *skip_pgm*), and inter-object-clear."""
+        """True iff (x, y) is free, wall-clear (unless *skip_pgm*), furniture-clear, and inter-object-clear."""
         if not skip_pgm:
             # ── Wall / boundary clearance ─────────────────────────────────────
             c_px = int(math.ceil(self._clearance / self._resolution))
@@ -383,6 +383,13 @@ class ObjectPlacer:
                         return False
                     if not self._gt_mask[r, c]:
                         return False
+
+            # ── Furniture obstacle clearance ──────────────────────────────────
+            for obs in self._obstacles:
+                hw = obs["w"] / 2 + self._clearance
+                hh = obs["h"] / 2 + self._clearance
+                if abs(x - obs["x"]) < hw and abs(y - obs["y"]) < hh:
+                    return False
 
         # ── Inter-object clearance (always applied) ───────────────────────────
         for p in placed:

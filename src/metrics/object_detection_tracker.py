@@ -77,14 +77,15 @@ class ObjectDetectionTracker:
         self._start_time: float = 0.0
         self._first_detections: dict[str, float] = {}  # class_id → elapsed_s
         self._sub: Any = None
-        self._odom_sub: Any = None
+        self._odom_sub: Any = None   # fallback only; kept alive while subscribed
+        self._gz_node: Any = None    # gz-transport node; kept alive to maintain subscription
         # LOS state — camera world position (precomputed from robot pose + offset)
         self._robot_pose: tuple[float, float] | None = None  # camera world (x, y)
         self._pgm_pixels: list[list[int]] | None = None      # occupancy grid rows
         self._pgm_W: int = 0
         self._pgm_H: int = 0
         self._map_res: float = 0.5  # metres per grid cell
-        # Spawn offset (world frame) — loaded from world_state.json
+        # Spawn offset — only used for the odom fallback path
         self._spawn_x: float = 0.0
         self._spawn_y: float = 0.0
         self._spawn_yaw: float = 0.0  # kept alive to keep subscription active
@@ -108,14 +109,26 @@ class ObjectDetectionTracker:
     def _load_pgm(self) -> None:
         """Load occupancy grid from PGM for LOS ray-casting."""
         try:
-            import cv2
+            import numpy as np  # noqa: PLC0415
 
             state = json.loads(_WORLD_STATE_PATH.read_text())
             self._map_res = float(state.get("map_resolution", 0.5))
             pgm_path = state["map_pgm"]
-            grid = cv2.imread(pgm_path, cv2.IMREAD_GRAYSCALE)
-            if grid is None:
+            raw = open(pgm_path, "rb").read()  # noqa: WPS515
+            # Parse P5 (binary) PGM header — same logic as exploration_coverage.py
+            lines: list[str] = []
+            idx = 0
+            while len(lines) < 3:
+                end = raw.index(b"\n", idx)
+                token = raw[idx:end].strip()
+                idx = end + 1
+                if not token or token.startswith(b"#"):
+                    continue
+                lines.append(token.decode())
+            if lines[0] != "P5":
                 return
+            W, H = map(int, lines[1].split())
+            grid = np.frombuffer(raw[idx:], dtype=np.uint8).reshape((H, W))
             self._pgm_H, self._pgm_W = grid.shape
             # Store as list-of-lists (row-major, row 0 = top of map = max world-y)
             self._pgm_pixels = grid.tolist()
@@ -123,9 +136,19 @@ class ObjectDetectionTracker:
             pass
 
     def _start_pose_listener(self) -> None:
-        """Subscribe to /odom and keep self._robot_pose (camera world pos) current."""
+        """Track camera world position for LOS checks.
+
+        Primary: gz-transport ground-truth pose (accurate, no drift).
+        Fallback: ROS /odom (used only if gz-transport is unavailable).
+        """
+        # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
+        robot = self._topic.strip("/").split("/")[0]
+
+        # ── Read world_state.json for world_name + spawn offset (odom fallback) ──
+        world_name: str = ""
         try:
             state = json.loads(_WORLD_STATE_PATH.read_text())
+            world_name = state.get("world_name", "")
             sp = state.get("spawn_pose", {})
             self._spawn_x = float(sp.get("x", 0.0))
             self._spawn_y = float(sp.get("y", 0.0))
@@ -133,31 +156,44 @@ class ObjectDetectionTracker:
         except Exception:
             pass
 
-        # robot name = first segment of topic, e.g. /derpbot_0/detections → derpbot_0
-        robot = self._topic.strip("/").split("/")[0]
-        odom_topic = f"/{robot}/odom"
+        # ── Primary: gz-transport ground-truth pose ────────────────────────────
+        if world_name:
+            try:
+                from utils.gz_transport import gz_subscribe_robot_pose  # noqa: PLC0415
 
-        from nav_msgs.msg import Odometry  # noqa: PLC0415
+                def _on_gz_pose(x: float, y: float, yaw: float) -> None:
+                    self._robot_pose = (
+                        x + CAMERA_FORWARD_OFFSET * math.cos(yaw),
+                        y + CAMERA_FORWARD_OFFSET * math.sin(yaw),
+                    )
 
-        def _on_odom(msg: Any) -> None:
-            ox = msg.pose.pose.position.x
-            oy = msg.pose.pose.position.y
-            q = msg.pose.pose.orientation
-            yaw = math.atan2(
-                2.0 * (q.w * q.z + q.x * q.y),
-                1.0 - 2.0 * (q.y * q.y + q.z * q.z),
-            )
-            sy, cy = math.sin(self._spawn_yaw), math.cos(self._spawn_yaw)
-            wx = self._spawn_x + cy * ox - sy * oy
-            wy = self._spawn_y + sy * ox + cy * oy
-            wyaw = self._spawn_yaw + yaw
-            # Track camera world position (robot centre + forward offset along heading)
-            self._robot_pose = (
-                wx + CAMERA_FORWARD_OFFSET * math.cos(wyaw),
-                wy + CAMERA_FORWARD_OFFSET * math.sin(wyaw),
-            )
+                self._gz_node = gz_subscribe_robot_pose(robot, world_name, _on_gz_pose)
+            except Exception:
+                self._gz_node = None
 
-        self._odom_sub = self._node.create_subscription(Odometry, odom_topic, _on_odom, 10)
+        # ── Fallback: ROS /odom (spawn-offset corrected) ───────────────────────
+        if self._gz_node is None:
+            odom_topic = f"/{robot}/odom"
+            from nav_msgs.msg import Odometry  # noqa: PLC0415
+
+            def _on_odom(msg: Any) -> None:
+                ox = msg.pose.pose.position.x
+                oy = msg.pose.pose.position.y
+                q = msg.pose.pose.orientation
+                yaw = math.atan2(
+                    2.0 * (q.w * q.z + q.x * q.y),
+                    1.0 - 2.0 * (q.y * q.y + q.z * q.z),
+                )
+                sy, cy = math.sin(self._spawn_yaw), math.cos(self._spawn_yaw)
+                wx = self._spawn_x + cy * ox - sy * oy
+                wy = self._spawn_y + sy * ox + cy * oy
+                wyaw = self._spawn_yaw + yaw
+                self._robot_pose = (
+                    wx + CAMERA_FORWARD_OFFSET * math.cos(wyaw),
+                    wy + CAMERA_FORWARD_OFFSET * math.sin(wyaw),
+                )
+
+            self._odom_sub = self._node.create_subscription(Odometry, odom_topic, _on_odom, 10)
 
     def _has_line_of_sight(self, class_id: str) -> bool:
         """Return True if a clear sightline exists from camera to the object.

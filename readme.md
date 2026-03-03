@@ -81,7 +81,7 @@ The human player gets **only the forward camera** — no map, no object position
 
 **Terminal 1 — simulation (headless; metrics still collected):**
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless --timeout 300
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless --timeout 300
 ```
 
 **Terminal 2 — camera-only view:**
@@ -109,8 +109,6 @@ python3.12 -m pytest tests/
 
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
+- add a location to detection topic (if not already done) that can be checked for category and location
 
-to test: 
-- no flickering lights
-- smoke in correct yaml
   

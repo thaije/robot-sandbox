@@ -593,6 +593,7 @@ class WorldGenerator:
             "map_resolution": 0.5,
             "spawn_pose": spawn,
             "obstacles": template_cfg.get("obstacles", []),
+            "world_name": template_name,
         }
         self._output_dir.mkdir(parents=True, exist_ok=True)
         out = self._output_dir / "world_state.json"
