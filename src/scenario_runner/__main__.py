@@ -24,6 +24,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=None, help="Override random seed")
     p.add_argument("--timeout", type=float, default=None, help="Override timeout (seconds)")
     p.add_argument("--output-dir", default="results", help="Output directory for results")
+    p.add_argument("--speed", type=float, default=1.0,
+                   help="Simulation real-time factor (e.g. 3.0 = 3× speed). "
+                        "Actual RTF depends on CPU; gz-sim degrades gracefully if "
+                        "the target cannot be sustained.")
     return p
 
 
@@ -45,6 +49,8 @@ def main() -> None:
         print(f"[arst] No seed specified — using random seed: {seed}  (replay with --seed {seed})")
     if args.timeout is not None:
         config["scenario"]["timeout_seconds"] = args.timeout
+    if args.speed != 1.0:
+        config["scenario"]["real_time_factor"] = args.speed
 
     headless = not args.gui
     runner = ScenarioRunner(config, headless=headless, output_dir=Path(args.output_dir))

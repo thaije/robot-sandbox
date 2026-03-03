@@ -121,6 +121,15 @@ class WorldGenerator:
         if world_elem is None:
             raise ValueError(f"No <world> element found in {sdf_path}")
 
+        # Apply real-time factor override (--speed flag)
+        rtf = float(scenario_config["scenario"].get("real_time_factor", 1.0))
+        if rtf != 1.0:
+            physics_elem = world_elem.find("physics")
+            if physics_elem is not None:
+                rtf_elem = physics_elem.find("real_time_factor")
+                if rtf_elem is not None:
+                    rtf_elem.text = str(rtf)
+
         # Apply lighting variation (skip lights that FlickerController will create at runtime)
         lighting_preset = world_cfg.get("variations", {}).get("lighting", "normal")
         flicker_names = {

@@ -4,6 +4,16 @@
 # Usage:
 #   ./scripts/run_scenario.sh <scenario.yaml> [extra args]
 #
+# Key flags (passed through to the Python runner):
+#   --headless          Run without GUI (default)
+#   --gui               Launch with Gazebo GUI
+#   --seed N            Pin random seed for reproducibility
+#   --timeout N         Override scenario timeout (seconds)
+#   --speed N           Simulation real-time factor, e.g. --speed 3 for 3×.
+#                       All metrics/timeouts remain in sim-seconds; a 600 s
+#                       scenario completes in ~200 s wall time at 3×.
+#                       Requires headless; actual RTF is CPU-dependent.
+#
 # Optional env vars:
 #   ROS_DOMAIN_ID   — ROS 2 DDS domain ID (0–232).  Processes on different
 #                     domain IDs are completely invisible to each other, which
@@ -14,6 +24,9 @@
 # Examples:
 #   # Single robot, default domain:
 #   ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml
+#
+#   # Run at 3× speed, headless:
+#   ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --speed 3
 #
 #   # Run a specific difficulty tier:
 #   ./scripts/run_scenario.sh config/scenarios/office_explore_detect/hard.yaml
