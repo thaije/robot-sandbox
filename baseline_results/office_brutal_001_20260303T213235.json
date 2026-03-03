@@ -1,0 +1,114 @@
+{
+  "scenario_name": "office_brutal_001",
+  "status": "SUCCESS",
+  "elapsed_seconds": 100.2016183070009,
+  "timeout_seconds": 180.0,
+  "random_seed": 1122160232,
+  "categories": [
+    "CategoryScore(name='speed', score=72.06, grade='B', grade_label='Good', weight=0.3)",
+    "CategoryScore(name='accuracy', score=58.97, grade='C', grade_label='Adequate', weight=0.25)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.2)",
+    "CategoryScore(name='efficiency', score=63.64, grade='C', grade_label='Adequate', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=100.0, grade='S', grade_label='Outstanding', weight=0.15)"
+  ],
+  "overall_score": 77.7,
+  "overall_grade": "B",
+  "overall_grade_label": "Good",
+  "raw_metrics": {
+    "meters_traveled": 38.254,
+    "collision_count": 0.0,
+    "near_miss_count": 0.0,
+    "exploration_coverage": 92.94,
+    "revisit_ratio": 0.9783,
+    "found_ratio": 1.0,
+    "precision": 0.0882,
+    "duplicate_rate": 0.9875,
+    "time_to_all_detections": 100.25,
+    "average_time_per_detection": 11.14,
+    "false_positive_count": 93.0,
+    "duplicate_count": 711.0,
+    "detection_count": 9.0,
+    "collision_events": [],
+    "near_miss_events": [],
+    "detection_events": [
+      {
+        "label_key": "8",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #3",
+        "timestamp": 0.04,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 6.26,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 7.07,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "7",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #2",
+        "timestamp": 33.03,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "6",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #1",
+        "timestamp": 43.8,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "9",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #4",
+        "timestamp": 49.99,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "3",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #3",
+        "timestamp": 55.68,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "5",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #2",
+        "timestamp": 69.59,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "2",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #2",
+        "timestamp": 100.25,
+        "location_error": 0.0
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 3,
+        "total": 3
+      },
+      "first_aid_kit": {
+        "detected": 2,
+        "total": 2
+      },
+      "hazard_sign": {
+        "detected": 4,
+        "total": 4
+      }
+    },
+    "task_completion_time": 100.2
+  }
+}

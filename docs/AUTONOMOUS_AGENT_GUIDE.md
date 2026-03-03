@@ -23,7 +23,7 @@ Runs are scored 0–100 across five categories, combined as a weighted sum.
 | Category | What it measures |
 |---|---|
 | **Speed** | Time-to-detect and exploration rate relative to par |
-| **Accuracy** | `found_ratio` (recall, 0.55) + `precision` (0.45) |
+| **Accuracy** | Detections `found_ratio` (recall, 0.55) + `precision` (0.45) |
 | **Safety** | Collisions and near-misses |
 | **Efficiency** | Redundant traversal, area-per-metre coverage |
 | **Effectiveness** | Per-type detection completeness (types have configurable weights) |

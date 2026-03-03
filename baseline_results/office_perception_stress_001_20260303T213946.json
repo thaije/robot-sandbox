@@ -1,0 +1,160 @@
+{
+  "scenario_name": "office_perception_stress_001",
+  "status": "SUCCESS",
+  "elapsed_seconds": 92.98731960499936,
+  "timeout_seconds": 600.0,
+  "random_seed": 1442332907,
+  "categories": [
+    "CategoryScore(name='speed', score=82.99, grade='B', grade_label='Good', weight=0.2)",
+    "CategoryScore(name='accuracy', score=57.28, grade='C', grade_label='Adequate', weight=0.35)",
+    "CategoryScore(name='safety', score=82.0, grade='B', grade_label='Good', weight=0.2)",
+    "CategoryScore(name='efficiency', score=64.33, grade='C', grade_label='Adequate', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=100.0, grade='S', grade_label='Outstanding', weight=0.15)"
+  ],
+  "overall_score": 74.5,
+  "overall_grade": "B",
+  "overall_grade_label": "Good",
+  "raw_metrics": {
+    "exploration_coverage": 95.03,
+    "collision_count": 0.0,
+    "near_miss_count": 9.0,
+    "meters_traveled": 36.22,
+    "revisit_ratio": 0.9765,
+    "found_ratio": 1.0,
+    "precision": 0.0506,
+    "duplicate_rate": 0.9811,
+    "time_to_all_detections": 94.54,
+    "average_time_per_detection": 10.5,
+    "false_positive_count": 169.0,
+    "duplicate_count": 467.0,
+    "detection_count": 9.0,
+    "collision_events": [],
+    "near_miss_events": [
+      {
+        "t": 22.56,
+        "count": 1,
+        "min_range": 0.291
+      },
+      {
+        "t": 33.22,
+        "count": 2,
+        "min_range": 0.295
+      },
+      {
+        "t": 40.43,
+        "count": 3,
+        "min_range": 0.228
+      },
+      {
+        "t": 41.98,
+        "count": 4,
+        "min_range": 0.241
+      },
+      {
+        "t": 44.34,
+        "count": 5,
+        "min_range": 0.279
+      },
+      {
+        "t": 61.19,
+        "count": 6,
+        "min_range": 0.293
+      },
+      {
+        "t": 73.19,
+        "count": 7,
+        "min_range": 0.292
+      },
+      {
+        "t": 77.39,
+        "count": 8,
+        "min_range": 0.199
+      },
+      {
+        "t": 79.73,
+        "count": 9,
+        "min_range": 0.29
+      }
+    ],
+    "detection_events": [
+      {
+        "label_key": "8",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #3",
+        "timestamp": 36.62,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "6",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #1",
+        "timestamp": 44.17,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 44.24,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "9",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #4",
+        "timestamp": 47.83,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "2",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #2",
+        "timestamp": 57.57,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "7",
+        "class_type": "hazard_sign",
+        "class_name": "hazard_sign #2",
+        "timestamp": 67.72,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 92.59,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "5",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #2",
+        "timestamp": 94.49,
+        "location_error": 0.0
+      },
+      {
+        "label_key": "3",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #3",
+        "timestamp": 94.54,
+        "location_error": 0.0
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 3,
+        "total": 3
+      },
+      "first_aid_kit": {
+        "detected": 2,
+        "total": 2
+      },
+      "hazard_sign": {
+        "detected": 4,
+        "total": 4
+      }
+    },
+    "task_completion_time": 92.99
+  }
+}

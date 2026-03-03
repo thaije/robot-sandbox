@@ -287,11 +287,14 @@ class ObjectDetectionTracker:
             if class_type not in self._valid_types:
                 continue
 
-            # 2. Already-seen tracking ID → no-op (prevents same detection spamming)
-            if tracking_id and tracking_id in self._seen_tracking_ids:
-                continue
-            if tracking_id:
-                self._seen_tracking_ids.add(tracking_id)
+            # 2. Dedup: real-agent only — oracle uses _confirmed_objects below.
+            # Oracle tracking_id == numeric label; blacklisting it on a LOS-rejected
+            # frame would permanently prevent re-detection.
+            if not is_oracle:
+                if tracking_id and tracking_id in self._seen_tracking_ids:
+                    continue
+                if tracking_id:
+                    self._seen_tracking_ids.add(tracking_id)
 
             # 3. Find nearest physical object of this type
             label_key, dist = self._find_nearest_object(class_type, wx, wy)

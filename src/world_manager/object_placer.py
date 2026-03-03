@@ -39,7 +39,12 @@ class ObjectPlacer:
     #: Maximum random samples per object before giving up.
     MAX_ATTEMPTS: int = 2000
 
-    def __init__(self, template_config: dict, clearance: float | None = None) -> None:
+    def __init__(
+        self,
+        template_config: dict,
+        clearance: float | None = None,
+        robot_spawns: list[tuple[float, float]] | None = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -47,6 +52,9 @@ class ObjectPlacer:
             Parsed ``worlds/templates/<name>/config.yaml`` dict.
         clearance:
             Override the template's ``placement_clearance`` (metres).
+        robot_spawns:
+            List of (x, y) world-frame positions where robots will spawn.
+            Objects are kept at least *clearance* metres away from each.
         """
         self._zones: list[dict] = template_config.get("placement_zones", [])
         self._clearance: float = clearance if clearance is not None else float(
@@ -55,6 +63,7 @@ class ObjectPlacer:
         self._gt_mask, self._resolution, self._world_h = _load_gt_mask(template_config)
         self._zone_weights: list[float] = _zone_area_weights(self._zones)
         self._obstacles: list[dict] = template_config.get("obstacles", [])
+        self._robot_spawns: list[tuple[float, float]] = list(robot_spawns or [])
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -394,6 +403,11 @@ class ObjectPlacer:
         # ── Inter-object clearance (always applied) ───────────────────────────
         for p in placed:
             if math.hypot(x - p.x, y - p.y) < self._clearance:
+                return False
+
+        # ── Robot spawn clearance (always applied) ────────────────────────────
+        for rx, ry in self._robot_spawns:
+            if math.hypot(x - rx, y - ry) < self._clearance:
                 return False
 
         return True

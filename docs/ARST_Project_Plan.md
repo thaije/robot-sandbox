@@ -14,9 +14,7 @@ For the external autonomous agent interface (sensors, topics, mission endpoint),
 
 | ID | Requirement | Notes |
 |----|-------------|-------|
-| SIM-09 | Configurable environment variations (lighting, door states, dynamic obstacles) | **Done** — door states (connected-graph guaranteed), localized lighting (4 presets + 2 compound), vertical/surface placement, flickering lights, patrol bot, smoke emitters, 5 tier YAMLs |
 | SIM-12 | Multiple simulator instances in parallel | Future |
-| SIM-13 | Deterministic replay (same seed = same scenario) | Not verified |
 | MET-13 | Calibrated par values | After first working run |
 
 ---

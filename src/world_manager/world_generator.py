@@ -95,7 +95,12 @@ class WorldGenerator:
 
         # ── Place objects ──────────────────────────────────────────────────────
         objects = world_cfg.get("objects", [])
-        placer = ObjectPlacer(template_cfg)
+        robot_spawns = [
+            (float(r["spawn_pose"]["x"]), float(r["spawn_pose"]["y"]))
+            for r in robots_cfg
+            if "x" in r.get("spawn_pose", {}) and "y" in r.get("spawn_pose", {})
+        ]
+        placer = ObjectPlacer(template_cfg, robot_spawns=robot_spawns)
         placements: list[PlacedObject] = placer.place(objects, seed) if objects else []
 
         # ── Build final SDF via XML manipulation ───────────────────────────────

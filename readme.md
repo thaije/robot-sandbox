@@ -109,5 +109,13 @@ python3.12 -m pytest tests/
 
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
-
+- remove revisit ratio > always duplicate and not informative
+- Speed = completion time compared to par
+- Is time to detections informative? Is it no always completion time / number of obj instances? Only informative when not completed within time limit? I propose deleting it. 
+- Efficiency = area per meter coverage
+- Effectiveness as sort of completeness? Move exploration rate to there? 
+- Add: average km/h. Not as part of one of the categories, just as interesting fact. 
+- first hard: mission briefing weird? First hard obj sign hovering in office A
+- first aid kit very hard to see in brutal on furniture
+- objects block patrol bot
   
