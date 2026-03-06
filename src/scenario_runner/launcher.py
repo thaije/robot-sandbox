@@ -46,6 +46,8 @@ class SimulationLauncher:
         dynamic_obstacles: list[dict] | None = None,
         gazebo_timeout: float = 90.0,
         robot_timeout: float = 30.0,
+        enable_oracle: bool = False,
+        enable_pointcloud: bool = False,
     ) -> None:
         """Launch Gazebo and robot bridge nodes. Blocks until all are ready.
 
@@ -66,6 +68,10 @@ class SimulationLauncher:
             Seconds to wait for ``/clock`` before raising TimeoutError.
         robot_timeout:
             Seconds to wait for each ``/<robot_name>/odom`` before raising.
+        enable_oracle:
+            Bridge the bbox oracle camera to /detections (dev/cheat mode).
+        enable_pointcloud:
+            Bridge the RGBD point cloud to /ROBOT_NAME/rgbd/points.
         """
         self._launch_gazebo(world_sdf)
         self._wait_for_gazebo(timeout=gazebo_timeout)
@@ -75,7 +81,11 @@ class SimulationLauncher:
             platform = robot["platform"]
             name = robot.get("name", f"{platform}_0")
             robot_names.append(name)
-            self._launch_robot_bridges(platform, name, world_name)
+            self._launch_robot_bridges(
+                platform, name, world_name,
+                enable_oracle=enable_oracle,
+                enable_pointcloud=enable_pointcloud,
+            )
 
         self._wait_for_robots(robot_names, timeout=robot_timeout)
 
@@ -106,6 +116,8 @@ class SimulationLauncher:
         platform: str,
         robot_name: str,
         world_name: str,
+        enable_oracle: bool = False,
+        enable_pointcloud: bool = False,
     ) -> subprocess.Popen:
         """Start RSP + ros_gz_bridge for a robot that is already in the world SDF.
 
@@ -119,6 +131,8 @@ class SimulationLauncher:
             f"name:={robot_name}",
             f"world:={world_name}",
             "spawn:=false",
+            f"enable_oracle:={'true' if enable_oracle else 'false'}",
+            f"enable_pointcloud:={'true' if enable_pointcloud else 'false'}",
         ]
         proc = subprocess.Popen(
             cmd,

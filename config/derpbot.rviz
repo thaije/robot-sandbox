@@ -9,6 +9,7 @@ Panels:
         - /TF1
         - /Odometry1
         - /Camera Image1
+        - /Depth Image1
         - /World Map1
         - /LiDAR Scan1
       Splitter Ratio: 0.5
@@ -134,7 +135,21 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /derpbot_0/image_raw
+        Value: /derpbot_0/rgbd
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 6
+      Median window: 5
+      Min Value: 0
+      Name: Depth Image
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /derpbot_0/rgbd/depth_image
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
@@ -236,6 +251,8 @@ Visualization Manager:
         Y: -0.6715807914733887
 Window Geometry:
   Camera Image:
+    collapsed: false
+  Depth Image:
     collapsed: false
   Displays:
     collapsed: true

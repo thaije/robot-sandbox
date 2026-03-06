@@ -28,6 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Simulation real-time factor (e.g. 3.0 = 3× speed). "
                         "Actual RTF depends on CPU; gz-sim degrades gracefully if "
                         "the target cannot be sustained.")
+    p.add_argument("--enable-oracle", action="store_true", default=False,
+                   help="Bridge the bbox oracle camera to /detections (dev/cheat mode).")
+    p.add_argument("--enable-pointcloud", action="store_true", default=False,
+                   help="Bridge the RGBD point cloud to /ROBOT_NAME/rgbd/points.")
     return p
 
 
@@ -53,7 +57,13 @@ def main() -> None:
         config["scenario"]["real_time_factor"] = args.speed
 
     headless = not args.gui
-    runner = ScenarioRunner(config, headless=headless, output_dir=Path(args.output_dir))
+    runner = ScenarioRunner(
+        config,
+        headless=headless,
+        output_dir=Path(args.output_dir),
+        enable_oracle=args.enable_oracle,
+        enable_pointcloud=args.enable_pointcloud,
+    )
     runner.run()
 
 

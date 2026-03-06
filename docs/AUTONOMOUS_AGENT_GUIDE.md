@@ -52,7 +52,10 @@ Ground robot (differential drive — currently the only supported model).
 |---|---|---|---|
 | 2-D LiDAR | `/derpbot_0/scan` | ~10 Hz | 360°, 720 rays, 0.5° resolution, 0.15–12 m range, `sensor_msgs/LaserScan` |
 | IMU | `/derpbot_0/imu` | 100 Hz | `sensor_msgs/Imu`, **BEST_EFFORT QoS** |
-| RGB camera | `/derpbot_0/image_raw` | 10 Hz | 640 × 480, 90° horizontal FOV, forward-facing, `sensor_msgs/Image` |
+| RGBD — RGB | `/derpbot_0/rgbd` | 10 Hz | 640 × 480, 90° H-FOV, forward-facing, `sensor_msgs/Image` |
+| RGBD — depth | `/derpbot_0/rgbd/depth_image` | 10 Hz | float32 metres, 0.15–6.0 m range, Gaussian noise σ=0.01 m, `sensor_msgs/Image` |
+| RGBD — intrinsics | `/derpbot_0/rgbd/camera_info` | 10 Hz | `sensor_msgs/CameraInfo` — required for 3-D back-projection |
+| RGBD — point cloud | `/derpbot_0/rgbd/points` | 10 Hz | `sensor_msgs/PointCloud2` — **off by default**, enable with `--enable-pointcloud` |
 | Odometry | `/derpbot_0/odom` | — | `nav_msgs/Odometry`, wheel-encoder dead-reckoning |
 
 ### Control & TF
@@ -77,7 +80,7 @@ Publish your detections on `/derpbot_0/detections` as `vision_msgs/Detection2DAr
 
 **Validation logic:** a detection is a **true positive** if the class matches a known target type, the claimed position is within 1.5 m of a real object of that type, and there is line of sight. Detections of unknown classes are silently ignored (no penalty). False positives, duplicate positives and localization error reduce your score.
 
-**Note:** a ground-truth oracle is available at `/derpbot_0/detections` during development runs (see §6). For scored runs, deploy your own vision pipeline on `/derpbot_0/image_raw`.
+**Note:** a ground-truth oracle can be enabled with `--enable-oracle` (see §4). When active, the simulator bridges its bbox camera directly to `/derpbot_0/detections`, replacing the need for your own vision pipeline. **Off by default** — for scored runs you must publish your own detections using `/derpbot_0/rgbd` and `/derpbot_0/rgbd/depth_image`.
 
 ---
 
@@ -94,6 +97,12 @@ Publish your detections on `/derpbot_0/detections` as `vision_msgs/Detection2DAr
 
 # Shorten timeout for iteration
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless --timeout 300
+
+# Enable oracle detections (dev/cheat — bbox camera feeds /detections directly)
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless --enable-oracle
+
+# Enable RGBD point cloud bridge (high bandwidth — off by default)
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --enable-pointcloud
 ```
 
 Available difficulty tiers (ascending): `easy` · `medium` · `hard` · `brutal` · `perception_stress`

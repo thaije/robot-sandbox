@@ -22,6 +22,7 @@
     rear_caster_wheel — at (-0.13, 0, -0.03) relative to base_link → z=0.02 world
 
   Sensors: contact/bumper on base_link (detects all sides).  Bounding-box camera on top-front.
+           RGBD camera on top-front (z=+0.20 rel to base_link) — RGB + depth.
            2D LiDAR (gpu_lidar) on top of body at z=+0.12 rel to base_link.
            IMU at body centre z=+0.05 rel to base_link.
 
@@ -348,13 +349,21 @@
       <visualize>false</visualize>
     </sensor>
 
-    <!-- RGB camera: live image stream for RViz2 / debugging -->
-    <sensor name="rgb_camera" type="camera">
+    <!-- RGBD camera: RGB + depth for agent perception pipelines.
+         Base topic /ROBOT_NAME/rgbd publishes:
+           /ROBOT_NAME/rgbd             — RGB image  (sensor_msgs/Image)
+           /ROBOT_NAME/rgbd/depth_image — depth map  (float32 metres)
+           /ROBOT_NAME/rgbd/points      — point cloud (PointCloud2, optional bridge)
+           /ROBOT_NAME/rgbd/camera_info — intrinsics  (sensor_msgs/CameraInfo)
+         Depth clip 0.15–6.0 m matches RealSense-class hardware.
+         Depth noise: Gaussian stddev 0.01 m (≈1 % at 1 m).               -->
+    <sensor name="rgbd_camera" type="rgbd_camera">
       <always_on>true</always_on>
       <update_rate>10</update_rate>
-      <topic>/ROBOT_NAME/image_raw</topic>
-      <camera name="rgb_camera">
-        <!-- Same FOV/resolution as bbox_camera so views match -->
+      <topic>/ROBOT_NAME/rgbd</topic>
+      <gz_frame_id>camera_link</gz_frame_id>
+      <camera name="rgbd_camera">
+        <!-- Same FOV/resolution as bbox_camera so views align -->
         <horizontal_fov>1.5708</horizontal_fov>
         <image>
           <width>640</width>
@@ -362,9 +371,23 @@
           <format>R8G8B8</format>
         </image>
         <clip>
-          <near>0.05</near>
-          <far>100.0</far>
+          <!-- near=0.15: matches realistic RGBD sensor minimum depth.
+               far=6.0: RealSense D435 rated range. -->
+          <near>0.15</near>
+          <far>6.0</far>
         </clip>
+        <depth_camera>
+          <output>depths</output>
+          <clip>
+            <near>0.15</near>
+            <far>6.0</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </depth_camera>
       </camera>
       <visualize>false</visualize>
     </sensor>

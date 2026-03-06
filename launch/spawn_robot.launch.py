@@ -79,6 +79,25 @@ ARGUMENTS = [
     DeclareLaunchArgument(
         "use_sim_time", default_value="true", choices=["true", "false"],
     ),
+    DeclareLaunchArgument(
+        "enable_oracle",
+        default_value="false",
+        choices=["true", "false"],
+        description=(
+            "Bridge the bounding-box oracle camera to /detections. "
+            "Enables the ground-truth detection feed (dev/cheat). "
+            "When false the agent must publish its own detections."
+        ),
+    ),
+    DeclareLaunchArgument(
+        "enable_pointcloud",
+        default_value="false",
+        choices=["true", "false"],
+        description=(
+            "Bridge the RGBD point cloud to /ROBOT_NAME/rgbd/points "
+            "(sensor_msgs/PointCloud2). Off by default — high bandwidth."
+        ),
+    ),
 ]
 
 
@@ -91,8 +110,10 @@ def _make_actions(context, *args, **kwargs):
     z    = LaunchConfiguration("z").perform(context)
     yaw  = LaunchConfiguration("yaw").perform(context)
     use_sim_time_str = LaunchConfiguration("use_sim_time").perform(context)
-    use_sim_time = use_sim_time_str.lower() == "true"
-    do_spawn = LaunchConfiguration("spawn").perform(context).lower() == "true"
+    use_sim_time  = use_sim_time_str.lower() == "true"
+    do_spawn      = LaunchConfiguration("spawn").perform(context).lower() == "true"
+    enable_oracle = LaunchConfiguration("enable_oracle").perform(context).lower() == "true"
+    enable_pointcloud = LaunchConfiguration("enable_pointcloud").perform(context).lower() == "true"
 
     # ── Load URDF — substitute ROBOT_NAME placeholder ────────────────────────
     # The URDF uses the literal string ROBOT_NAME in Gazebo topic names so that
@@ -152,30 +173,52 @@ def _make_actions(context, *args, **kwargs):
     #
     # Bridge argument format: gz_topic@ros_type]gz_type  (ROS→GZ)
     #                         gz_topic@ros_type[gz_type  (GZ→ROS)
+    bridge_args = [
+        # cmd_vel: ROS 2 → Gazebo
+        f"/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist",
+        # odom: Gazebo → ROS 2
+        f"/{robot_name}/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
+        # TF from diff drive: Gazebo → ROS 2
+        f"/{robot_name}/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+        # Joint states: Gazebo → ROS 2
+        f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
+        # Bumper contact: Gazebo → ROS 2  (feeds CollisionCount metric)
+        f"/{robot_name}/bumper_contact@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
+        # RGBD camera — RGB image: Gazebo → ROS 2
+        f"/{robot_name}/rgbd@sensor_msgs/msg/Image[gz.msgs.Image",
+        # RGBD camera — depth image: Gazebo → ROS 2  (float32 metres)
+        f"/{robot_name}/rgbd/depth_image@sensor_msgs/msg/Image[gz.msgs.Image",
+        # RGBD camera — intrinsics: Gazebo → ROS 2  (for 3-D projection)
+        f"/{robot_name}/rgbd/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+        # 2-D LiDAR: Gazebo → ROS 2  (feeds ExplorationCoverage + Nav2)
+        f"/{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+        # IMU: Gazebo → ROS 2
+        f"/{robot_name}/imu@sensor_msgs/msg/Imu[gz.msgs.IMU",
+    ]
+
+    # Oracle bounding-box detections (dev/cheat) — off by default.
+    # When enabled the gz bbox_camera sensor feeds /detections directly,
+    # replacing the need for a real vision pipeline.
+    if enable_oracle:
+        bridge_args.append(
+            f"/{robot_name}/detections"
+            "@vision_msgs/msg/Detection2DArray"
+            "[gz.msgs.AnnotatedAxisAligned2DBox_V"
+        )
+
+    # RGBD point cloud — off by default (high bandwidth at 640×480×10 Hz).
+    if enable_pointcloud:
+        bridge_args.append(
+            f"/{robot_name}/rgbd/points"
+            "@sensor_msgs/msg/PointCloud2"
+            "[gz.msgs.PointCloudPacked"
+        )
+
     bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
         name=f"bridge_{robot_name}",
-        arguments=[
-            # cmd_vel: ROS 2 → Gazebo
-            f"/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist",
-            # odom: Gazebo → ROS 2
-            f"/{robot_name}/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
-            # TF from diff drive: Gazebo → ROS 2
-            f"/{robot_name}/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
-            # Joint states: Gazebo → ROS 2
-            f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
-            # Bumper contact: Gazebo → ROS 2  (feeds CollisionCount metric)
-            f"/{robot_name}/bumper_contact@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
-            # Bounding-box camera: Gazebo → ROS 2  (feeds DetectionMetrics)
-            f"/{robot_name}/detections@vision_msgs/msg/Detection2DArray[gz.msgs.AnnotatedAxisAligned2DBox_V",
-            # RGB camera: Gazebo → ROS 2  (live image stream for RViz2 / debugging)
-            f"/{robot_name}/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
-            # 2-D LiDAR: Gazebo → ROS 2  (feeds ExplorationCoverage + Nav2)
-            f"/{robot_name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
-            # IMU: Gazebo → ROS 2
-            f"/{robot_name}/imu@sensor_msgs/msg/Imu[gz.msgs.IMU",
-        ],
+        arguments=bridge_args,
         remappings=[
             # Merge robot's TF stream into the global /tf topic
             (f"/{robot_name}/tf", "/tf"),

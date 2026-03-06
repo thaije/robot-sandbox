@@ -69,7 +69,7 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 | RobotModel | `/derpbot_0/robot_description` | Full URDF with lidar drum visible |
 | TF | `/tf` | `odom → base_footprint → base_link → lidar_link / camera_link` |
 | Odometry | `/derpbot_0/odom` | Red arrows, last 100 poses |
-| Camera Image | `/derpbot_0/image_raw` | Live RGB feed from forward-facing camera |
+| Camera Image | `/derpbot_0/rgbd` | Live RGB feed from forward-facing RGBD camera |
 | World Map | `/arst/world_map` | Top-down floor plan with robot + object positions |
 | LiDAR Scan | `/derpbot_0/scan` | Cyan point cloud, 360° 12 m range |
 
@@ -86,7 +86,7 @@ The human player gets **only the forward camera** — no map, no object position
 
 **Terminal 2 — camera-only view:**
 ```bash
-ros2 run rqt_image_view rqt_image_view /derpbot_0/image_raw
+ros2 run rqt_image_view rqt_image_view /derpbot_0/rgbd
 ```
 
 **Terminal 3 — keyboard teleop:**
@@ -110,5 +110,9 @@ python3.12 -m pytest tests/
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
 - label ? in metrics report
-- sim x3?
-  
+- try disabling the bounding box cam to see influence on real time factor. If big > only trigger on teleop session or detection publish
+- add sound?
+
+To check: 
+- way to enable/disable oracle detector for autonomous robot development w or w/o vision model.
+- depth

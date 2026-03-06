@@ -50,10 +50,14 @@ class ScenarioRunner:
         config: dict,
         headless: bool = True,
         output_dir: Path = Path("results"),
+        enable_oracle: bool = False,
+        enable_pointcloud: bool = False,
     ) -> None:
         self._cfg = config
         self._headless = headless
         self._output_dir = Path(output_dir)
+        self._enable_oracle = enable_oracle
+        self._enable_pointcloud = enable_pointcloud
         self._launcher = SimulationLauncher(headless=headless)
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -94,6 +98,8 @@ class ScenarioRunner:
             world_name=world_cfg["template"],
             robots_cfg=robots_cfg,
             dynamic_obstacles=world_cfg.get("dynamic_obstacles", []),
+            enable_oracle=self._enable_oracle,
+            enable_pointcloud=self._enable_pointcloud,
         )
         robot_names = [r.get("name", f"{r['platform']}_0") for r in robots_cfg]
         log.info("Simulation ready — robots: %s", robot_names)
