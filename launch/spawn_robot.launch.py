@@ -184,8 +184,8 @@ def _make_actions(context, *args, **kwargs):
         f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
         # Bumper contact: Gazebo → ROS 2  (feeds CollisionCount metric)
         f"/{robot_name}/bumper_contact@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
-        # RGBD camera — RGB image: Gazebo → ROS 2
-        f"/{robot_name}/rgbd@sensor_msgs/msg/Image[gz.msgs.Image",
+        # RGBD camera — RGB image: Gazebo → ROS 2  (note: gz publishes on /rgbd/image, not /rgbd)
+        f"/{robot_name}/rgbd/image@sensor_msgs/msg/Image[gz.msgs.Image",
         # RGBD camera — depth image: Gazebo → ROS 2  (float32 metres)
         f"/{robot_name}/rgbd/depth_image@sensor_msgs/msg/Image[gz.msgs.Image",
         # RGBD camera — intrinsics: Gazebo → ROS 2  (for 3-D projection)

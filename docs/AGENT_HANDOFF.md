@@ -21,7 +21,7 @@ Full plan + remaining work: [`docs/ARST_Project_Plan.md`](ARST_Project_Plan.md).
 - **LiDAR**: `/derpbot_0/scan` → `sensor_msgs/LaserScan` @ 9.8 Hz, 720 samples, 360°, 0.15–12 m, `frame_id=lidar_link`
 - **IMU**: `/derpbot_0/imu` → `sensor_msgs/Imu` @ 100 Hz, `frame_id=imu_link`, **BEST_EFFORT QoS** (subscribe with `ReliabilityPolicy.BEST_EFFORT`)
 - **RGBD camera** (`camera_link`, z=0.20 rel base_link, 640×480, 90° H-FOV, 10 Hz): replaces old `image_raw` RGB-only camera
-  - `/derpbot_0/rgbd` — RGB (`sensor_msgs/Image`)
+  - `/derpbot_0/rgbd/image` — RGB (`sensor_msgs/Image`)
   - `/derpbot_0/rgbd/depth_image` — depth float32 m, 0.15–6.0 m, σ=0.01 m (`sensor_msgs/Image`)
   - `/derpbot_0/rgbd/camera_info` — intrinsics, always on (`sensor_msgs/CameraInfo`)
   - `/derpbot_0/rgbd/points` — point cloud, **off by default** (`--enable-pointcloud`)
@@ -79,7 +79,7 @@ ScenarioRunner.run()
 - `ROBOT_NAME` placeholder in URDF replaced at SDF generation time → unique topics per instance
 - Robots embedded in world SDF (not dynamically spawned) — required for contact sensors
 - `spawn_robot.launch.py` with `spawn:=false` starts RSP + bridges only (used by automated runs; robot already in world SDF). True dynamic spawn works for teleop/odom/TF but contact sensor won't fire.
-- `boundingbox_camera` oracle: **off by default** — enable with `--enable-oracle`. When on, bridges gz bbox sensor → `/detections`; tracker auto-detects numeric class_ids and translates via label_map. Off = agent must provide its own detections via RGBD pipeline.
+- `boundingbox_camera` oracle: **off by default** — enable with `--enable-oracle`. When on, bridges gz bbox sensor → `/detections`; tracker auto-detects numeric class_ids and translates via label_map. Off = agent must provide its own detections via `/rgbd/image` + `/rgbd/depth_image` pipeline.
 - Coverage: raycasting at 0.5m res using `skimage.draw.line()` + odom pose converted to world frame via spawn offset (near-zero drift in sim)
 - TF frames unprefixed (`odom → base_footprint → base_link`) — fine for single robot
 
