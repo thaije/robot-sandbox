@@ -100,6 +100,13 @@ Speed is capped at 0.5 m/s and 2.0 rad/s by the diff-drive plugin regardless of 
 
 Navigate the four rooms and locate all objects as quickly as possible.  When the timeout expires (or all objects are found) the scorecard and JSON result are printed. 
 
+## Sim diagnostics
+
+```bash
+# Realtime factor (headless-friendly)
+gz topic -e -t /stats
+```
+
 ## Tests
 
 ```bash
