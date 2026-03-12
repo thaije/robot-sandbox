@@ -6,7 +6,8 @@ each incoming detection as TP, DP, FP, or IGN against the ground-truth label_map
 Detection2D message contract (required from agents):
   class_id  (results[0].hypothesis.class_id) : object type, e.g. "fire_extinguisher"
   id                                          : persistent per-instance tracking ID
-  results[0].pose.pose.position.{x,y}        : estimated world position (metres)
+  results[0].pose.pose.position.{x,y}        : estimated position in map/slam frame (metres);
+                                                scorer applies spawn-offset transform → world frame
 
 Oracle compatibility (dev/cheat tool):
   Numeric class_id that resolves in label_map is accepted as oracle format.
@@ -254,6 +255,9 @@ class ObjectDetectionTracker:
     def _on_detections(self, msg: Any) -> None:
         elapsed = time.monotonic() - self._start_time
         new_tp = False
+        # Per-message FP dedup: prevents a persistently-bad track from counting
+        # multiple FPs within a single DetectionArray message.
+        _fp_seen_this_msg: set[str] = set()
 
         for det in msg.detections:
             if not det.results:
@@ -276,10 +280,16 @@ class ObjectDetectionTracker:
                 tracking_id = raw_class_id   # numeric label is its own stable UID
                 is_oracle = True
             else:
-                # Real-agent format: class_id is type name; pose is world position
+                # Real-agent format: class_id is type name; pose is in map/slam frame
+                # (odom origin = robot spawn pose).  Convert to world frame using the
+                # same spawn-offset transform applied to odom-based robot pose.
                 class_type = raw_class_id
-                wx = float(hyp.pose.pose.position.x)
-                wy = float(hyp.pose.pose.position.y)
+                mx = float(hyp.pose.pose.position.x)
+                my = float(hyp.pose.pose.position.y)
+                sy = math.sin(self._spawn_yaw)
+                cy = math.cos(self._spawn_yaw)
+                wx = self._spawn_x + cy * mx - sy * my
+                wy = self._spawn_y + sy * mx + cy * my
                 tracking_id = det.id or ""
                 is_oracle = False
 
@@ -288,13 +298,12 @@ class ObjectDetectionTracker:
                 continue
 
             # 2. Dedup: real-agent only — oracle uses _confirmed_objects below.
-            # Oracle tracking_id == numeric label; blacklisting it on a LOS-rejected
-            # frame would permanently prevent re-detection.
+            # Only blacklist a tracking_id once it's confirmed as TP or DP.
+            # FP/miss outcomes must NOT blacklist — the same track may later have a
+            # better position or clear LOS and should be re-evaluated.
             if not is_oracle:
                 if tracking_id and tracking_id in self._seen_tracking_ids:
                     continue
-                if tracking_id:
-                    self._seen_tracking_ids.add(tracking_id)
 
             # 3. Find nearest physical object of this type
             label_key, dist = self._find_nearest_object(class_type, wx, wy)
@@ -302,12 +311,18 @@ class ObjectDetectionTracker:
             if label_key is not None and dist <= self._match_threshold:
                 actual = self._label_map[label_key]
                 if not self._has_line_of_sight(float(actual["x"]), float(actual["y"])):
-                    self._fp_count += 1
+                    # LOS failure — count FP but do NOT blacklist tracking_id;
+                    # robot may gain LOS on a future message.
+                    if not is_oracle and tracking_id not in _fp_seen_this_msg:
+                        self._fp_count += 1
+                        _fp_seen_this_msg.add(tracking_id)
                     continue
 
                 if label_key in self._confirmed_objects:
                     # Physical object already confirmed → duplicate positive
                     self._dp_count += 1
+                    if not is_oracle and tracking_id:
+                        self._seen_tracking_ids.add(tracking_id)
                 else:
                     # True positive
                     location_error = 0.0 if is_oracle else dist
@@ -318,6 +333,8 @@ class ObjectDetectionTracker:
                     }
                     if not is_oracle:
                         self._location_errors.append(dist)
+                        if tracking_id:
+                            self._seen_tracking_ids.add(tracking_id)
                     self._tp_events.append({
                         "label_key": label_key,
                         "class_type": class_type,
@@ -327,8 +344,12 @@ class ObjectDetectionTracker:
                     })
                     new_tp = True
             else:
-                # Nothing within threshold → false positive
-                self._fp_count += 1
+                # Nothing within threshold → false positive (per-message dedup)
+                if not is_oracle and tracking_id not in _fp_seen_this_msg:
+                    self._fp_count += 1
+                    _fp_seen_this_msg.add(tracking_id)
+                elif is_oracle:
+                    self._fp_count += 1
 
         if new_tp:
             self._write_live_state()

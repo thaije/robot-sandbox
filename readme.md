@@ -119,7 +119,6 @@ To fix:
 - label ? in metrics report
 - try disabling the bounding box cam to see influence on real time factor. If big > only trigger on teleop session or detection publish
 - add sound?
-
-To check:
-- ~~way to enable/disable oracle detector for autonomous robot development w or w/o vision model.~~ ✓ done (`--enable-oracle`)
-- ~~depth~~ ✓ done (RGBD camera — `rgbd/image`, `rgbd/depth_image`, `rgbd/camera_info`)
+- add dummy objects?
+- add some variation in signs e.g. also on wall etc.
+- add plus to back of first aid kit as well

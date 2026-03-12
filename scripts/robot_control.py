@@ -152,10 +152,10 @@ def cmd_snapshot(args):
     rclpy.init()
     node = rclpy.create_node("rc_snapshot")
     try:
-        msg = _wait_for_message(node, Image, f"/{args.robot}/image_raw", args.timeout)
+        msg = _wait_for_message(node, Image, f"/{args.robot}/rgbd/image", args.timeout)
         if msg is None:
             print(
-                f"ERROR: no image on /{args.robot}/image_raw within {args.timeout}s.\n"
+                f"ERROR: no image on /{args.robot}/rgbd/image within {args.timeout}s.\n"
                 + _sim_not_running_hint()
             )
             return 1

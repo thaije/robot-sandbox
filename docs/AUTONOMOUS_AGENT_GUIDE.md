@@ -76,9 +76,9 @@ Publish your detections on `/derpbot_0/detections` as `vision_msgs/Detection2DAr
 |---|---|
 | `results[0].hypothesis.class_id` | Object type string, e.g. `"fire_extinguisher"` |
 | `id` | Persistent per-instance tracking ID (e.g. `"track_23"`). Use a stable ID for the same physical object across frames. |
-| `results[0].pose.pose.position.{x,y}` | Estimated world position in metres (from robot pose + depth estimate) |
+| `results[0].pose.pose.position.{x,y}` | Estimated position in **map frame** (odom origin = robot spawn pose), in metres. The scorer converts to world frame automatically using the spawn offset. |
 
-**Validation logic:** a detection is a **true positive** if the class matches a known target type, the claimed position is within 1.5 m of a real object of that type, and there is line of sight. Detections of unknown classes are silently ignored (no penalty). False positives, duplicate positives and localization error reduce your score.
+**Validation logic:** a detection is a **true positive** if the class matches a known target type, the claimed map-frame position converts to within 1.5 m of a real object of that type in world frame, and there is line of sight. Detections of unknown classes are silently ignored (no penalty). False positives, duplicate positives and localization error reduce your score.
 
 **Safety threshold:** a near-miss is any obstacle within **≤ 0.3 m** of the robot (as measured by LiDAR). Collisions and near-misses both reduce the Safety score. The robot body is 30 × 20 cm (LiDAR-to-surface offset ≈ 0.15 m front/back).
 
@@ -107,7 +107,16 @@ Publish your detections on `/derpbot_0/detections` as `vision_msgs/Detection2DAr
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --enable-pointcloud
 ```
 
-Available difficulty tiers (ascending): `easy` · `medium` · `hard` · `brutal` · `perception_stress`
+Available difficulty tiers (ascending):
+
+| Tier | Timeout |
+|---|---|
+| `easy` | 900 s |
+| `medium` | 600 s |
+| `hard` | 300 s |
+| `brutal` | 180 s |
+| `perception_stress` | 600 s |
+
 All YAML files are under `config/scenarios/office_explore_detect/`.
 
 Startup takes ~5 s. The scenario ends on `SUCCESS` or `TIME_LIMIT`; scorecard prints to stdout and JSON is written to `results/`.
@@ -153,7 +162,7 @@ A mission brief is also printed to stdout at scenario start and again just befor
 
 1. **Receive the mission** — fetch the mission description (see section 4) before or at run start.
 2. **Explore** the environment — no map is provided; build it from LiDAR and odometry.
-3. **Detect objects** — publish `vision_msgs/Detection2DArray` on `/derpbot_0/detections` with class, tracking ID, and world position (see §3).
+3. **Detect objects** — publish `vision_msgs/Detection2DArray` on `/derpbot_0/detections` with class, tracking ID, and map-frame position (see §3).
 4. **Navigate safely** — collisions and near-misses reduce your Safety score.
 5. **Stop or let the runner end the episode** — the runner polls detections and terminates automatically.
 
