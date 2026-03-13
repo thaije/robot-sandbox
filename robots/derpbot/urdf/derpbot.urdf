@@ -380,9 +380,10 @@
         </image>
         <clip>
           <!-- near=0.15: matches realistic RGBD sensor minimum depth.
-               far=6.0: RealSense D435 rated range. -->
+               far=100.0: unlimited RGB rendering; depth range is controlled
+               separately by depth_camera/clip below (6 m). -->
           <near>0.15</near>
-          <far>6.0</far>
+          <far>100.0</far>
         </clip>
         <depth_camera>
           <output>depths</output>

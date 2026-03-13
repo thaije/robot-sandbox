@@ -65,10 +65,43 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 # always shows the current map without world_state.py needing to touch ROS.
 python3.12 "$SCRIPT_DIR/map_publisher.py" &
 MAP_PUB_PID=$!
+
+RUNNER_PID=""
+_CLEANED=0
+_SIGINT_RECEIVED=0
+
 _cleanup() {
+    # Disable errexit inside the trap: bash can raise a spurious
+    # "pop_var_context" internal error when set -euo pipefail is active
+    # and a trap fires during certain shell states.
+    set +euo pipefail
+    # Guard: INT trap and EXIT trap would both call this; run only once.
+    [[ $_CLEANED -eq 1 ]] && return
+    _CLEANED=1
+
+    if [[ -n "$RUNNER_PID" ]]; then
+        if [[ $_SIGINT_RECEIVED -eq 0 ]]; then
+            # External kill (SIGTERM to the shell): background Python shares our
+            # process group so it did NOT get SIGINT from the terminal.  Send it
+            # now so its KeyboardInterrupt handler runs and shuts Gazebo cleanly.
+            kill -INT "$RUNNER_PID" 2>/dev/null || true
+        fi
+        # Ctrl-C case: Python already has SIGINT from the terminal — just wait.
+        wait "$RUNNER_PID" 2>/dev/null || true
+    fi
     kill "$MAP_PUB_PID" 2>/dev/null || true
     wait "$MAP_PUB_PID" 2>/dev/null || true
+    # Belt-and-suspenders: kill any simulation/bridge processes left over.
+    pkill -KILL -f "gz sim" 2>/dev/null || true
+    pkill -KILL -f "ros_gz_bridge" 2>/dev/null || true
+    # Release port 7400 with SIGKILL — this is last-resort, clean shutdown
+    # already happened above via Python's finally block.
+    fuser -k 7400/tcp 2>/dev/null || true
 }
-trap _cleanup EXIT INT TERM
+trap '_SIGINT_RECEIVED=1; _cleanup' INT
+trap _cleanup EXIT TERM
 
-python3.12 -m scenario_runner --scenario "$@"
+python3.12 -m scenario_runner --scenario "$@" &
+RUNNER_PID=$!
+wait "$RUNNER_PID" || true
+RUNNER_PID=""

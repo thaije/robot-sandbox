@@ -79,5 +79,39 @@
       </visual>
     </link>
 
+    <!-- ── White cross — horizontal bar (decal on back face, y=+0.06) ───── -->
+    <link name="cross_h_back">
+      <pose>0 0.062 0.11 0 0 0</pose>
+
+      <visual name="cross_h_back_visual">
+        <geometry>
+          <box>
+            <size>0.22 0.004 0.06</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.95 0.95 0.95 1</ambient>
+          <diffuse>0.95 0.95 0.95 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ── White cross — vertical bar (back face) ────────────────────────── -->
+    <link name="cross_v_back">
+      <pose>0 0.062 0.11 0 0 0</pose>
+
+      <visual name="cross_v_back_visual">
+        <geometry>
+          <box>
+            <size>0.06 0.004 0.16</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.95 0.95 0.95 1</ambient>
+          <diffuse>0.95 0.95 0.95 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
   </model>
 </sdf>

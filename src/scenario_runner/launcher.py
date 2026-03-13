@@ -200,6 +200,16 @@ class SimulationLauncher:
         Robots are embedded in the world SDF and are destroyed with Gazebo —
         no explicit despawn step is needed.
         """
+        # Block SIGINT for the duration of shutdown so a second Ctrl-C from the
+        # user cannot raise a second KeyboardInterrupt that aborts cleanup and
+        # leaves Gazebo running or port 7400 held.
+        old_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            self._shutdown_inner()
+        finally:
+            signal.signal(signal.SIGINT, old_sigint)
+
+    def _shutdown_inner(self) -> None:
         # Each process was launched with start_new_session=True, so it has its
         # own process group (pgid == proc.pid).  Killing the group ensures gz sim
         # and ros_gz_bridge grandchildren are also terminated.

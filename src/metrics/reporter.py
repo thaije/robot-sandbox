@@ -25,7 +25,7 @@ def _format_event(item: Any) -> str:
         return str(item)
     # detection_events: {class_id, class_name, timestamp}
     if "class_name" in item:
-        return f"t={item.get('timestamp', '?'):6.1f}s  {item['class_name']} [label {item.get('class_id', '?')}]"
+        return f"t={item.get('timestamp', '?'):6.1f}s  {item['class_name']} [label {item.get('class_type', '?')}]"
     # collision_events: {t, count}  (no min_range key)
     if "count" in item and "min_range" not in item:
         return f"t={item.get('t', '?'):6.1f}s  collision #{item['count']}"

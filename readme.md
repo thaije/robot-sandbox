@@ -115,12 +115,19 @@ python3.12 -m pytest tests/
 
 
 To fix: 
-- collisions don't seem to count correctly? Hitting door 3 times, only one detected.
-- label ? in metrics report
-- add sound? E.g. for detecting victims
-- add dummy objects?
-- add some variation in signs e.g. also on wall etc.
-- add plus to back of first aid kit as well
-- field of way is limited of rgbd rgb camera
-- scenario not really killed when quitting scenario runner and free port 7400
-- add sensor jitter, e.g. odom wheels error / slipping
+- bugs:
+  - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
+  - label ? in metrics report
+  - add plus to back of first aid kit as well
+  - field of way is limited of rgbd rgb camera
+  - scenario not really killed when quitting scenario runner and free port 7400
+- extensions:
+  - add dummy objects?
+  - add some variation in signs e.g. also on wall etc.
+- new features:
+  - add sound? E.g. for detecting victims
+  - add sensor jitter, e.g. odom wheels error / slipping  
+
+
+
+

@@ -133,9 +133,13 @@ class ScenarioRunner:
         for m in metrics.values():
             m.start()
 
-        spin_thread = threading.Thread(
-            target=rclpy.spin, args=(node,), daemon=True,
-        )
+        def _spin_node() -> None:
+            try:
+                rclpy.spin(node)
+            except Exception:  # noqa: BLE001  # ExternalShutdownException on cleanup
+                pass
+
+        spin_thread = threading.Thread(target=_spin_node, daemon=True)
         spin_thread.start()
         # Give DDS time to discover the odom/bumper publishers before the run starts.
         time.sleep(2.0)

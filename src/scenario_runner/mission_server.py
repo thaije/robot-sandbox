@@ -210,4 +210,5 @@ class MissionServer:
     def stop(self) -> None:
         if self._server is not None:
             self._server.shutdown()
+            self._server.server_close()
             self._server = None
