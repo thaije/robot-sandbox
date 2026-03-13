@@ -117,8 +117,8 @@ python3.12 -m pytest tests/
 To fix: 
 - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
 - label ? in metrics report
-- try disabling the bounding box cam to see influence on real time factor. If big > only trigger on teleop session or detection publish
-- add sound?
+- add sound? E.g. for detecting victims
 - add dummy objects?
 - add some variation in signs e.g. also on wall etc.
 - add plus to back of first aid kit as well
+- field of way is limited of rgbd rgb camera

@@ -11,7 +11,7 @@ dimensions:
   body_width:  0.20   # m
   body_height: 0.10   # m
   wheel_radius: 0.05  # m
-  wheel_separation: 0.23  # m (centre-to-centre)
+  wheel_separation: 0.1725  # m — calibrated effective kinematic track width (geometric is 0.23 m centre-to-centre, but Gazebo contact physics yields 0.1725 m effective)
 
 control:
   cmd_vel_topic: "/derpbot_0/cmd_vel"   # namespace matches spawn name

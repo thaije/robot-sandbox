@@ -11,7 +11,8 @@
      │               │  ← body: 0.30 × 0.20 × 0.10 m (L × W × H)
      │       ●       │  ← rear caster sphere r=0.02 at x=-0.13
      └───────────────┘
-    ○               ○   ← wheels r=0.05, w=0.03, separation 0.23 m
+    ○               ○   ← wheels r=0.05, w=0.03, geometric separation 0.23 m
+                         (effective kinematic track width 0.1725 m — calibrated in sim)
 
   Coordinate convention:
     base_footprint  — at ground level (z=0), this is the spawn frame
@@ -271,7 +272,14 @@
             name="gz::sim::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint>
       <right_joint>right_wheel_joint</right_joint>
-      <wheel_separation>0.23</wheel_separation>
+      <!-- Geometric centre-to-centre is 0.23 m (joints at y=±0.115).
+           Gazebo Harmonic contact physics yields an effective kinematic track
+           width of 0.1725 m (= 0.23 × 0.75).  Using the uncalibrated 0.23 m
+           here causes a ~25 % angular under-report: 360° physical spin →
+           ~270° odom heading.  Set to the calibrated effective value so that
+           both the command-to-wheel mapping and the odom integration are
+           internally consistent and match ground-truth rotation. -->
+      <wheel_separation>0.1725</wheel_separation>
       <wheel_radius>0.05</wheel_radius>
       <odom_publish_frequency>20</odom_publish_frequency>
       <topic>/ROBOT_NAME/cmd_vel</topic>
