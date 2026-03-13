@@ -33,12 +33,15 @@ class CollisionCount(BaseMetric):
         self,
         bumper_topic: str = "/bumper_contact",
         node: Any = None,
+        contact_reset_s: float = 0.5,
     ) -> None:
         self._bumper_topic = bumper_topic
         self._node = node
         self._count: int = 0
         self._start_time: float = 0.0
         self._in_contact: bool = False   # rising-edge tracker
+        self._last_contact_time: float = 0.0  # gz only publishes when contacts exist
+        self._contact_reset_s: float = contact_reset_s  # gap → contact ended
         self._events: list[dict] = []
         self._sub: Any = None
 
@@ -78,17 +81,26 @@ class CollisionCount(BaseMetric):
         ]
 
     def _on_contact(self, msg: Any) -> None:
-        # Rising-edge detection: count a new collision only when contact starts.
-        # Ground-plane contacts are excluded — the robot always rests on the floor.
+        # Gazebo contact sensors ONLY publish when contacts are active — they do
+        # NOT send an empty-contacts message when contact ends.  We therefore
+        # infer "contact ended" from a gap in incoming messages rather than from
+        # an explicit clear message.
         real = self._non_ground_contacts(msg)
         has_contacts = len(real) > 0
-        if has_contacts and not self._in_contact:
-            self._in_contact = True
-            self._count += 1
-            elapsed = round(time.monotonic() - self._start_time, 2)
-            self._events.append({"t": elapsed, "count": self._count})
-        elif not has_contacts:
+        now = time.monotonic()
+
+        if self._in_contact and (now - self._last_contact_time) > self._contact_reset_s:
+            # Gap since last contact message → contact ended; reset for next rising edge.
             self._in_contact = False
+
+        if has_contacts:
+            self._last_contact_time = now
+            if not self._in_contact:
+                # Rising edge: new distinct collision event.
+                self._in_contact = True
+                self._count += 1
+                elapsed = round(now - self._start_time, 2)
+                self._events.append({"t": elapsed, "count": self._count})
 
     def update(self) -> None:
         pass
@@ -118,4 +130,5 @@ class CollisionCount(BaseMetric):
         self._count = 0
         self._start_time = 0.0
         self._in_contact = False
+        self._last_contact_time = 0.0
         self._events = []
