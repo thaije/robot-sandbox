@@ -264,17 +264,23 @@ def cmd_rotate(args):
         rclpy.shutdown()
         return 1
 
-    initial_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
     target_rad = math.radians(float(args.degrees))
     KP, MAX_WZ, THRESHOLD = 2.0, 0.8, math.radians(1.5)
+
+    # Use a cumulative accumulator so rotations > 180° (including 360°) work
+    # correctly.  _angle_diff wraps to (−π, π], so passing target_rad=2π
+    # directly would evaluate as ≈0 and exit immediately.
+    prev_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
+    cumulative = 0.0
 
     print(f"Rotating {args.degrees}° ({'CCW' if args.degrees >= 0 else 'CW'}) …")
     start = time.monotonic()
     try:
         while True:
             current_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
-            rotated = _angle_diff(current_yaw, initial_yaw)
-            remaining = _angle_diff(target_rad, rotated)
+            cumulative += _angle_diff(current_yaw, prev_yaw)
+            prev_yaw = current_yaw
+            remaining = target_rad - cumulative
             if abs(remaining) < THRESHOLD:
                 break
             twist = Twist()
@@ -292,9 +298,7 @@ def cmd_rotate(args):
         rclpy.shutdown()
 
     elapsed = time.monotonic() - start
-    current_yaw = _yaw_from_quaternion(latest[0].pose.pose.orientation)
-    actual = math.degrees(_angle_diff(current_yaw, initial_yaw))
-    print(f"Done — {elapsed:.1f}s  target {args.degrees}°  actual {actual:.1f}°")
+    print(f"Done — {elapsed:.1f}s  target {args.degrees}°  actual {math.degrees(cumulative):.1f}°")
     return 0
 
 

@@ -122,3 +122,5 @@ To fix:
 - add some variation in signs e.g. also on wall etc.
 - add plus to back of first aid kit as well
 - field of way is limited of rgbd rgb camera
+- scenario not really killed when quitting scenario runner and free port 7400
+- add sensor jitter, e.g. odom wheels error / slipping
