@@ -6,7 +6,10 @@
       "Bash(/dev/null pkill:*)",
       "Bash(/dev/null sleep:*)",
       "Bash(fuser -k 7400/tcp)",
-      "Bash(fuser 7400/tcp)"
+      "Bash(fuser 7400/tcp)",
+      "Bash(ls -t results/*.json)",
+      "Read(//home/plip/Projects/robot-sandbox/**)",
+      "Bash(ls -la results/*.json)"
     ]
   }
 }

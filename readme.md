@@ -116,11 +116,7 @@ python3.12 -m pytest tests/
 
 To fix: 
 - bugs:
-  - collisions don't seem to count correctly? Hitting door 3 times, only one detected.
-  - label ? in metrics report
-  - add plus to back of first aid kit as well
-  - field of way is limited of rgbd rgb camera
-  - scenario not really killed when quitting scenario runner and free port 7400
+
 - extensions:
   - add dummy objects?
   - add some variation in signs e.g. also on wall etc.
