@@ -21,7 +21,7 @@ class NearMissTracker(BaseMetric):
     def __init__(
         self,
         scan_topic: str = "/scan",
-        threshold_meters: float = 0.3,
+        threshold_meters: float = 0.2,
         debounce_seconds: float = 1.0,
         node: Any = None,
     ) -> None:
