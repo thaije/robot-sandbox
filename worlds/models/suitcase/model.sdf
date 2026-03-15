@@ -18,7 +18,7 @@
             <visual name="visual">
                 <geometry>
                     <mesh>
-                        <uri>meshes/SmallCase.dae</uri>
+                        <uri>model://suitcase/meshes/SmallCase.dae</uri>
                     </mesh>
                 </geometry>
                 <material>
@@ -26,10 +26,10 @@
                     <specular>1.0 1.0 1.0</specular>
                     <pbr>
                         <metal>
-                            <albedo_map>materials/textures/SmallCase_Albedo.jpg</albedo_map>
-                            <normal_map>materials/textures/SmallCase_Normal.jpg</normal_map>
-                            <roughness_map>materials/textures/SmallCase_Roughness.jpg</roughness_map>
-                            <metalness_map>materials/textures/SmallCase_Metalness.png</metalness_map>
+                            <albedo_map>model://suitcase/materials/textures/SmallCase_Albedo.jpg</albedo_map>
+                            <normal_map>model://suitcase/materials/textures/SmallCase_Normal.jpg</normal_map>
+                            <roughness_map>model://suitcase/materials/textures/SmallCase_Roughness.jpg</roughness_map>
+                            <metalness_map>model://suitcase/materials/textures/SmallCase_Metalness.png</metalness_map>
                         </metal>
                     </pbr>
                 </material>

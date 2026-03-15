@@ -51,6 +51,21 @@ text = open(sdf_path).read()
 if fuel_name != local_name:
     text = text.replace(f"model://{fuel_name}/", f"model://{local_name}/")
 
+# ── Relative mesh URI → model:// ─────────────────────────────────────────────
+# When WorldGenerator embeds model SDF into the world SDF, the parser loses the
+# model root context, so bare relative URIs can't be resolved.
+# Convert relative meshes/ and materials/ URIs to model://<local_name>/...
+text = re.sub(
+    r'<uri>((?:meshes|materials)/[^<]+)</uri>',
+    f'<uri>model://{local_name}/\\1</uri>',
+    text)
+# Same fix for PBR map tags (albedo_map, normal_map, etc.)
+for tag in ('albedo_map', 'normal_map', 'roughness_map', 'metalness_map', 'emissive_map'):
+    text = re.sub(
+        rf'<{tag}>((?:meshes|materials)/[^<]+)</{tag}>',
+        f'<{tag}>model://{local_name}/\\1</{tag}>',
+        text)
+
 # ── Strip Fuel contest artefacts ─────────────────────────────────────────────
 # Some Fuel models embed an <include> pointing to "Artifact Proximity Detector"
 # and legacy <plugin filename="ignition-gazebo-thermal-system"> blocks.

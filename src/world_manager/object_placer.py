@@ -389,34 +389,54 @@ class ObjectPlacer:
         already: list[PlacedObject],
         spec: dict,
     ) -> PlacedObject:
-        """Place above a door frame, near the ceiling.
+        """Place on the wall beside a door at sign height (default 1.25 m).
 
-        Picks a random door from the template's ``doors`` list and returns a
-        position at that door's (x, y) at *z* = ``z_offset`` (default 2.75 m —
-        just below the 3.0 m ceiling).  Yaw is derived from door orientation:
-        "ns" (wall runs N–S) → yaw=0; "ew" (wall runs E–W) → yaw=π/2.
+        Picks a random door, offsets 0.7 m along the wall (clear of the 1.0 m
+        door opening), and mounts the sign at z = ``z_offset`` (default 1.25 m).
+        A 0.15 m perpendicular nudge pulls the sign off the wall surface.
+        Yaw is perpendicular to the wall so the sign faces the corridor:
+          "ns" wall (runs N–S) → yaw=0; "ew" wall (runs E–W) → yaw=π/2.
 
-        Falls back to random floor placement if no doors are defined in the
-        template config.
+        Falls back to random floor placement if no doors are defined.
         """
         if not self._doors:
             return self._place_one(model_type, rng, already, spec)
 
-        z = float(spec.get("z_offset", 2.75))
+        z = float(spec.get("z_offset", 1.25))
+        side_offset = 0.7  # metres beside the door centre, clear of the opening
 
-        # Avoid reusing a door position already occupied by another above_door object.
-        occupied_xy = {(round(p.x, 2), round(p.y, 2)) for p in already}
-        available = [
-            d for d in self._doors
-            if (round(float(d["x"]), 2), round(float(d["y"]), 2)) not in occupied_xy
-        ]
+        # Avoid placing two signs near the same door.
+        def _door_taken(d: dict) -> bool:
+            dx, dy = float(d["x"]), float(d["y"])
+            return any(
+                math.hypot(p.x - dx, p.y - dy) < side_offset + 0.5
+                for p in already
+            )
+
+        available = [d for d in self._doors if not _door_taken(d)]
         if not available:
             available = self._doors  # all taken — allow overlap
 
         door = rng.choice(available)
-        x = float(door["x"])
-        y = float(door["y"])
-        yaw = 0.0 if door.get("orientation", "ew") == "ns" else math.pi / 2
+        x, y = float(door["x"]), float(door["y"])
+        side = rng.choice([-1, 1])        # which side of door opening
+        wall_side = rng.choice([-1, 1])   # which room face the sign hangs on
+        wall_offset = 0.15  # metres off the wall surface into the room
+
+        if door.get("orientation", "ew") == "ns":
+            # Wall runs N–S (parallel to y-axis).
+            # Slide along y to clear the door, push in x off the wall surface.
+            # Yaw 0 → sign face perpendicular to the wall, visible from corridor.
+            y += side * side_offset
+            x += wall_side * wall_offset
+            yaw = 0.0
+        else:
+            # Wall runs E–W (parallel to x-axis).
+            # Slide along x to clear the door, push in y off the wall surface.
+            # Yaw π/2 → sign face perpendicular to the wall, visible from corridor.
+            x += side * side_offset
+            y += wall_side * wall_offset
+            yaw = math.pi / 2
 
         return PlacedObject(model_type=model_type, x=x, y=y, yaw=yaw, z=z)
 

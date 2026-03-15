@@ -6,14 +6,14 @@
             <collision name="collision">
                 <geometry>
                     <mesh>
-                        <uri>meshes/drill.dae</uri>
+                        <uri>model://drill/meshes/drill.dae</uri>
                     </mesh>
                 </geometry>
             </collision>
             <visual name="visual">
                 <geometry>
                     <mesh>
-                        <uri>meshes/drill.dae</uri>
+                        <uri>model://drill/meshes/drill.dae</uri>
                     </mesh>
                 </geometry>
             </visual>

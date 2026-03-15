@@ -6,7 +6,7 @@
             <visual name="visual">
                 <geometry>
                     <mesh>
-                        <uri>meshes/officechair.dae</uri>
+                        <uri>model://office_chair/meshes/officechair.dae</uri>
                     </mesh>
                 </geometry>
                 <material>
@@ -14,10 +14,10 @@
                     <specular>1.0 1.0 1.0</specular>
                     <pbr>
                         <metal>
-                            <albedo_map>materials/textures/OfficeChair_Albedo.png</albedo_map>
-                            <normal_map>materials/textures/OfficeChair_Normal.png</normal_map>
-                            <roughness_map>materials/textures/OfficeChair_Roughness.png</roughness_map>
-                            <metalness_map>materials/textures/OfficeChair_Metalness.png</metalness_map>
+                            <albedo_map>model://office_chair/materials/textures/OfficeChair_Albedo.png</albedo_map>
+                            <normal_map>model://office_chair/materials/textures/OfficeChair_Normal.png</normal_map>
+                            <roughness_map>model://office_chair/materials/textures/OfficeChair_Roughness.png</roughness_map>
+                            <metalness_map>model://office_chair/materials/textures/OfficeChair_Metalness.png</metalness_map>
                         </metal>
                     </pbr>
                 </material>
