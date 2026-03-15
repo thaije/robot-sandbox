@@ -4,11 +4,11 @@
 # Run once from the repo root to replace stub geometry with proper meshes:
 #   ./scripts/download_fuel_models.sh
 #
-# Requirements: curl, unzip, python3
+# Requirements: gz (gz-fuel-tools), python3
 #
 # What it does per model:
-#   1. Downloads the Fuel zip archive (OpenRobotics collection)
-#   2. Extracts into a temp dir
+#   1. Downloads via `gz fuel download` into the Fuel cache (~/.gz/fuel/)
+#   2. Finds the latest cached version
 #   3. Copies to worlds/models/<local_name>/   (meshes/ and materials/ included)
 #   4. Patches model:// URIs so they use <local_name> (matching the directory)
 #   5. Injects the gz-sim-label-system plugin if not already present
@@ -20,9 +20,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODELS_DIR="$SCRIPT_DIR/../worlds/models"
+FUEL_CACHE="${HOME}/.gz/fuel/fuel.gazebosim.org/openrobotics/models"
 FUEL_BASE="https://fuel.gazebosim.org/1.0/OpenRobotics/models"
 
-# Map: local_directory_name → Fuel model name (exact, URL-unsafe chars allowed)
+# Map: local_directory_name → Fuel model name (exact, case-sensitive)
 declare -A FUEL_MODELS=(
     [fire_extinguisher]="Extinguisher"
     [exit_sign]="ExitSign"
@@ -41,14 +42,25 @@ declare -A FUEL_MODELS=(
 #   • Adds gz-sim-label-system plugin inside <model> if absent
 PATCH_PY=$(cat <<'PYEOF'
 import sys, re
-from xml.etree import ElementTree as ET
 
 sdf_path, local_name, fuel_name = sys.argv[1], sys.argv[2], sys.argv[3]
 
-# ── URI rename ───────────────────────────────────────────────────────────────
 text = open(sdf_path).read()
+
+# ── URI rename ───────────────────────────────────────────────────────────────
 if fuel_name != local_name:
     text = text.replace(f"model://{fuel_name}/", f"model://{local_name}/")
+
+# ── Strip Fuel contest artefacts ─────────────────────────────────────────────
+# Some Fuel models embed an <include> pointing to "Artifact Proximity Detector"
+# and legacy <plugin filename="ignition-gazebo-thermal-system"> blocks.
+# Both cause Gazebo Harmonic to stall on remote fetches or log errors on load.
+text = re.sub(
+    r'\s*<include>\s*<uri>[^<]*Artifact Proximity Detector[^<]*</uri>\s*</include>',
+    '', text)
+text = re.sub(
+    r'\s*<plugin\s+filename="ignition-gazebo-thermal-system"[^>]*>.*?</plugin>',
+    '', text, flags=re.DOTALL)
 
 # ── Label plugin injection ────────────────────────────────────────────────────
 LABEL_PLUGIN = (
@@ -57,7 +69,6 @@ LABEL_PLUGIN = (
     '  </plugin>\n'
 )
 if "gz-sim-label-system" not in text:
-    # Insert before closing </model> tag
     text = re.sub(r'([ \t]*</model>)', LABEL_PLUGIN + r'\1', text, count=1)
 
 open(sdf_path, "w").write(text)
@@ -68,49 +79,43 @@ PYEOF
 # ── Main loop ────────────────────────────────────────────────────────────────
 for local_name in "${!FUEL_MODELS[@]}"; do
     fuel_name="${FUEL_MODELS[$local_name]}"
-    encoded=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$fuel_name")
-    url="${FUEL_BASE}/${encoded}/zip"
+    fuel_url="${FUEL_BASE}/${fuel_name}"
     dest="${MODELS_DIR}/${local_name}"
+    # Fuel cache uses lowercase model names
+    fuel_name_lower=$(echo "$fuel_name" | tr '[:upper:]' '[:lower:]')
+    cache_dir="${FUEL_CACHE}/${fuel_name_lower}"
 
     echo "⬇  ${fuel_name}  →  worlds/models/${local_name}/"
 
-    tmpdir=$(mktemp -d)
-    trap "rm -rf '$tmpdir'" EXIT
+    # Download via gz fuel (idempotent — skips if already cached)
+    if ! gz fuel download -u "${fuel_url}" 2>&1 | grep -qv "^$"; then
+        gz fuel download -u "${fuel_url}" 2>&1 || true
+    fi
+    gz fuel download -u "${fuel_url}" 2>/dev/null || true
 
-    # Download
-    if ! curl -fsSL --retry 3 "$url" -o "${tmpdir}/model.zip"; then
-        echo "   ✗ Download failed for ${fuel_name} — keeping stub."
-        rm -rf "$tmpdir"
-        trap - EXIT
+    # Find the highest version in the cache
+    if [ ! -d "${cache_dir}" ]; then
+        echo "   ✗ Not found in Fuel cache after download — keeping stub."
         continue
     fi
 
-    # Extract
-    unzip -q "${tmpdir}/model.zip" -d "${tmpdir}/extracted/"
+    version=$(ls -1 "${cache_dir}" | sort -n | tail -1)
+    src_dir="${cache_dir}/${version}"
 
-    # Fuel zips may place files directly or inside a subdirectory
-    # Find the directory containing model.sdf
-    sdf_file=$(find "${tmpdir}/extracted" -name "model.sdf" | head -1)
-    if [ -z "$sdf_file" ]; then
-        echo "   ✗ No model.sdf found in zip — keeping stub."
-        rm -rf "$tmpdir"
-        trap - EXIT
+    if [ ! -f "${src_dir}/model.sdf" ]; then
+        echo "   ✗ No model.sdf in cache at ${src_dir} — keeping stub."
         continue
     fi
-    src_dir=$(dirname "$sdf_file")
 
-    # Copy files (preserve existing model.config if we customised it)
+    # Copy files (preserve our model.config)
     mkdir -p "$dest"
-    # Sync everything except model.config (keep ours)
     rsync -a --exclude="model.config" "${src_dir}/" "${dest}/" 2>/dev/null \
-        || cp -r "${src_dir}/"* "${dest}/"
+        || { cp -r "${src_dir}/"* "${dest}/"; rm -f "${dest}/model.config" 2>/dev/null || true; }
 
     # Patch URIs + inject label plugin
     python3 -c "$PATCH_PY" "${dest}/model.sdf" "$local_name" "$fuel_name"
 
-    rm -rf "$tmpdir"
-    trap - EXIT
-    echo "   ✓ ${local_name} installed"
+    echo "   ✓ ${local_name} installed (from cache v${version})"
 done
 
 echo ""

@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
       "Bash(apt list:*)",

@@ -263,15 +263,23 @@ class ScenarioRunner:
         requested = set(self._cfg.get("metrics", {}).get("collect", []))
         needs_detection = bool(requested & _DETECTION_METRIC_NAMES)
 
-        # Total labelled instances is the detection denominator.
-        # label_map has one entry per placed instance (e.g. 9 for 3+2+4 objects).
-        # Fall back to the number of unique object types if label_map not available.
+        # Total labelled instances is the detection denominator for found_ratio.
+        # When mission_target is used, count only mission-target instances so that
+        # environmental objects (drink_can, drill, trash_can, etc.) do not inflate
+        # the denominator and make found_ratio >= 1.0 unachievable.
         label_map = label_map or {}
-        if label_map:
+        world_objects = self._cfg.get("world", {}).get("objects", [])
+        uses_mission_target = any("mission_target" in obj for obj in world_objects)
+        if uses_mission_target:
+            total_targets = sum(
+                int(obj.get("count", 1))
+                for obj in world_objects
+                if obj.get("mission_target", False)
+            )
+        elif label_map:
             total_targets = len(label_map)
         else:
-            world_objects = self._cfg.get("world", {}).get("objects", [])
-            total_targets = len(world_objects)
+            total_targets = sum(int(obj.get("count", 1)) for obj in world_objects)
 
         built: dict[str, Any] = {}
 

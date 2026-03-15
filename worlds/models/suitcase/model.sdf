@@ -1,45 +1,84 @@
-<?xml version="1.0"?>
-<!--
-  SUITCASE — small carry-on, 0.45 × 0.25 × 0.30 m (L × W × H).
-  Replace visual by running scripts/download_fuel_models.sh
-  (Fuel: Small Case / OpenRobotics).
--->
-<sdf version="1.9">
-  <model name="suitcase">
-    <static>true</static>
-    <!-- Main body -->
-    <link name="body">
-      <pose>0 0 0.15 0 0 0</pose>
-      <visual name="case_visual">
-        <geometry>
-          <box><size>0.45 0.25 0.30</size></box>
-        </geometry>
-        <material>
-          <ambient>0.10 0.12 0.38 1</ambient>
-          <diffuse>0.12 0.15 0.45 1</diffuse>
-          <specular>0.15 0.15 0.20 1</specular>
-        </material>
-      </visual>
-      <!-- Handle bar (visual only) -->
-      <visual name="handle_visual">
-        <pose>0 0 0.18 0 0 0</pose>
-        <geometry>
-          <box><size>0.20 0.04 0.04</size></box>
-        </geometry>
-        <material>
-          <ambient>0.6 0.6 0.6 1</ambient>
-          <diffuse>0.6 0.6 0.6 1</diffuse>
-        </material>
-      </visual>
-      <collision name="collision">
-        <geometry>
-          <box><size>0.45 0.25 0.30</size></box>
-        </geometry>
-      </collision>
-    </link>
-
-    <plugin name="gz::sim::systems::Label" filename="gz-sim-label-system">
-      <label>1</label>
-    </plugin>
-  </model>
+<?xml version='1.0' ?>
+<sdf version="1.6">
+    <model name="small_case">
+        <static>false</static>
+        <link name="link">
+            <inertial>
+                <pose>0 0 0.07 0 0 0</pose>
+                <mass>1</mass>
+                <inertia>
+                    <ixx>0.00188109</ixx>
+                    <ixy>0.0</ixy>
+                    <ixz>0.0</ixz>
+                    <iyy>0.00462835</iyy>
+                    <iyz>0.0</iyz>
+                    <izz>0.00330112</izz>
+                </inertia>
+            </inertial>
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>meshes/SmallCase.dae</uri>
+                    </mesh>
+                </geometry>
+                <material>
+                    <diffuse>1.0 1.0 1.0</diffuse>
+                    <specular>1.0 1.0 1.0</specular>
+                    <pbr>
+                        <metal>
+                            <albedo_map>materials/textures/SmallCase_Albedo.jpg</albedo_map>
+                            <normal_map>materials/textures/SmallCase_Normal.jpg</normal_map>
+                            <roughness_map>materials/textures/SmallCase_Roughness.jpg</roughness_map>
+                            <metalness_map>materials/textures/SmallCase_Metalness.png</metalness_map>
+                        </metal>
+                    </pbr>
+                </material>
+            </visual>
+            <collision name="Box004">
+                <pose>0.0 -0.00514981 0.064262 1.5708 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.190361 0.129459 0.0103708</size>
+                    </box>
+                </geometry>
+            </collision>
+            <collision name="Box005">
+                <pose>0.0 -0.00356354 0.126202 0.0 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.142795 0.0291594 0.0156732</size>
+                    </box>
+                </geometry>
+            </collision>
+            <collision name="Cylinder007">
+                <pose>-0.0449782 -0.005139 -0.0015085 1.5708 0.0 -1.5708</pose>
+                <geometry>
+                    <cylinder>
+                        <length>0.0498479</length>
+                        <radius>0.00290607</radius>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <collision name="Cylinder008">
+                <pose>0.044978 -0.005139 -0.0015085 1.5708 0.0 1.5708</pose>
+                <geometry>
+                    <cylinder>
+                        <length>0.0498479</length>
+                        <radius>0.00290607</radius>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <collision name="Box003">
+                <pose>0.0 -9.18023e-05 0.064262 1.5708 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.177553 0.116038 0.0543985</size>
+                    </box>
+                </geometry>
+            </collision>
+        </link>
+  <plugin name="gz::sim::systems::Label" filename="gz-sim-label-system">
+    <label>1</label>
+  </plugin>
+    </model>
 </sdf>

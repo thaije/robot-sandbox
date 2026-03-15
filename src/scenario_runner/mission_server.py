@@ -41,8 +41,15 @@ def build_mission_data(cfg: dict) -> dict[str, Any]:
     # Group by type — scenarios may list the same type multiple times with
     # different placement strategies (e.g. some on desk, some on floor).
     # Merge so the mission brief shows one line per object type.
+    # If any object explicitly carries mission_target, use it as a filter.
+    # Scenarios that predate the field have no entry on any object → show all
+    # (backward compat).
+    uses_mission_target = any("mission_target" in obj for obj in objects)
+
     grouped: dict[str, dict[str, Any]] = {}
     for obj in objects:
+        if uses_mission_target and not obj.get("mission_target", False):
+            continue
         obj_type = obj["type"]
         revealed = obj.get("count_revealed", True)
         count = int(obj.get("count", 1))
