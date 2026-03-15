@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!--
+  SMARTPHONE — black glass slab, 0.075 × 0.012 × 0.155 m (W × D × H), standing upright.
+  Intended for desk/table surface placement.
+  Replace visual by running scripts/download_fuel_models.sh
+  (Fuel: Samsung J8 Black / OpenRobotics).
+-->
+<sdf version="1.9">
+  <model name="phone">
+    <static>true</static>
+    <!-- Body slab -->
+    <link name="body">
+      <pose>0 0 0.078 0 0 0</pose>
+      <visual name="body_visual">
+        <geometry>
+          <box><size>0.075 0.012 0.155</size></box>
+        </geometry>
+        <material>
+          <ambient>0.04 0.04 0.06 1</ambient>
+          <diffuse>0.06 0.06 0.10 1</diffuse>
+          <specular>0.50 0.50 0.55 1</specular>
+        </material>
+      </visual>
+      <!-- Screen (slightly raised, blue-tinted glass) -->
+      <visual name="screen_visual">
+        <pose>0 -0.007 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.065 0.002 0.135</size></box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.08 0.18 1</ambient>
+          <diffuse>0.08 0.12 0.25 1</diffuse>
+          <specular>0.70 0.72 0.80 1</specular>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box><size>0.075 0.012 0.155</size></box>
+        </geometry>
+      </collision>
+    </link>
+
+    <plugin name="gz::sim::systems::Label" filename="gz-sim-label-system">
+      <label>1</label>
+    </plugin>
+  </model>
+</sdf>

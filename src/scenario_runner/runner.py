@@ -174,6 +174,22 @@ class ScenarioRunner:
                 status = "FAILURE"
 
             # ── 7. Score + display scorecard ──────────────────────────────────
+            # If effectiveness_weights is not explicitly set in scoring config,
+            # derive equal weights from objects that have mission_target: true.
+            scoring_cfg = self._cfg.get("scoring", {})
+            if "effectiveness_weights" not in scoring_cfg:
+                # Use dict.fromkeys to deduplicate while preserving insertion order.
+                # A type may appear in multiple object entries (e.g. same type on desk
+                # and on floor) — it should still count as one mission-target category.
+                mission_types = list(dict.fromkeys(
+                    obj["type"]
+                    for obj in self._cfg.get("world", {}).get("objects", [])
+                    if obj.get("mission_target", False)
+                ))
+                if mission_types:
+                    weight = 100.0 / len(mission_types)
+                    scoring_cfg["effectiveness_weights"] = {t: weight for t in mission_types}
+
             engine    = ScoringEngine(self._cfg["scoring"])
             scorecard = engine.compute(raw, self._cfg)
             scorecard.status          = status

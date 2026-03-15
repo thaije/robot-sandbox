@@ -1,6 +1,6 @@
 scenario:
   name: "office_perception_stress_001"
-  description: "Perception stress test — flicker red emergency lighting, smoke, fast patrol bot, cornered hazard signs"
+  description: "Perception stress test — flicker red emergency lighting, smoke, fast patrol bot, cornered exit signs"
   timeout_seconds: 600
 
 world:
@@ -12,23 +12,43 @@ world:
       - name: "light_corridor_emergency"
         period_s: 0.8
   objects:
+    # ── Mission targets (scored) ──────────────────────────────────────────────
     - type: "fire_extinguisher"
       count: 1
       placement: "random"
       surface: "desk"
+      mission_target: true
     - type: "fire_extinguisher"
       count: 2
       placement: "random"
+      mission_target: true
     - type: "first_aid_kit"
       count: 1
       placement: "random"
       z_offset: 0.1
+      mission_target: true
     - type: "first_aid_kit"
       count: 1
       placement: "random"
-    - type: "hazard_sign"
+      mission_target: true
+    - type: "exit_sign"
       count: 4
-      placement: "cornered"
+      placement: "above_door"
+      mission_target: true
+    # ── Environmental objects (not scored) ────────────────────────────────────
+    - type: "trash_can"
+      count: 1
+      placement: "random"
+    - type: "person"
+      count: 1
+      placement: "random"
+    - type: "drink_can"
+      count: 1
+      placement: "random"
+      surface: "desk"
+    - type: "drill"
+      count: 1
+      placement: "random"
   dynamic_obstacles:
     - model: "patrol_bot"
       name: "patrol_bot_0"
@@ -81,12 +101,12 @@ scoring:
   effectiveness_weights:
     fire_extinguisher: 40
     first_aid_kit: 40
-    hazard_sign: 20
+    exit_sign: 20
   par_values:
     completion_time_par: 132.7  # baseline avg (n=2)
     path_length_par: 54.3       # baseline avg (n=2)
     coverage_per_meter_par: 1.7 # baseline avg (n=2)
-    near_miss_threshold: 0.3
+    near_miss_threshold: 0.2
   collision_thresholds: [0, 2, 5, 10]
   collision_scores: [100, 80, 60, 40, 20]
   grade_thresholds:

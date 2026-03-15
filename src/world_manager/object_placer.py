@@ -68,6 +68,7 @@ class ObjectPlacer:
         self._gt_mask, self._resolution, self._world_h = _load_gt_mask(template_config)
         self._zone_weights: list[float] = _zone_area_weights(self._zones)
         self._obstacles: list[dict] = template_config.get("obstacles", [])
+        self._doors: list[dict] = template_config.get("doors", [])
         self._robot_spawns: list[tuple[float, float]] = list(robot_spawns or [])
         self._patrol_segments: list[tuple[tuple[float, float], tuple[float, float]]] = list(
             patrol_segments or []
@@ -194,6 +195,8 @@ class ObjectPlacer:
             return self._place_cornered(model_type, rng, already, spec)
         elif strategy == "elevated":
             return self._place_elevated(model_type, rng, already, spec)
+        elif strategy == "above_door":
+            return self._place_above_door(model_type, rng, already, spec)
         else:
             # Unknown strategy: fall back to random
             return self._place_one(model_type, rng, already, spec)
@@ -378,6 +381,44 @@ class ObjectPlacer:
         elevated_spec["surface"] = "desk"
         elevated_spec["z_offset"] = 0.0
         return self._place_one(model_type, rng, already, elevated_spec)
+
+    def _place_above_door(
+        self,
+        model_type: str,
+        rng: random.Random,
+        already: list[PlacedObject],
+        spec: dict,
+    ) -> PlacedObject:
+        """Place above a door frame, near the ceiling.
+
+        Picks a random door from the template's ``doors`` list and returns a
+        position at that door's (x, y) at *z* = ``z_offset`` (default 2.75 m —
+        just below the 3.0 m ceiling).  Yaw is derived from door orientation:
+        "ns" (wall runs N–S) → yaw=0; "ew" (wall runs E–W) → yaw=π/2.
+
+        Falls back to random floor placement if no doors are defined in the
+        template config.
+        """
+        if not self._doors:
+            return self._place_one(model_type, rng, already, spec)
+
+        z = float(spec.get("z_offset", 2.75))
+
+        # Avoid reusing a door position already occupied by another above_door object.
+        occupied_xy = {(round(p.x, 2), round(p.y, 2)) for p in already}
+        available = [
+            d for d in self._doors
+            if (round(float(d["x"]), 2), round(float(d["y"]), 2)) not in occupied_xy
+        ]
+        if not available:
+            available = self._doors  # all taken — allow overlap
+
+        door = rng.choice(available)
+        x = float(door["x"])
+        y = float(door["y"])
+        yaw = 0.0 if door.get("orientation", "ew") == "ns" else math.pi / 2
+
+        return PlacedObject(model_type=model_type, x=x, y=y, yaw=yaw, z=z)
 
     def _is_valid(
         self, x: float, y: float, placed: list[PlacedObject], skip_pgm: bool = False

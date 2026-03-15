@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!--
+  SUITCASE — small carry-on, 0.45 × 0.25 × 0.30 m (L × W × H).
+  Replace visual by running scripts/download_fuel_models.sh
+  (Fuel: Small Case / OpenRobotics).
+-->
+<sdf version="1.9">
+  <model name="suitcase">
+    <static>true</static>
+    <!-- Main body -->
+    <link name="body">
+      <pose>0 0 0.15 0 0 0</pose>
+      <visual name="case_visual">
+        <geometry>
+          <box><size>0.45 0.25 0.30</size></box>
+        </geometry>
+        <material>
+          <ambient>0.10 0.12 0.38 1</ambient>
+          <diffuse>0.12 0.15 0.45 1</diffuse>
+          <specular>0.15 0.15 0.20 1</specular>
+        </material>
+      </visual>
+      <!-- Handle bar (visual only) -->
+      <visual name="handle_visual">
+        <pose>0 0 0.18 0 0 0</pose>
+        <geometry>
+          <box><size>0.20 0.04 0.04</size></box>
+        </geometry>
+        <material>
+          <ambient>0.6 0.6 0.6 1</ambient>
+          <diffuse>0.6 0.6 0.6 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box><size>0.45 0.25 0.30</size></box>
+        </geometry>
+      </collision>
+    </link>
+
+    <plugin name="gz::sim::systems::Label" filename="gz-sim-label-system">
+      <label>1</label>
+    </plugin>
+  </model>
+</sdf>

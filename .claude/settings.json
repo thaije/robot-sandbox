@@ -9,7 +9,12 @@
       "Bash(fuser 7400/tcp)",
       "Bash(ls -t results/*.json)",
       "Read(//home/plip/Projects/robot-sandbox/**)",
-      "Bash(ls -la results/*.json)"
+      "Bash(ls -la results/*.json)",
+      "Bash(find /home/plip/Projects/robot-sandbox -name .gz -o -name *fuel*)",
+      "Bash(grep -n \"GZ_SIM_RESOURCE_PATH\\\\|resource_path\\\\|models_path\\\\|model_path\" scripts/*.sh src/**/*.py)",
+      "Bash(/home/plip/Projects/robot-sandbox/config/scenarios/office_explore_detect/brutal.yaml:*)",
+      "Bash(grep -c \"near_miss_threshold: 0.2\" config/scenarios/office_explore_detect/*.yaml)",
+      "Bash(grep -c \"exit_sign\" config/scenarios/office_explore_detect/*.yaml)"
     ]
   }
 }

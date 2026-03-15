@@ -9,21 +9,37 @@ world:
     lighting: "dim_localized"
     door_states: "closed"
   objects:
+    # ── Mission targets (scored) ──────────────────────────────────────────────
     - type: "fire_extinguisher"
       count: 2
       placement: "random"
       surface: "desk"
+      mission_target: true
     - type: "fire_extinguisher"
       count: 1
       placement: "random"
+      mission_target: true
     - type: "first_aid_kit"
       count: 2
       placement: "random"
-    - type: "hazard_sign"
+      mission_target: true
+    - type: "exit_sign"
+      count: 3
+      placement: "above_door"
+      mission_target: true
+    # ── Environmental objects (not scored) ────────────────────────────────────
+    - type: "trash_can"
       count: 1
       placement: "random"
-    - type: "hazard_sign"
-      count: 3
+    - type: "person"
+      count: 1
+      placement: "random"
+    - type: "drink_can"
+      count: 1
+      placement: "random"
+      surface: "desk"
+    - type: "drill"
+      count: 1
       placement: "random"
 
 robots:
@@ -63,12 +79,12 @@ scoring:
   effectiveness_weights:
     fire_extinguisher: 40
     first_aid_kit: 40
-    hazard_sign: 20
+    exit_sign: 20
   par_values:
     completion_time_par: 101.6  # baseline avg (n=4)
     path_length_par: 38.1       # baseline avg (n=4)
     coverage_per_meter_par: 2.23 # baseline avg (n=4)
-    near_miss_threshold: 0.3
+    near_miss_threshold: 0.2
   collision_thresholds: [0, 2, 5, 10]
   collision_scores: [100, 80, 60, 40, 20]
   grade_thresholds:
