@@ -26,7 +26,8 @@ class PlacedObject:
     x: float
     y: float
     yaw: float = 0.0
-    z: float = 0.0          # 0.0 = floor; >0 = elevated (on furniture surface)
+    z: float = 0.0
+    mission_target: bool = False          # 0.0 = floor; >0 = elevated (on furniture surface)
 
 
 class PlacementError(RuntimeError):
@@ -106,13 +107,17 @@ class ObjectPlacer:
             model_type: str = spec["type"]
             count: int = int(spec.get("count", 1))
             strategy: str = spec.get("placement", "random")
+            is_target: bool = bool(spec.get("mission_target", False))
             if strategy == "clustered":
                 # Place all instances of this type as a cluster together
                 cluster = self._place_clustered(model_type, rng, placed, spec, count)
+                for obj in cluster:
+                    obj.mission_target = is_target
                 placed.extend(cluster)
             else:
                 for _ in range(count):
                     obj = self._place_one_strategy(model_type, rng, placed, spec)
+                    obj.mission_target = is_target
                     placed.append(obj)
 
         return placed

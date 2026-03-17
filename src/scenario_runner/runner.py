@@ -22,7 +22,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from utils.config_loader import load_scenario
 from world_manager.world_generator import WorldGenerator
@@ -40,6 +40,21 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # How often to check success criteria during a run
 _POLL_INTERVAL = 2.0
+
+
+def _sim_seconds(node: Any) -> float:
+    """Current sim time in fractional seconds (0.0 until first /clock arrives)."""
+    return node.get_clock().now().nanoseconds * 1e-9
+
+
+def _wait_for_sim_clock(node: Any, timeout_wall: float = 15.0) -> None:
+    """Block until the sim clock publishes its first non-zero tick."""
+    deadline = time.monotonic() + timeout_wall
+    while time.monotonic() < deadline:
+        if _sim_seconds(node) > 0.0:
+            return
+        time.sleep(0.05)
+    log.warning("Sim clock did not become available within %.0fs — timing may be wall-clock", timeout_wall)
 
 
 class ScenarioRunner:
@@ -143,6 +158,8 @@ class ScenarioRunner:
         spin_thread.start()
         # Give DDS time to discover the odom/bumper publishers before the run starts.
         time.sleep(2.0)
+        _wait_for_sim_clock(node)
+        get_time: Callable[[], float] = lambda: _sim_seconds(node)
         log.info("Metrics collection started: %s", list(metrics))
 
         raw: dict[str, Any] = {}
@@ -150,9 +167,10 @@ class ScenarioRunner:
         elapsed = 0.0
         try:
             # ── 4. Run until success criteria met or timeout ───────────────────
-            start_time = time.monotonic()
-            outcome    = self._run_until_done(timeout, metrics, start_time)
-            elapsed    = time.monotonic() - start_time
+            # get_time() returns sim seconds — correct at any --speed multiplier.
+            start_time = get_time()
+            outcome    = self._run_until_done(timeout, metrics, get_time)
+            elapsed    = get_time() - start_time
             log.info("Scenario ended: outcome=%s  elapsed=%.1fs", outcome, elapsed)
 
             # ── 5. Collect final metric snapshot ──────────────────────────────
@@ -400,7 +418,7 @@ class ScenarioRunner:
         self,
         timeout: float,
         metrics: dict[str, Any],
-        start_time: float,
+        get_time: Callable[[], float],
     ) -> str:
         """Poll success criteria every _POLL_INTERVAL seconds.
 
@@ -410,8 +428,9 @@ class ScenarioRunner:
             ``"success"`` if all criteria passed, ``"time_limit"`` when the
             max run time is reached (not a failure — just end of allocated time).
         """
-        deadline = start_time + timeout
-        while time.monotonic() < deadline:
+        start    = get_time()
+        deadline = start + timeout
+        while get_time() < deadline:
             raw = self._collect_metrics(metrics)
             passed, _ = evaluate_criteria(self._cfg["success_criteria"], raw)
             if passed:

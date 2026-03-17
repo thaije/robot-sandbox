@@ -50,7 +50,7 @@ DEFAULT_PNG = REPO_ROOT / "arst_world_map.png"
 CAMERA_FORWARD_OFFSET = 0.05  # metres
 
 # 2-char symbol per object type
-OBJ_SYM = {"fire_extinguisher": "F", "first_aid_kit": "A", "hazard_sign": "H"}
+OBJ_SYM = {"fire_extinguisher": "F", "first_aid_kit": "A", "hazard_sign": "H", "person": "P"}
 
 # Room labels: (world_x_centre, world_y_centre, label)
 ROOMS = [
@@ -324,9 +324,12 @@ def print_summary(
     visible_ids: set[str],
     is_colliding: bool | None,
 ) -> None:
-    print("Objects (ground truth):")
+    print("Objects (ground truth — mission targets only):")
     for lbl in sorted(label_map, key=int):
         info = label_map[lbl]
+        # Backward-compat: old world_state.json without the field → treat as target
+        if not info.get("mission_target", True):
+            continue
         sym = OBJ_SYM.get(info["type"], "?")
         if lbl in found:
             status = "FOUND ✓"
@@ -422,6 +425,9 @@ def render_png(
     VISIBLE_RING  = (255, 255, 255)  # white ring = currently visible
 
     for lbl, info in label_map.items():
+        # Backward-compat: old world_state.json without the field → treat as target
+        if not info.get("mission_target", True):
+            continue
         ix = int(info["x"] * SCALE)
         iy = ih - int(info["y"] * SCALE)
         color = FOUND_COLOR if lbl in found else TYPE_COLOR.get(info["type"], (180, 0, 180))

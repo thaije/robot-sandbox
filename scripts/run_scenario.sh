@@ -10,9 +10,11 @@
 #   --seed N            Pin random seed for reproducibility
 #   --timeout N         Override scenario timeout (seconds)
 #   --speed N           Simulation real-time factor, e.g. --speed 3 for 3×.
-#                       All metrics/timeouts remain in sim-seconds; a 600 s
-#                       scenario completes in ~200 s wall time at 3×.
-#                       Requires headless; actual RTF is CPU-dependent.
+#                       Timeout and task_completion_time are in sim-seconds,
+#                       so a 600 s scenario runs for 600 sim-seconds at any
+#                       speed (~200 s wall time at 3×). Scores are comparable
+#                       across speeds. Requires headless; actual RTF is
+#                       CPU-dependent.
 #
 # Optional env vars:
 #   ROS_DOMAIN_ID   — ROS 2 DDS domain ID (0–232).  Processes on different

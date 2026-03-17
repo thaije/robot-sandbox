@@ -432,6 +432,7 @@ class WorldGenerator:
             self.label_map[str(label_counter)] = {
                 "type": mt, "instance": idx,
                 "x": round(obj.x, 3), "y": round(obj.y, 3),
+                "mission_target": obj.mission_target,
             }
             world_elem.append(self._load_model_element(mt, idx, obj, label_counter))
             label_counter += 1

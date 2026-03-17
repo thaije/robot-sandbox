@@ -34,7 +34,6 @@ world:
     - type: "exit_sign"
       count: 4
       placement: "above_door"
-      mission_target: true
     # ── Environmental objects (not scored) ────────────────────────────────────
     - type: "trash_can"
       count: 1
@@ -42,6 +41,7 @@ world:
     - type: "person"
       count: 1
       placement: "random"
+      mission_target: true
     - type: "drink_can"
       count: 1
       placement: "random"
@@ -101,7 +101,7 @@ scoring:
   effectiveness_weights:
     fire_extinguisher: 40
     first_aid_kit: 40
-    exit_sign: 20
+    person: 20
   par_values:
     completion_time_par: 132.7  # baseline avg (n=2)
     path_length_par: 54.3       # baseline avg (n=2)
