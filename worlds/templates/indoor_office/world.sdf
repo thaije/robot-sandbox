@@ -32,7 +32,7 @@
 
     <!-- ═══════════════════════════════ PLUGINS ═══════════════════════════════ -->
     <physics type="ode">
-      <max_step_size>0.003</max_step_size>
+      <max_step_size>0.008</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
     <plugin name="gz::sim::systems::Physics"         filename="gz-sim-physics-system"/>
