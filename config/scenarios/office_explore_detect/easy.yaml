@@ -1,7 +1,7 @@
 scenario:
   name: "office_easy_001"
   description: "Easy office exploration — bright lighting, open doors, comfortable timeout"
-  timeout_seconds: 900
+  timeout_seconds: 300
 
 world:
   template: "indoor_office"
