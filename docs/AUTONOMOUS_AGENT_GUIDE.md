@@ -174,4 +174,3 @@ A mission brief is also printed to stdout at scenario start and again just befor
 - Use `--seed N` to freeze the layout while iterating on your algorithm.
 - `scripts/robot_control.py` — manual drive / camera snapshot (dev/cheat tool).
 - `scripts/world_state.py` — PNG map + object ground-truth positions (dev/cheat tool).
-- Reference docs: [`docs/AGENT_HANDOFF.md`](AGENT_HANDOFF.md) (architecture, gotchas).
