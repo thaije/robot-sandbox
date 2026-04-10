@@ -61,11 +61,17 @@ class MetersTraveled(BaseMetric):
     def _on_odom(self, msg: Any) -> None:
         x = msg.pose.pose.position.x
         y = msg.pose.pose.position.y
-        if self._last_pos is not None:
-            delta = math.hypot(x - self._last_pos[0], y - self._last_pos[1])
-            if delta >= self._min_delta:
-                self._total += delta
-        self._last_pos = (x, y)
+        if self._last_pos is None:
+            self._last_pos = (x, y)
+            return
+        delta = math.hypot(x - self._last_pos[0], y - self._last_pos[1])
+        # Hysteresis: only advance the reference point once motion clears the
+        # noise floor. Without this, at 20 Hz odom a robot moving slower than
+        # min_delta * rate (e.g. <0.2 m/s at min_delta=0.01) has every sample
+        # dropped while last_pos marches forward, losing all slow motion.
+        if delta >= self._min_delta:
+            self._total += delta
+            self._last_pos = (x, y)
 
     def update(self) -> None:
         pass  # reactive via callback

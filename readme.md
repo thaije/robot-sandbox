@@ -16,7 +16,7 @@ Full plan: [`docs/ARST_Project_Plan.md`](docs/ARST_Project_Plan.md) · Agent sta
 ## Run a scenario (automated)
 
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless [--timeout N] [--gui] [--seed N] [--speed N] [--enable-oracle] [--enable-pointcloud]
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless [--timeout N] [--gui] [--seed N] [--speed N] [--enable-oracle] [--enable-pointcloud]
 ```
 
 Handles full lifecycle: generates world SDF (with robot embedded), starts Gazebo, collects metrics, prints scorecard, cleans up. Results → `results/<scenario_name>.json`.
@@ -43,7 +43,7 @@ Pass `--seed N` to pin a specific layout; omit for a fresh random layout each ru
 ## Interactive dev session (GUI + teleoperation)
 
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --gui
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
 ```
 
 Then in a separate terminal:
@@ -86,11 +86,13 @@ The human player gets **only the forward camera** — no map, no object position
 
 **Terminal 2 — camera-only view:**
 ```bash
+. ~/Projects/derpbot-explorer/scripts/ros_env.sh    # to connect to the DDS discovery server
 ros2 run rqt_image_view rqt_image_view /derpbot_0/rgbd/image
 ```
 
 **Terminal 3 — keyboard teleop:**
 ```bash
+. ~/Projects/derpbot-explorer/scripts/ros_env.sh    # to connect to the DDS discovery server
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 ```

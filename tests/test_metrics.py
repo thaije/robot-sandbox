@@ -225,13 +225,26 @@ def test_revisit_grid_quantization():
 # ── MetersTraveled — min_delta filtering ──────────────────────────────────────
 
 def test_meters_min_delta_filters_noise():
-    """Moves smaller than min_delta must not accumulate."""
+    """Moves smaller than min_delta must not accumulate, and must not advance
+    the reference point (hysteresis) — otherwise slow motion below the noise
+    floor is silently dropped forever."""
     mt = MetersTraveled(min_delta=0.1)
     mt._on_odom(make_odom(0.0, 0.0))    # sets last_pos, no distance
-    mt._on_odom(make_odom(0.05, 0.0))   # delta 0.05 < 0.1 → ignored (last_pos still updates)
+    mt._on_odom(make_odom(0.05, 0.0))   # delta 0.05 < 0.1 → ignored, last_pos stays at (0,0)
     assert mt.get_result()["meters_traveled"] == 0.0
-    mt._on_odom(make_odom(0.5, 0.0))    # delta 0.45 from (0.05,0) → counted
-    assert mt.get_result()["meters_traveled"] == pytest.approx(0.45, abs=1e-6)
+    mt._on_odom(make_odom(0.5, 0.0))    # delta 0.5 from (0,0) → counted
+    assert mt.get_result()["meters_traveled"] == pytest.approx(0.5, abs=1e-6)
+
+def test_meters_slow_motion_accumulates():
+    """Regression: many sub-threshold steps must accumulate via hysteresis,
+    not be silently dropped (prior bug under-reported distance by ~3× at
+    typical DerpBot speeds of 0.1–0.2 m/s with 20 Hz odom)."""
+    mt = MetersTraveled(min_delta=0.01)
+    # 100 steps of 0.005 m each — every individual delta below threshold.
+    for i in range(101):
+        mt._on_odom(make_odom(i * 0.005, 0.0))
+    # Total path = 0.5 m; hysteresis should capture it in ~0.01 m chunks.
+    assert mt.get_result()["meters_traveled"] == pytest.approx(0.5, abs=0.01)
 
 def test_meters_first_message_no_distance():
     mt = MetersTraveled(min_delta=0.0)
