@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>Autonomous Robotics Simulation Testbed — Phase 1: DerpBot indoor exploration with metrics and composite scoring.</description>
   <maintainer email="placeholder@example.com">Tjalling</maintainer>
-  <license>TODO</license>
+  <license>MIT</license>
 
   <!-- ROS 2 runtime deps -->
   <exec_depend>rclpy</exec_depend>
