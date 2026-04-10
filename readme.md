@@ -116,14 +116,5 @@ python3.12 -m pytest tests/
 ```
 
 
-To fix: 
-- bugs:
-  - scenario timeout does not take RTF into account?
-- extensions:
-- new features:
-  - add sound? E.g. for detecting victims
-  - add sensor jitter, e.g. odom wheels error / slipping  
-
-
 
 
