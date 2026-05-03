@@ -174,3 +174,45 @@ A mission brief is also printed to stdout at scenario start and again just befor
 - Use `--seed N` to freeze the layout while iterating on your algorithm.
 - `scripts/robot_control.py` — manual drive / camera snapshot (dev/cheat tool).
 - `scripts/world_state.py` — PNG map + object ground-truth positions (dev/cheat tool).
+
+---
+
+## 7. Benchmark submission
+
+### Protocol
+
+| Property | Value |
+|---|---|
+| Scenario | `office_explore_detect` |
+| Difficulties | easy / medium / hard / brutal / perception_stress |
+| Seeds | 1 – 5 (fixed) |
+| Runs per seed | 3 |
+| **Total per entry** | **15 runs per difficulty** |
+
+Use `--seed N` to pin the layout. **Do not use `--enable-oracle`** for scored runs — you must publish your own detections via `/derpbot_0/rgbd`.
+
+### Result file naming
+
+Place all run JSONs in `results/submissions/<your-agent-name>/`, named:
+
+```
+<difficulty>_seed<N>_run<K>.json
+```
+
+Example: `easy_seed1_run1.json`, `brutal_seed3_run2.json`.
+
+### Submission YAML
+
+Copy `results/submissions/example_benchmark_submission.yaml`, fill in your details, and place it alongside your results directory.
+
+### Validate before submitting
+
+```bash
+python3.12 scripts/validate_submission.py path/to/benchmark_submission.yaml
+```
+
+Checks: all expected files present, JSON schema valid, `overall_score` in [0, 100], `sandbox_version` tag exists. Exit 0 = pass, exit 1 = fail with itemised errors.
+
+### Submitting
+
+Open a PR adding your YAML + results directory to `results/submissions/`. Submissions that fail validation will not be merged.

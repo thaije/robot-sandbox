@@ -36,6 +36,8 @@ DerpBot topics (/derpbot_0/...)
 TF: `odom → base_footprint → base_link → lidar_link / camera_link`
 Ends on `SUCCESS` (`found_ratio` = 1.0) or `TIME_LIMIT`.
 
+Benchmark submission: `scripts/validate_submission.py` + `results/submissions/`. Protocol + format → `docs/AUTONOMOUS_AGENT_GUIDE.md §7`.
+
 ---
 
 ## Invariants (will bite again — keep in context)

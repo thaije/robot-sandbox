@@ -109,6 +109,14 @@ Navigate the four rooms and locate all objects as quickly as possible.  When the
 gz topic -e -t /stats
 ```
 
+## Benchmark submission
+
+Seeds 1–5 × 3 runs/seed = 15 runs per difficulty. Full protocol, result naming convention, submission YAML format, and validation instructions: **[`docs/AUTONOMOUS_AGENT_GUIDE.md §7`](docs/AUTONOMOUS_AGENT_GUIDE.md#7-benchmark-submission)**.
+
+```bash
+python3.12 scripts/validate_submission.py path/to/benchmark_submission.yaml
+```
+
 ## Tests
 
 ```bash

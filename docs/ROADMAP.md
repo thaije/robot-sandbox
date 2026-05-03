@@ -15,9 +15,6 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ## Next
 
-### Benchmark: submission format + validation script · [#6](https://github.com/thaije/robot-sandbox/issues/6)
-Define submission YAML format and `scripts/validate_submission.py`. Protocol: seeds 1–5, 3 runs/seed, 15 runs per (scenario × difficulty). Prerequisite for everything else.
-
 ### Benchmark: random agent baseline runs · [#8](https://github.com/thaije/robot-sandbox/issues/8)
 Run #7 across full benchmark protocol (seeds 1–5 × 3 runs × 5 difficulties). Depends on #7, #6.
 
