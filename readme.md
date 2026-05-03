@@ -2,6 +2,8 @@
 
 Autonomous Robotics Simulation Testbed. Gazebo Harmonic + ROS 2 Jazzy. DerpBot (two-wheeled diff-drive) in indoor environments with metrics + composite scoring.
 
+**Autonomous agent instructions: [`docs/AUTONOMOUS_AGENT_GUIDE.md`](docs/AUTONOMOUS_AGENT_GUIDE.md)** — task, grading, sensors, running scenarios, benchmark submission.
+
 State: [`docs/STATE.md`](docs/STATE.md) · Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Prerequisites
