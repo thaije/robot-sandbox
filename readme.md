@@ -112,7 +112,11 @@ gz topic -e -t /stats
 ## Tests
 
 ```bash
+# Unit tests (no sim required)
 python3.12 -m pytest tests/
+
+# Integration test (requires live sim + ROS 2)
+pytest -m integration tests/test_integration.py
 ```
 
 
