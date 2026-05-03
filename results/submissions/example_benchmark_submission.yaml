@@ -1,0 +1,20 @@
+# Example benchmark submission — copy and fill in for your agent.
+#
+# Run:  python3.12 scripts/validate_submission.py benchmark_submission.yaml
+# Docs: see issue #6 for full benchmark protocol.
+
+stack_name: "DerpBot Explorer v1"
+repo_url: "https://github.com/example/your-agent"
+sandbox_version: "v1.0-benchmark"        # git tag of robot-sandbox used for your runs
+scenario: "office_explore_detect"
+difficulties:                            # list of completed difficulties
+  - easy
+  - medium
+  - hard
+  - brutal
+  - perception_stress
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 3
+# results_dir must contain one JSON per run named <difficulty>_seed<N>_run<K>.json
+results_dir: "results/submissions/your-agent-name/"
+description: "Brief description of your navigation + detection approach"
