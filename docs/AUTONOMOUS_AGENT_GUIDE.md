@@ -193,7 +193,7 @@ Use `--seed N` to pin the layout. **Do not use `--enable-oracle`** for scored ru
 
 ### Result file naming
 
-Place all run JSONs in `results/submissions/<your-agent-name>/`, named:
+Each run produces a JSON scorecard in `results/` (e.g. `results/office_easy_001_20260101T120000.json`). Copy the relevant files into `results/submissions/<your-agent-name>/` and rename them to:
 
 ```
 <difficulty>_seed<N>_run<K>.json
