@@ -1,0 +1,17 @@
+# Random wander agent — score floor baseline
+# Validates with: python3.12 scripts/validate_submission.py results/submissions/random-baseline/benchmark_submission.yaml
+
+stack_name: "Random Baseline"
+repo_url: "https://github.com/thaije/robot-sandbox"
+sandbox_version: "main-58e5a1f"           # no v1.0-benchmark tag yet; update after #11
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+  - medium
+  - hard
+  - brutal
+  - perception_stress
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 3
+results_dir: "results/submissions/random-baseline/"
+description: "Random wander agent (scripts/random_agent.py) — laser-based obstacle avoidance, no SLAM, no detections. Score floor reference for leaderboard normalisation."
