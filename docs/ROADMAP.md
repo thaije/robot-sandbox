@@ -15,11 +15,26 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ## Next
 
-### Batch execution · [#3](https://github.com/thaije/robot-sandbox/issues/3)
-`scripts/run_batch.sh` — N runs with different seeds, aggregate mean/std/min/max. Builds on `run_scenario.sh` + existing results JSON format.
-
 ### Integration test · [#4](https://github.com/thaije/robot-sandbox/issues/4)
 Scripted movement pattern, verify all metrics record correctly end-to-end. Prefer Python pytest; minimal scenario in `config/scenarios/tests/`.
+
+### Benchmark: submission format + validation script · [#6](https://github.com/thaije/robot-sandbox/issues/6)
+Define submission YAML format and `scripts/validate_submission.py`. Protocol: seeds 1–5, 3 runs/seed, 15 runs per (scenario × difficulty). Prerequisite for everything else.
+
+### Benchmark: random wander agent · [#7](https://github.com/thaije/robot-sandbox/issues/7)
+`scripts/random_agent.py` — no SLAM/Nav2/ML, zero external deps. Score floor reference.
+
+### Benchmark: random agent baseline runs · [#8](https://github.com/thaije/robot-sandbox/issues/8)
+Run #7 across full benchmark protocol (seeds 1–5 × 3 runs × 5 difficulties). Depends on #7, #6.
+
+### Benchmark: human teleop baseline runs · [#9](https://github.com/thaije/robot-sandbox/issues/9)
+Teleop sessions for easy + medium, seeds 1–5 × 3 runs. Oracle detections. Depends on #6.
+
+### Benchmark: static leaderboard page · [#10](https://github.com/thaije/robot-sandbox/issues/10)
+`results/leaderboard.json` + `docs/leaderboard.html`. Depends on #6, #8, #9.
+
+### Benchmark: versioned release v1.0-benchmark · [#11](https://github.com/thaije/robot-sandbox/issues/11)
+Freeze scenario/scoring/seeds/protocol; git tag. Depends on #6–#10.
 
 ---
 
@@ -29,6 +44,7 @@ Known issues not currently prioritised. Full details in the linked issues.
 
 - [#1](https://github.com/thaije/robot-sandbox/issues/1) — Add sound to simulation
 - [#2](https://github.com/thaije/robot-sandbox/issues/2) — Add sensor jitter
+- [#3](https://github.com/thaije/robot-sandbox/issues/3) — Batch execution script (autonomy devs run their own parallel instances; see [derpbot-explorer/scripts/start_stack.sh](https://github.com/thaije/derpbot-explorer/blob/master/scripts/start_stack.sh) as reference)
 - [#5](https://github.com/thaije/robot-sandbox/issues/5) — Multiple simulator instances (SIM-12, parallel runs via Docker + GZ_PARTITION)
 
 Run `gh issue list --state open --label backlog` for the live list.
