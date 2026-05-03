@@ -88,13 +88,11 @@ The human player gets **only the forward camera** — no map, no object position
 
 **Terminal 2 — camera-only view:**
 ```bash
-. ~/Projects/derpbot-explorer/scripts/ros_env.sh    # to connect to the DDS discovery server
 ros2 run rqt_image_view rqt_image_view /derpbot_0/rgbd/image
 ```
 
 **Terminal 3 — keyboard teleop:**
 ```bash
-. ~/Projects/derpbot-explorer/scripts/ros_env.sh    # to connect to the DDS discovery server
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 ```

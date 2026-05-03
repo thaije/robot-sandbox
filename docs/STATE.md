@@ -58,6 +58,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **URDF→SDF joint lumping**: `gz sdf -p` lumps `base_footprint→base_link`. Contact sensor collision reference must use post-lump name: `base_footprint_fixed_joint_lump__base_link_collision_collision`.
 - **Particle emitter**: `gz-sim-particle-emitter-system` must be in `world.sdf` or emitters silently do nothing. Use PBR `<albedo_map>` — NOT `<material><script>` (ogre1 syntax, renders black in ogre2).
 - **FlickerController**: `/world/<world>/light_config` is a SERVICE, not a topic. gz-sim 8.10.0 bug: only works on lights created dynamically via EntityFactory, not SDF-baked lights — flicker lights must be recreated at startup.
+- **Only one sim run at a time.** Hardware cannot sustain two Gazebo/ROS 2 stacks simultaneously. Always run seeds sequentially, never in parallel.
 
 ### Robot geometry
 - **Camera min height z=0.18 m.** Below this, the DerpBot chassis re-enters the frame and blocks the lower image portion.
