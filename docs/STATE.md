@@ -78,8 +78,11 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 
-# Tests
+# Unit tests (no sim required)
 python3.12 -m pytest tests/
+
+# Integration test (requires live sim + ROS 2)
+pytest -m integration tests/test_integration.py
 ```
 
 Navigation: invoke the `arst-nav` skill — full docs inside.
