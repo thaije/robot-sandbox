@@ -40,12 +40,18 @@ class ObjectPlacer:
     #: Maximum random samples per object before giving up.
     MAX_ATTEMPTS: int = 2000
 
+    #: Minimum clearance around robot spawn points when no override is supplied.
+    #: Wider than the general placement_clearance because it must cover the
+    #: robot's physical footprint plus the object's footprint.
+    MIN_ROBOT_CLEARANCE: float = 1.0
+
     def __init__(
         self,
         template_config: dict,
         clearance: float | None = None,
         robot_spawns: list[tuple[float, float]] | None = None,
         patrol_segments: list[tuple[tuple[float, float], tuple[float, float]]] | None = None,
+        robot_clearance: float | None = None,
     ) -> None:
         """
         Parameters
@@ -56,15 +62,24 @@ class ObjectPlacer:
             Override the template's ``placement_clearance`` (metres).
         robot_spawns:
             List of (x, y) world-frame positions where robots will spawn.
-            Objects are kept at least *clearance* metres away from each.
+            Objects are kept at least *robot_clearance* metres away from each.
         patrol_segments:
             List of ((x1, y1), (x2, y2)) line segments traversed by patrol
             robots.  Objects are kept at least *clearance* metres from each
             segment (exact perpendicular distance, not sample-point distance).
+        robot_clearance:
+            Override the clearance applied specifically to robot spawn points
+            (metres).  Defaults to ``max(clearance * 2, MIN_ROBOT_CLEARANCE)``
+            so it is always at least ``MIN_ROBOT_CLEARANCE`` regardless of the
+            general clearance setting.
         """
         self._zones: list[dict] = template_config.get("placement_zones", [])
         self._clearance: float = clearance if clearance is not None else float(
             template_config.get("placement_clearance", 0.5)
+        )
+        self._robot_clearance: float = (
+            robot_clearance if robot_clearance is not None
+            else max(self._clearance * 2, self.MIN_ROBOT_CLEARANCE)
         )
         self._gt_mask, self._resolution, self._world_h = _load_gt_mask(template_config)
         self._zone_weights: list[float] = _zone_area_weights(self._zones)
@@ -481,7 +496,7 @@ class ObjectPlacer:
 
         # ── Robot spawn clearance (always applied) ────────────────────────────
         for rx, ry in self._robot_spawns:
-            if math.hypot(x - rx, y - ry) < self._clearance:
+            if math.hypot(x - rx, y - ry) < self._robot_clearance:
                 return False
 
         # ── Patrol path clearance (exact perpendicular distance to segments) ──

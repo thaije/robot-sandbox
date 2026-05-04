@@ -138,6 +138,38 @@ def test_place_nine_objects(placer, office_config):
             assert dist >= clearance
 
 
+# ── Robot spawn clearance ─────────────────────────────────────────────────────
+
+def test_robot_spawn_clearance_default(office_config):
+    """Default robot clearance must be at least MIN_ROBOT_CLEARANCE (1.0 m)."""
+    placer = ObjectPlacer(office_config, robot_spawns=[(6.5, 2.5)])
+    assert placer._robot_clearance >= ObjectPlacer.MIN_ROBOT_CLEARANCE
+
+
+def test_objects_respect_robot_spawn_clearance(office_config):
+    """No object may land within robot_clearance of the robot spawn (regression: easy/seed=1)."""
+    spawn = (6.5, 2.5)
+    placer = ObjectPlacer(office_config, robot_spawns=[spawn])
+    objects = [
+        {"type": "fire_extinguisher", "count": 3},
+        {"type": "first_aid_kit",     "count": 2},
+        {"type": "person",            "count": 1, "placement": "random", "mission_target": True},
+    ]
+    placed = placer.place(objects, seed=1)
+    for obj in placed:
+        dist = math.hypot(obj.x - spawn[0], obj.y - spawn[1])
+        assert dist >= placer._robot_clearance, (
+            f"{obj.model_type} placed {dist:.3f} m from spawn "
+            f"(robot_clearance={placer._robot_clearance} m)"
+        )
+
+
+def test_robot_clearance_override(office_config):
+    """robot_clearance kwarg overrides the default."""
+    placer = ObjectPlacer(office_config, robot_spawns=[(5.0, 3.0)], robot_clearance=2.5)
+    assert placer._robot_clearance == 2.5
+
+
 # ── Error handling ────────────────────────────────────────────────────────────
 
 def test_impossible_placement_raises(office_config):
