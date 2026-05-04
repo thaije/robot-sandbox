@@ -1,0 +1,199 @@
+{
+  "stack_name": "random-baseline",
+  "generated_at": "2026-05-04T17:43:38.413089+00:00",
+  "total_runs": 75,
+  "expected_runs": 75,
+  "missing_runs": [],
+  "results": {
+    "easy": {
+      "n_runs": 15,
+      "status_counts": {
+        "SUCCESS": 0,
+        "TIME_LIMIT": 15,
+        "other": 0
+      },
+      "speed": {
+        "mean": 21.04,
+        "std": 0.09,
+        "n": 15
+      },
+      "accuracy": {
+        "mean": 40.0,
+        "std": 0.0,
+        "n": 15
+      },
+      "safety": {
+        "mean": 50.4,
+        "std": 21.17,
+        "n": 15
+      },
+      "efficiency": {
+        "mean": 39.51,
+        "std": 6.07,
+        "n": 15
+      },
+      "effectiveness": {
+        "mean": 19.67,
+        "std": 5.64,
+        "n": 15
+      },
+      "overall": {
+        "mean": 35.71,
+        "std": 5.11,
+        "n": 15
+      }
+    },
+    "medium": {
+      "n_runs": 15,
+      "status_counts": {
+        "SUCCESS": 0,
+        "TIME_LIMIT": 15,
+        "other": 0
+      },
+      "speed": {
+        "mean": 10.66,
+        "std": 0.02,
+        "n": 15
+      },
+      "accuracy": {
+        "mean": 40.0,
+        "std": 0.0,
+        "n": 15
+      },
+      "safety": {
+        "mean": 31.87,
+        "std": 12.59,
+        "n": 15
+      },
+      "efficiency": {
+        "mean": 21.9,
+        "std": 5.21,
+        "n": 15
+      },
+      "effectiveness": {
+        "mean": 24.16,
+        "std": 9.25,
+        "n": 15
+      },
+      "overall": {
+        "mean": 27.91,
+        "std": 2.76,
+        "n": 15
+      }
+    },
+    "hard": {
+      "n_runs": 15,
+      "status_counts": {
+        "SUCCESS": 0,
+        "TIME_LIMIT": 15,
+        "other": 0
+      },
+      "speed": {
+        "mean": 23.53,
+        "std": 0.12,
+        "n": 15
+      },
+      "accuracy": {
+        "mean": 40.0,
+        "std": 0.0,
+        "n": 15
+      },
+      "safety": {
+        "mean": 52.13,
+        "std": 17.69,
+        "n": 15
+      },
+      "efficiency": {
+        "mean": 41.51,
+        "std": 6.17,
+        "n": 15
+      },
+      "effectiveness": {
+        "mean": 22.65,
+        "std": 7.33,
+        "n": 15
+      },
+      "overall": {
+        "mean": 35.86,
+        "std": 2.94,
+        "n": 15
+      }
+    },
+    "brutal": {
+      "n_runs": 15,
+      "status_counts": {
+        "SUCCESS": 0,
+        "TIME_LIMIT": 15,
+        "other": 0
+      },
+      "speed": {
+        "mean": 39.51,
+        "std": 0.28,
+        "n": 15
+      },
+      "accuracy": {
+        "mean": 40.0,
+        "std": 0.0,
+        "n": 15
+      },
+      "safety": {
+        "mean": 49.33,
+        "std": 26.98,
+        "n": 15
+      },
+      "efficiency": {
+        "mean": 62.68,
+        "std": 12.48,
+        "n": 15
+      },
+      "effectiveness": {
+        "mean": 19.65,
+        "std": 8.21,
+        "n": 15
+      },
+      "overall": {
+        "mean": 40.94,
+        "std": 4.47,
+        "n": 15
+      }
+    },
+    "perception_stress": {
+      "n_runs": 15,
+      "status_counts": {
+        "SUCCESS": 0,
+        "TIME_LIMIT": 15,
+        "other": 0
+      },
+      "speed": {
+        "mean": 15.42,
+        "std": 0.04,
+        "n": 15
+      },
+      "accuracy": {
+        "mean": 40.0,
+        "std": 0.0,
+        "n": 15
+      },
+      "safety": {
+        "mean": 26.67,
+        "std": 11.1,
+        "n": 15
+      },
+      "efficiency": {
+        "mean": 32.86,
+        "std": 4.04,
+        "n": 15
+      },
+      "effectiveness": {
+        "mean": 27.71,
+        "std": 5.83,
+        "n": 15
+      },
+      "overall": {
+        "mean": 29.85,
+        "std": 2.23,
+        "n": 15
+      }
+    }
+  }
+}

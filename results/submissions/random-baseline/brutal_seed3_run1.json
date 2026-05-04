@@ -1,0 +1,108 @@
+{
+  "scenario_name": "office_brutal_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 182.64000000000001,
+  "timeout_seconds": 180.0,
+  "random_seed": 3,
+  "categories": [
+    "CategoryScore(name='speed', score=39.55, grade='F', grade_label='Failed', weight=0.3)",
+    "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.25)",
+    "CategoryScore(name='safety', score=40.0, grade='D', grade_label='Poor', weight=0.2)",
+    "CategoryScore(name='efficiency', score=77.6, grade='B', grade_label='Good', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=27.89, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 41.8,
+  "overall_grade": "D",
+  "overall_grade_label": "Poor",
+  "raw_metrics": {
+    "exploration_coverage": 79.69,
+    "collision_count": 5.0,
+    "meters_traveled": 31.569,
+    "near_miss_count": 4.0,
+    "found_ratio": 0.0,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "collision_events": [
+      {
+        "t": 8.44,
+        "count": 1
+      },
+      {
+        "t": 20.9,
+        "count": 2
+      },
+      {
+        "t": 44.88,
+        "count": 3
+      },
+      {
+        "t": 46.59,
+        "count": 4
+      },
+      {
+        "t": 64.53,
+        "count": 5
+      }
+    ],
+    "near_miss_events": [
+      {
+        "t": 8.4,
+        "count": 1,
+        "min_range": 0.196
+      },
+      {
+        "t": 20.82,
+        "count": 2,
+        "min_range": 0.194
+      },
+      {
+        "t": 44.79,
+        "count": 3,
+        "min_range": 0.184
+      },
+      {
+        "t": 64.42,
+        "count": 4,
+        "min_range": 0.195
+      }
+    ],
+    "detection_events": [],
+    "detection_by_type": {
+      "drill": {
+        "detected": 0,
+        "total": 1
+      },
+      "drink_can": {
+        "detected": 0,
+        "total": 1
+      },
+      "exit_sign": {
+        "detected": 0,
+        "total": 2
+      },
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2
+      },
+      "person": {
+        "detected": 0,
+        "total": 1
+      },
+      "trash_can": {
+        "detected": 0,
+        "total": 1
+      }
+    },
+    "task_completion_time": 182.64,
+    "avg_speed_kmh": 0.622
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.384,
+  "timeout_seconds": 600.0,
+  "random_seed": 4,
+  "categories": [
+    "CategoryScore(name='speed', score=10.64, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=20.0, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='efficiency', score=27.65, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=31.72, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 26.7,
+  "overall_grade": "F",
+  "overall_grade_label": "Failed",
+  "raw_metrics": {
+    "collision_count": 12.0,
+    "near_miss_count": 16.0,
+    "exploration_coverage": 90.62,
+    "meters_traveled": 99.499,
+    "found_ratio": 0.0,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "collision_events": [
+      {
+        "t": 10.63,
+        "count": 1
+      },
+      {
+        "t": 24.2,
+        "count": 2
+      },
+      {
+        "t": 43.84,
+        "count": 3
+      },
+      {
+        "t": 47.89,
+        "count": 4
+      },
+      {
+        "t": 76.69,
+        "count": 5
+      },
+      {
+        "t": 96.79,
+        "count": 6
+      },
+      {
+        "t": 100.57,
+        "count": 7
+      },
+      {
+        "t": 103.87,
+        "count": 8
+      },
+      {
+        "t": 121.14,
+        "count": 9
+      },
+      {
+        "t": 178.32,
+        "count": 10
+      },
+      {
+        "t": 181.67,
+        "count": 11
+      },
+      {
+        "t": 192.94,
+        "count": 12
+      }
+    ],
+    "near_miss_events": [
+      {
+        "t": 10.4,
+        "count": 1,
+        "min_range": 0.19
+      },
+      {
+        "t": 23.95,
+        "count": 2,
+        "min_range": 0.189
+      },
+      {
+        "t": 43.61,
+        "count": 3,
+        "min_range": 0.186
+      },
+      {
+        "t": 47.7,
+        "count": 4,
+        "min_range": 0.174
+      },
+      {
+        "t": 76.46,
+        "count": 5,
+        "min_range": 0.197
+      },
+      {
+        "t": 90.83,
+        "count": 6,
+        "min_range": 0.197
+      },
+      {
+        "t": 96.52,
+        "count": 7,
+        "min_range": 0.192
+      },
+      {
+        "t": 100.33,
+        "count": 8,
+        "min_range": 0.191
+      },
+      {
+        "t": 103.64,
+        "count": 9,
+        "min_range": 0.182
+      },
+      {
+        "t": 115.41,
+        "count": 10,
+        "min_range": 0.191
+      },
+      {
+        "t": 120.91,
+        "count": 11,
+        "min_range": 0.191
+      },
+      {
+        "t": 124.07,
+        "count": 12,
+        "min_range": 0.199
+      },
+      {
+        "t": 177.93,
+        "count": 13,
+        "min_range": 0.186
+      },
+      {
+        "t": 181.44,
+        "count": 14,
+        "min_range": 0.197
+      },
+      {
+        "t": 186.95,
+        "count": 15,
+        "min_range": 0.196
+      },
+      {
+        "t": 192.72,
+        "count": 16,
+        "min_range": 0.196
+      }
+    ],
+    "detection_events": [],
+    "detection_by_type": {
+      "drill": {
+        "detected": 0,
+        "total": 1
+      },
+      "drink_can": {
+        "detected": 0,
+        "total": 1
+      },
+      "exit_sign": {
+        "detected": 0,
+        "total": 4
+      },
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2
+      },
+      "office_chair": {
+        "detected": 0,
+        "total": 1
+      },
+      "person": {
+        "detected": 0,
+        "total": 1
+      },
+      "trash_can": {
+        "detected": 0,
+        "total": 1
+      }
+    },
+    "task_completion_time": 602.38,
+    "avg_speed_kmh": 0.595
+  }
+}

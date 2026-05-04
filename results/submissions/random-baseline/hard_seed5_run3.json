@@ -1,0 +1,109 @@
+{
+  "scenario_name": "office_hard_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 300.664,
+  "timeout_seconds": 300.0,
+  "random_seed": 5,
+  "categories": [
+    "CategoryScore(name='speed', score=23.65, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=60.0, grade='C', grade_label='Adequate', weight=0.2)",
+    "CategoryScore(name='efficiency', score=37.03, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=13.67, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 35.7,
+  "overall_grade": "F",
+  "overall_grade_label": "Failed",
+  "raw_metrics": {
+    "meters_traveled": 48.686,
+    "exploration_coverage": 39.07,
+    "collision_count": 4.0,
+    "near_miss_count": 5.0,
+    "found_ratio": 0.0,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "collision_events": [
+      {
+        "t": 25.39,
+        "count": 1
+      },
+      {
+        "t": 35.6,
+        "count": 2
+      },
+      {
+        "t": 66.69,
+        "count": 3
+      },
+      {
+        "t": 72.27,
+        "count": 4
+      }
+    ],
+    "near_miss_events": [
+      {
+        "t": 25.34,
+        "count": 1,
+        "min_range": 0.192
+      },
+      {
+        "t": 35.55,
+        "count": 2,
+        "min_range": 0.195
+      },
+      {
+        "t": 66.57,
+        "count": 3,
+        "min_range": 0.194
+      },
+      {
+        "t": 72.22,
+        "count": 4,
+        "min_range": 0.189
+      },
+      {
+        "t": 83.75,
+        "count": 5,
+        "min_range": 0.189
+      }
+    ],
+    "detection_events": [],
+    "detection_by_type": {
+      "drill": {
+        "detected": 0,
+        "total": 1
+      },
+      "drink_can": {
+        "detected": 0,
+        "total": 1
+      },
+      "exit_sign": {
+        "detected": 0,
+        "total": 3
+      },
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2
+      },
+      "person": {
+        "detected": 0,
+        "total": 1
+      },
+      "trash_can": {
+        "detected": 0,
+        "total": 1
+      }
+    },
+    "task_completion_time": 300.66,
+    "avg_speed_kmh": 0.583
+  }
+}
