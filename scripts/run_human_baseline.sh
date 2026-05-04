@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Human teleop baseline runner — easy + medium, seeds 1–5, 1 run each = 10 runs
+# Human teleop baseline runner — all difficulties, seeds 1–5, 1 run each = 25 runs
 #
 # Usage:
 #   ./scripts/run_human_baseline.sh
@@ -16,7 +16,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-DIFFICULTIES=(easy medium)
+DIFFICULTIES=(easy medium hard brutal perception_stress)
 SEEDS=(1 2 3 4 5)
 RUN=1   # one run per seed
 

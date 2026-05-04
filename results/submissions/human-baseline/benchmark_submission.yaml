@@ -8,6 +8,9 @@ scenario: "office_explore_detect"
 difficulties:
   - easy
   - medium
+  - hard
+  - brutal
+  - perception_stress
 seeds: [1, 2, 3, 4, 5]
 runs_per_seed: 1
 results_dir: "results/submissions/human-baseline/"
