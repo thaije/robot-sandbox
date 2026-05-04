@@ -1,0 +1,14 @@
+# Human teleop baseline — navigation upper-bound reference
+# Validates with: python3.12 scripts/validate_submission.py results/submissions/human-baseline/benchmark_submission.yaml
+
+stack_name: "Human Teleop (oracle detections)"
+repo_url: "https://github.com/thaije/robot-sandbox"
+sandbox_version: "main-58e5a1f"           # update to git tag after #11
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+  - medium
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 1
+results_dir: "results/submissions/human-baseline/"
+description: "Human operator via teleop_twist_keyboard. Oracle detections enabled — isolates navigation skill. Score ceiling reference for leaderboard."
