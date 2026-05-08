@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>robot-sandbox Leaderboard</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    color: #1a1a2e;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 0.2rem; }
+  .subtitle { color: #555; font-size: 0.9rem; margin-bottom: 2rem; }
+  .subtitle a { color: #0969da; text-decoration: none; }
+  .subtitle a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th {
+    background: #1a1a2e;
+    color: #e8e8f4;
+    text-align: left;
+    padding: 9px 12px;
+    font-weight: 600;
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid #e5e7eb; }
+  tbody tr:not(.scenario-header):not(.diff-header):hover td { background: #f0f4ff; }
+  tr.scenario-header td {
+    background: #1a1a2e;
+    color: #e8e8f4;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 10px 12px;
+  }
+  tr.diff-header td {
+    background: #eef0f6;
+    color: #555;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+  }
+  tr.baseline-row td { color: #888; font-style: italic; }
+  a { color: #0969da; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .score-cell {
+    cursor: help;
+    position: relative;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .score-cell::after {
+    content: attr(data-tip);
+    display: none;
+    position: absolute;
+    background: #1a1a2e;
+    color: #dde;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-style: normal;
+    white-space: nowrap;
+    z-index: 100;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  }
+  .score-cell:hover::after { display: block; }
+  .legend {
+    margin-top: 1.5rem;
+    font-size: 0.78rem;
+    color: #888;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+<h1>robot-sandbox Leaderboard</h1>
+<p class="subtitle">
+  Scenario: <strong>office_explore_detect</strong>&nbsp;&nbsp;·&nbsp;&nbsp;
+  Score&nbsp;=&nbsp;objects found / total objects (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
+  Hover score cell for raw metrics&nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="https://github.com/thaije/robot-sandbox" target="_blank">GitHub ↗</a>
+</p>
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>Stack</th>
+  <th>Score (mean ± std)</th>
+  <th>Runs</th>
+  <th>Submitted</th>
+  <th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr class="scenario-header"><td colspan="6">Office: Explore &amp; Detect</td></tr>
+<tr class="diff-header"><td colspan="6">Easy</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 0.0/16 · 0.16 km/h · 1.0 collisions · 41 m path · 97.1% coverage · 902s">0.000 ± 0.000</td><td>1</td><td></td><td>main-6ee7ab9</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/16 · 0.63 km/h · 5.9 collisions · 53 m path · 56.2% coverage · 303s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Medium</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/14 · 0.65 km/h · 10.3 collisions · 108 m path · 69.0% coverage · 602s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Hard</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/12 · 0.65 km/h · 5.6 collisions · 55 m path · 64.7% coverage · 302s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Brutal</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/11 · 0.64 km/h · 4.9 collisions · 33 m path · 56.1% coverage · 183s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Perception Stress</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/13 · 0.63 km/h · 14.2 collisions · 106 m path · 79.2% coverage · 602s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+</tbody>
+</table>
+<p class="legend">
+  Italic rows = baselines (not ranked — reference floor/ceiling only).<br>
+  Score = <code>found_ratio</code>: objects found / total objects in scenario.<br>
+  Hover the score cell to see: objects found, avg speed, collisions, path length, exploration coverage, elapsed time.
+</p>
+</body>
+</html>

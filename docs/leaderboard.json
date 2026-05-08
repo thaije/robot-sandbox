@@ -1,0 +1,286 @@
+[
+  {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "sandbox_version": "main-6ee7ab9",
+    "scenario": "office_explore_detect",
+    "difficulty": "easy",
+    "is_baseline": false,
+    "n_runs": 1,
+    "seeds": [
+      1
+    ],
+    "submitted": "",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 16
+      },
+      "avg_speed_kmh": {
+        "mean": 0.162,
+        "std": 0.0
+      },
+      "collision_count": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "path_length_m": {
+        "mean": 40.634,
+        "std": 0.0
+      },
+      "exploration_coverage_pct": {
+        "mean": 97.13,
+        "std": 0.0
+      },
+      "elapsed_s": {
+        "mean": 902.048,
+        "std": 0.0
+      }
+    }
+  },
+  {
+    "stack_name": "Random Baseline",
+    "repo_url": "https://github.com/thaije/robot-sandbox",
+    "sandbox_version": "main-58e5a1f",
+    "scenario": "office_explore_detect",
+    "difficulty": "easy",
+    "is_baseline": true,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "submitted": "2026-05-04",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 16
+      },
+      "avg_speed_kmh": {
+        "mean": 0.6253,
+        "std": 0.0496
+      },
+      "collision_count": {
+        "mean": 5.8667,
+        "std": 3.3778
+      },
+      "path_length_m": {
+        "mean": 52.6645,
+        "std": 4.3243
+      },
+      "exploration_coverage_pct": {
+        "mean": 56.2107,
+        "std": 16.1253
+      },
+      "elapsed_s": {
+        "mean": 303.1659,
+        "std": 1.3413
+      }
+    }
+  },
+  {
+    "stack_name": "Random Baseline",
+    "repo_url": "https://github.com/thaije/robot-sandbox",
+    "sandbox_version": "main-58e5a1f",
+    "scenario": "office_explore_detect",
+    "difficulty": "medium",
+    "is_baseline": true,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "submitted": "2026-05-04",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 14
+      },
+      "avg_speed_kmh": {
+        "mean": 0.6492,
+        "std": 0.0361
+      },
+      "collision_count": {
+        "mean": 10.3333,
+        "std": 5.2053
+      },
+      "path_length_m": {
+        "mean": 108.4951,
+        "std": 6.0578
+      },
+      "exploration_coverage_pct": {
+        "mean": 69.0293,
+        "std": 26.4391
+      },
+      "elapsed_s": {
+        "mean": 601.6325,
+        "std": 1.0415
+      }
+    }
+  },
+  {
+    "stack_name": "Random Baseline",
+    "repo_url": "https://github.com/thaije/robot-sandbox",
+    "sandbox_version": "main-58e5a1f",
+    "scenario": "office_explore_detect",
+    "difficulty": "hard",
+    "is_baseline": true,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "submitted": "2026-05-04",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 12
+      },
+      "avg_speed_kmh": {
+        "mean": 0.6547,
+        "std": 0.04
+      },
+      "collision_count": {
+        "mean": 5.6,
+        "std": 3.5817
+      },
+      "path_length_m": {
+        "mean": 54.9593,
+        "std": 3.3802
+      },
+      "exploration_coverage_pct": {
+        "mean": 64.71,
+        "std": 20.9296
+      },
+      "elapsed_s": {
+        "mean": 302.216,
+        "std": 1.5296
+      }
+    }
+  },
+  {
+    "stack_name": "Random Baseline",
+    "repo_url": "https://github.com/thaije/robot-sandbox",
+    "sandbox_version": "main-58e5a1f",
+    "scenario": "office_explore_detect",
+    "difficulty": "brutal",
+    "is_baseline": true,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "submitted": "2026-05-04",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 11
+      },
+      "avg_speed_kmh": {
+        "mean": 0.6445,
+        "std": 0.0293
+      },
+      "collision_count": {
+        "mean": 4.8667,
+        "std": 3.6619
+      },
+      "path_length_m": {
+        "mean": 32.7274,
+        "std": 1.4975
+      },
+      "exploration_coverage_pct": {
+        "mean": 56.1287,
+        "std": 23.4581
+      },
+      "elapsed_s": {
+        "mean": 182.84,
+        "std": 1.3194
+      }
+    }
+  },
+  {
+    "stack_name": "Random Baseline",
+    "repo_url": "https://github.com/thaije/robot-sandbox",
+    "sandbox_version": "main-58e5a1f",
+    "scenario": "office_explore_detect",
+    "difficulty": "perception_stress",
+    "is_baseline": true,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "submitted": "2026-05-04",
+    "total_score": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.0,
+        "std": 0.0,
+        "of_total": 13
+      },
+      "avg_speed_kmh": {
+        "mean": 0.633,
+        "std": 0.018
+      },
+      "collision_count": {
+        "mean": 14.2,
+        "std": 6.2473
+      },
+      "path_length_m": {
+        "mean": 105.9092,
+        "std": 2.9598
+      },
+      "exploration_coverage_pct": {
+        "mean": 79.162,
+        "std": 16.6541
+      },
+      "elapsed_s": {
+        "mean": 602.4331,
+        "std": 1.5676
+      }
+    }
+  }
+]

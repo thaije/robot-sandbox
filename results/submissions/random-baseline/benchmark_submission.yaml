@@ -14,4 +14,6 @@ difficulties:
 seeds: [1, 2, 3, 4, 5]
 runs_per_seed: 3
 results_dir: "results/submissions/random-baseline/"
+is_baseline: true
+submitted: "2026-05-04"
 description: "Random wander agent (scripts/random_agent.py) — laser-based obstacle avoidance, no SLAM, no detections. Score floor reference for leaderboard normalisation."
