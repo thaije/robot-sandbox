@@ -4,7 +4,11 @@ Autonomous Robotics Simulation Testbed. Gazebo Harmonic + ROS 2 Jazzy. DerpBot (
 
 **Autonomous agent instructions: [`docs/AUTONOMOUS_AGENT_GUIDE.md`](docs/AUTONOMOUS_AGENT_GUIDE.md)** — task, grading, sensors, running scenarios, benchmark submission.
 
-State: [`docs/STATE.md`](docs/STATE.md) · Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) · [**Leaderboard**](docs/leaderboard.html)
+State: [`docs/STATE.md`](docs/STATE.md) · Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
+
+---
+
+## [**Leaderboard →**](https://thaije.github.io/robot-sandbox/leaderboard.html)
 
 ## Prerequisites
 
@@ -116,6 +120,22 @@ Seeds 1–5 × 3 runs/seed = 15 runs per difficulty. Full protocol, result namin
 ```bash
 python3.12 scripts/validate_submission.py path/to/benchmark_submission.yaml
 ```
+
+## Leaderboard
+
+**[View the live leaderboard →](https://thaije.github.io/robot-sandbox/leaderboard.html)**
+
+After adding or updating submissions in `results/submissions/`, regenerate the leaderboard:
+
+```bash
+python3.12 scripts/generate_leaderboard.py
+```
+
+This reads all `benchmark_submission.yaml` files, aggregates per-difficulty stats, and writes:
+- `docs/leaderboard.json` — structured data
+- `docs/leaderboard.html` — viewable leaderboard page with per-cell hover tooltips
+
+The leaderboard is auto-published to GitHub Pages from `docs/` on every push to `main`.
 
 ## Tests
 

@@ -77,46 +77,94 @@
     color: #888;
     line-height: 1.8;
   }
+  .scenario-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #f5f6fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .scenario-img {
+    width: 160px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #e0e2ea;
+    flex-shrink: 0;
+  }
+  .scenario-desc {
+    font-size: 0.88rem;
+    color: #333;
+    line-height: 1.6;
+  }
+  .scenario-desc strong {
+    font-size: 1rem;
+    color: #1a1a2e;
+  }
+  .timeouts {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    color: #666;
+    background: #e8eaf0;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+  }
 </style>
 </head>
 <body>
 <h1>robot-sandbox Leaderboard</h1>
 <p class="subtitle">
-  Scenario: <strong>office_explore_detect</strong>&nbsp;&nbsp;·&nbsp;&nbsp;
-  Score&nbsp;=&nbsp;objects found / total objects (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
+  Score&nbsp;=&nbsp;mission targets found / total mission targets (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
   Hover score cell for raw metrics&nbsp;&nbsp;·&nbsp;&nbsp;
   <a href="https://github.com/thaije/robot-sandbox" target="_blank">GitHub ↗</a>
 </p>
+<div class="scenario-info">
+  <img class="scenario-img" src="leaderboard_scenario.png" alt="Scenario preview">
+  <div class="scenario-desc">
+    <strong>Office: Explore &amp; Detect</strong><br>
+    Explore an unknown indoor environment and detect all mission-target objects before the time limit. Scored on Speed, Accuracy, Safety, Efficiency, and Effectiveness.<br>
+    <span class="timeouts">Time limits — Easy: 900s · Medium: 600s · Hard: 300s · Brutal: 180s · Perception Stress: 600s</span>
+  </div>
+</div>
+
 <table>
 <thead>
 <tr>
   <th>#</th>
   <th>Stack</th>
   <th>Score (mean ± std)</th>
-  <th>Runs</th>
+  <th>Seeds × Runs</th>
   <th>Submitted</th>
   <th>Version</th>
 </tr>
 </thead>
 <tbody>
 <tr class="scenario-header"><td colspan="6">Office: Explore &amp; Detect</td></tr>
-<tr class="diff-header"><td colspan="6">Easy</td></tr>
-<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 0.0/16 · 0.16 km/h · 1.0 collisions · 41 m path · 97.1% coverage · 902s">0.000 ± 0.000</td><td>1</td><td></td><td>main-6ee7ab9</td></tr>
-<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/16 · 0.63 km/h · 5.9 collisions · 53 m path · 56.2% coverage · 303s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
-<tr class="diff-header"><td colspan="6">Medium</td></tr>
-<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/14 · 0.65 km/h · 10.3 collisions · 108 m path · 69.0% coverage · 602s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
-<tr class="diff-header"><td colspan="6">Hard</td></tr>
-<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/12 · 0.65 km/h · 5.6 collisions · 55 m path · 64.7% coverage · 302s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
-<tr class="diff-header"><td colspan="6">Brutal</td></tr>
-<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/11 · 0.64 km/h · 4.9 collisions · 33 m path · 56.1% coverage · 183s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
-<tr class="diff-header"><td colspan="6">Perception Stress</td></tr>
-<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/13 · 0.63 km/h · 14.2 collisions · 106 m path · 79.2% coverage · 602s">0.000 ± 0.000</td><td>15</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Easy · 900s</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 1.5/6 targets · 0.11 km/h · 0.0 collisions · 28 m path · 58.5% coverage · 902s">0.244 ± 0.274</td><td>5×3</td><td>2026-05-09</td><td>main-29773fe</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/6 targets · 0.63 km/h · 5.9 collisions · 53 m path · 56.2% coverage · 303s">0.000 ± 0.000</td><td>5×3</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Medium · 600s</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 1.9/6 targets · 0.18 km/h · 0.5 collisions · 30 m path · 48.0% coverage · 602s">0.311 ± 0.243</td><td>5×3</td><td>2026-05-09</td><td>main-29773fe</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/6 targets · 0.65 km/h · 10.3 collisions · 108 m path · 69.0% coverage · 602s">0.000 ± 0.000</td><td>5×3</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Hard · 300s</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 0.7/6 targets · 0.21 km/h · 0.0 collisions · 18 m path · 46.4% coverage · 301s">0.122 ± 0.147</td><td>5×3</td><td>2026-05-09</td><td>main-29773fe</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/6 targets · 0.65 km/h · 5.6 collisions · 55 m path · 64.7% coverage · 302s">0.000 ± 0.000</td><td>5×3</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Brutal · 180s</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 0.3/6 targets · 0.26 km/h · 1.0 collisions · 13 m path · 50.7% coverage · 182s">0.056 ± 0.103</td><td>5×3</td><td>2026-05-09</td><td>main-29773fe</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/6 targets · 0.64 km/h · 4.9 collisions · 33 m path · 56.1% coverage · 183s">0.000 ± 0.000</td><td>5×3</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
+<tr class="diff-header"><td colspan="6">Perception Stress · 600s</td></tr>
+<tr><td>1</td><td><a href="https://github.com/thaije/derpbot-explorer" target="_blank">DerpBot Explorer — derpbot-explorer-v1</a></td><td class="score-cell" data-tip="found 0.6/6 targets · 0.14 km/h · 4.6 collisions · 23 m path · 56.5% coverage · 602s">0.100 ± 0.176</td><td>5×3</td><td>2026-05-09</td><td>main-29773fe</td></tr>
+<tr class="baseline-row"><td>—</td><td><a href="https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py" target="_blank">Random Baseline</a></td><td class="score-cell" data-tip="found 0.0/6 targets · 0.63 km/h · 14.2 collisions · 106 m path · 79.2% coverage · 602s">0.000 ± 0.000</td><td>5×3</td><td>2026-05-04</td><td>main-58e5a1f</td></tr>
 </tbody>
 </table>
 <p class="legend">
   Italic rows = baselines (not ranked — reference floor/ceiling only).<br>
-  Score = <code>found_ratio</code>: objects found / total objects in scenario.<br>
-  Hover the score cell to see: objects found, avg speed, collisions, path length, exploration coverage, elapsed time.
+  Seeds × Runs = number of seeds × runs per seed (total runs = seeds × runs_per_seed).<br>
+  Score = <code>found_ratio</code>: mission targets found / total mission targets.<br>
+  Hover the score cell to see: mission targets found, avg speed, collisions, path length, exploration coverage, elapsed time.
 </p>
 </body>
 </html>
