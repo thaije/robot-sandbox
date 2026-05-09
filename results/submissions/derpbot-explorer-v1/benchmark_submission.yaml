@@ -1,0 +1,14 @@
+stack_name: "DerpBot Explorer — derpbot-explorer-v1"
+repo_url: "https://github.com/thaije/derpbot-explorer"
+sandbox_version: "main-29773fe"
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+  - medium
+  - hard
+  - brutal
+  - perception_stress
+seeds: [1,2,3,4,5]
+runs_per_seed: 3
+results_dir: "results/submissions/derpbot-explorer-v1/"
+description: "Classical pipeline: slam_toolbox + Nav2 MPPI + frontier explorer + OWLv2 detector."
