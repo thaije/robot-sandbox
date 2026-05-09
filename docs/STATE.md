@@ -37,6 +37,7 @@ TF: `odom → base_footprint → base_link → lidar_link / camera_link`
 Ends on `SUCCESS` (`found_ratio` = 1.0) or `TIME_LIMIT`.
 
 Benchmark submission: `scripts/validate_submission.py` + `results/submissions/`. Protocol + format → `docs/AUTONOMOUS_AGENT_GUIDE.md §7`.
+Leaderboard: run `python3.12 scripts/generate_leaderboard.py` after adding/updating submissions — writes `docs/leaderboard.json` + `docs/leaderboard.html`. Ranking by `found_ratio` (mission targets only; environmental objects excluded).
 
 ---
 
@@ -51,6 +52,8 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **gz-transport Python bindings**: `gz.transport13` lives in `/usr/lib/python3/dist-packages/` (system). `src/utils/gz_transport.py` appends this path so it works with venv active.
 - **Parallel sessions**: isolate with `ROS_DOMAIN_ID=N ./scripts/run_scenario.sh ...`. gz transport is isolated per process; only ROS DDS needs the domain ID.
 - **Detection pose frame**: tracker expects agent detections in odom/map frame (odom origin = robot spawn). Applies spawn offset to convert to world frame. Oracle uses GT world positions directly.
+- **Leaderboard `detection_by_type` includes `mission_target`**: per-object-type boolean marking whether that type counts toward `found_ratio`. Leaderboard generator falls back to scenario YAML config for legacy JSONs lacking this field.
+- **Easy timeout is 900s** (not 300s). `easy_900s.yaml` has been merged into `easy.yaml`.
 
 ### Gazebo / SDF
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Robots must be embedded in world SDF at generation time.

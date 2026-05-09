@@ -217,4 +217,4 @@ Checks: all expected files present, JSON schema valid, `overall_score` in [0, 10
 
 Open a PR adding your YAML + results directory to `results/submissions/`. Submissions that fail validation will not be merged.
 
-Accepted submissions appear on the **[leaderboard](leaderboard.html)**. Ranking is by `found_ratio` (objects found / total objects); other per-run metrics are available on hover.
+Accepted submissions appear on the **[leaderboard](leaderboard.html)**. Ranking is by `found_ratio` (mission targets found / total mission targets); other per-run metrics are available on hover. After adding a submission, regenerate with `python3.12 scripts/generate_leaderboard.py`.

@@ -1,24 +1,24 @@
 {
   "scenario_name": "office_easy_001",
   "status": "TIME_LIMIT",
-  "elapsed_seconds": 303.584,
-  "timeout_seconds": 300.0,
+  "elapsed_seconds": 900.3280000000001,
+  "timeout_seconds": 900.0,
   "random_seed": 2,
   "categories": [
-    "CategoryScore(name='speed', score=21.01, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='speed', score=7.08, grade='F', grade_label='Failed', weight=0.2)",
     "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.3)",
-    "CategoryScore(name='safety', score=34.0, grade='F', grade_label='Failed', weight=0.25)",
-    "CategoryScore(name='efficiency', score=38.99, grade='F', grade_label='Failed', weight=0.1)",
-    "CategoryScore(name='effectiveness', score=19.39, grade='F', grade_label='Failed', weight=0.15)"
+    "CategoryScore(name='safety', score=20.0, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='efficiency', score=17.34, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=31.6, grade='F', grade_label='Failed', weight=0.15)"
   ],
-  "overall_score": 31.5,
+  "overall_score": 24.9,
   "overall_grade": "F",
   "overall_grade_label": "Failed",
   "raw_metrics": {
-    "meters_traveled": 52.792,
-    "exploration_coverage": 55.41,
-    "collision_count": 9.0,
-    "near_miss_count": 12.0,
+    "near_miss_count": 15.0,
+    "meters_traveled": 156.454,
+    "exploration_coverage": 90.29,
+    "collision_count": 13.0,
     "found_ratio": 0.0,
     "precision": 1.0,
     "duplicate_rate": 0.0,
@@ -27,146 +27,186 @@
     "false_positive_count": 0.0,
     "duplicate_count": 0.0,
     "detection_count": 0.0,
-    "collision_events": [
-      {
-        "t": 10.98,
-        "count": 1
-      },
-      {
-        "t": 22.04,
-        "count": 2
-      },
-      {
-        "t": 50.25,
-        "count": 3
-      },
-      {
-        "t": 55.92,
-        "count": 4
-      },
-      {
-        "t": 62.45,
-        "count": 5
-      },
-      {
-        "t": 71.64,
-        "count": 6
-      },
-      {
-        "t": 76.0,
-        "count": 7
-      },
-      {
-        "t": 89.01,
-        "count": 8
-      },
-      {
-        "t": 104.12,
-        "count": 9
-      }
-    ],
     "near_miss_events": [
       {
-        "t": 10.92,
+        "t": 63.92,
         "count": 1,
-        "min_range": 0.19
-      },
-      {
-        "t": 21.93,
-        "count": 2,
         "min_range": 0.199
       },
       {
-        "t": 50.2,
-        "count": 3,
-        "min_range": 0.198
+        "t": 65.28,
+        "count": 2,
+        "min_range": 0.194
       },
       {
-        "t": 51.58,
+        "t": 77.9,
+        "count": 3,
+        "min_range": 0.191
+      },
+      {
+        "t": 82.55,
         "count": 4,
+        "min_range": 0.185
+      },
+      {
+        "t": 86.63,
+        "count": 5,
+        "min_range": 0.179
+      },
+      {
+        "t": 147.94,
+        "count": 6,
         "min_range": 0.188
       },
       {
-        "t": 55.88,
-        "count": 5,
+        "t": 348.92,
+        "count": 7,
+        "min_range": 0.193
+      },
+      {
+        "t": 352.36,
+        "count": 8,
         "min_range": 0.187
       },
       {
-        "t": 57.55,
-        "count": 6,
-        "min_range": 0.196
-      },
-      {
-        "t": 62.39,
-        "count": 7,
-        "min_range": 0.194
-      },
-      {
-        "t": 71.59,
-        "count": 8,
-        "min_range": 0.194
-      },
-      {
-        "t": 75.95,
+        "t": 363.79,
         "count": 9,
-        "min_range": 0.186
+        "min_range": 0.18
       },
       {
-        "t": 88.97,
+        "t": 367.51,
         "count": 10,
-        "min_range": 0.196
+        "min_range": 0.198
       },
       {
-        "t": 104.03,
+        "t": 372.05,
         "count": 11,
-        "min_range": 0.188
+        "min_range": 0.189
       },
       {
-        "t": 113.27,
+        "t": 376.65,
         "count": 12,
-        "min_range": 0.188
+        "min_range": 0.191
+      },
+      {
+        "t": 397.75,
+        "count": 13,
+        "min_range": 0.2
+      },
+      {
+        "t": 413.51,
+        "count": 14,
+        "min_range": 0.195
+      },
+      {
+        "t": 458.99,
+        "count": 15,
+        "min_range": 0.177
+      }
+    ],
+    "collision_events": [
+      {
+        "t": 63.43,
+        "count": 1
+      },
+      {
+        "t": 77.41,
+        "count": 2
+      },
+      {
+        "t": 81.99,
+        "count": 3
+      },
+      {
+        "t": 86.04,
+        "count": 4
+      },
+      {
+        "t": 348.44,
+        "count": 5
+      },
+      {
+        "t": 351.83,
+        "count": 6
+      },
+      {
+        "t": 363.25,
+        "count": 7
+      },
+      {
+        "t": 366.99,
+        "count": 8
+      },
+      {
+        "t": 371.5,
+        "count": 9
+      },
+      {
+        "t": 376.11,
+        "count": 10
+      },
+      {
+        "t": 397.26,
+        "count": 11
+      },
+      {
+        "t": 413.02,
+        "count": 12
+      },
+      {
+        "t": 458.45,
+        "count": 13
       }
     ],
     "detection_events": [],
     "detection_by_type": {
       "drill": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "drink_can": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "exit_sign": {
         "detected": 0,
-        "total": 4
+        "total": 4,
+        "mission_target": false
       },
       "fire_extinguisher": {
         "detected": 0,
-        "total": 3
+        "total": 3,
+        "mission_target": true
       },
       "first_aid_kit": {
         "detected": 0,
-        "total": 2
+        "total": 2,
+        "mission_target": true
       },
       "office_chair": {
         "detected": 0,
-        "total": 2
+        "total": 2,
+        "mission_target": false
       },
       "person": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": true
       },
       "suitcase": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "trash_can": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       }
     },
-    "task_completion_time": 303.58,
+    "task_completion_time": 900.33,
     "avg_speed_kmh": 0.626
   }
 }

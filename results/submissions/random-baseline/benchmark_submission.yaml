@@ -2,8 +2,8 @@
 # Validates with: python3.12 scripts/validate_submission.py results/submissions/random-baseline/benchmark_submission.yaml
 
 stack_name: "Random Baseline"
-repo_url: "https://github.com/thaije/robot-sandbox"
-sandbox_version: "main-58e5a1f"           # no v1.0-benchmark tag yet; update after #11
+repo_url: "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py"
+sandbox_version: "v1.0.0"
 scenario: "office_explore_detect"
 difficulties:
   - easy

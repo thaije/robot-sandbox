@@ -1,24 +1,24 @@
 {
   "scenario_name": "office_easy_001",
   "status": "TIME_LIMIT",
-  "elapsed_seconds": 304.552,
-  "timeout_seconds": 300.0,
+  "elapsed_seconds": 900.3120000000001,
+  "timeout_seconds": 900.0,
   "random_seed": 1,
   "categories": [
-    "CategoryScore(name='speed', score=20.94, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='speed', score=7.08, grade='F', grade_label='Failed', weight=0.2)",
     "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.3)",
-    "CategoryScore(name='safety', score=60.0, grade='C', grade_label='Adequate', weight=0.25)",
-    "CategoryScore(name='efficiency', score=38.77, grade='F', grade_label='Failed', weight=0.1)",
-    "CategoryScore(name='effectiveness', score=23.41, grade='F', grade_label='Failed', weight=0.15)"
+    "CategoryScore(name='safety', score=20.0, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='efficiency', score=11.16, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=13.87, grade='F', grade_label='Failed', weight=0.15)"
   ],
-  "overall_score": 38.6,
+  "overall_score": 21.6,
   "overall_grade": "F",
   "overall_grade_label": "Failed",
   "raw_metrics": {
-    "exploration_coverage": 66.89,
-    "meters_traveled": 58.642,
-    "collision_count": 5.0,
-    "near_miss_count": 5.0,
+    "collision_count": 13.0,
+    "near_miss_count": 14.0,
+    "exploration_coverage": 39.62,
+    "meters_traveled": 157.881,
     "found_ratio": 0.0,
     "precision": 1.0,
     "duplicate_rate": 0.0,
@@ -29,93 +29,179 @@
     "detection_count": 0.0,
     "collision_events": [
       {
-        "t": 1.28,
+        "t": 58.48,
         "count": 1
       },
       {
-        "t": 2.25,
+        "t": 90.54,
         "count": 2
       },
       {
-        "t": 5.21,
+        "t": 116.5,
         "count": 3
       },
       {
-        "t": 20.22,
+        "t": 187.5,
         "count": 4
       },
       {
-        "t": 22.66,
+        "t": 191.19,
         "count": 5
+      },
+      {
+        "t": 205.84,
+        "count": 6
+      },
+      {
+        "t": 216.87,
+        "count": 7
+      },
+      {
+        "t": 225.48,
+        "count": 8
+      },
+      {
+        "t": 348.81,
+        "count": 9
+      },
+      {
+        "t": 372.34,
+        "count": 10
+      },
+      {
+        "t": 378.53,
+        "count": 11
+      },
+      {
+        "t": 397.57,
+        "count": 12
+      },
+      {
+        "t": 409.97,
+        "count": 13
       }
     ],
     "near_miss_events": [
       {
-        "t": 6.75,
+        "t": 58.16,
         "count": 1,
-        "min_range": 0.161
+        "min_range": 0.196
       },
       {
-        "t": 8.7,
+        "t": 90.22,
         "count": 2,
-        "min_range": 0.159
+        "min_range": 0.199
       },
       {
-        "t": 10.36,
+        "t": 116.27,
         "count": 3,
-        "min_range": 0.168
+        "min_range": 0.177
       },
       {
-        "t": 20.13,
+        "t": 187.19,
         "count": 4,
-        "min_range": 0.194
+        "min_range": 0.19
       },
       {
-        "t": 22.91,
+        "t": 190.9,
         "count": 5,
+        "min_range": 0.19
+      },
+      {
+        "t": 205.57,
+        "count": 6,
         "min_range": 0.183
+      },
+      {
+        "t": 216.63,
+        "count": 7,
+        "min_range": 0.172
+      },
+      {
+        "t": 225.23,
+        "count": 8,
+        "min_range": 0.174
+      },
+      {
+        "t": 348.51,
+        "count": 9,
+        "min_range": 0.19
+      },
+      {
+        "t": 372.08,
+        "count": 10,
+        "min_range": 0.189
+      },
+      {
+        "t": 378.25,
+        "count": 11,
+        "min_range": 0.191
+      },
+      {
+        "t": 397.31,
+        "count": 12,
+        "min_range": 0.187
+      },
+      {
+        "t": 409.74,
+        "count": 13,
+        "min_range": 0.176
+      },
+      {
+        "t": 445.08,
+        "count": 14,
+        "min_range": 0.198
       }
     ],
     "detection_events": [],
     "detection_by_type": {
       "drill": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "drink_can": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "exit_sign": {
         "detected": 0,
-        "total": 4
+        "total": 4,
+        "mission_target": false
       },
       "fire_extinguisher": {
         "detected": 0,
-        "total": 3
+        "total": 3,
+        "mission_target": true
       },
       "first_aid_kit": {
         "detected": 0,
-        "total": 2
+        "total": 2,
+        "mission_target": true
       },
       "office_chair": {
         "detected": 0,
-        "total": 2
+        "total": 2,
+        "mission_target": false
       },
       "person": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": true
       },
       "suitcase": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       },
       "trash_can": {
         "detected": 0,
-        "total": 1
+        "total": 1,
+        "mission_target": false
       }
     },
-    "task_completion_time": 304.55,
-    "avg_speed_kmh": 0.693
+    "task_completion_time": 900.31,
+    "avg_speed_kmh": 0.631
   }
 }

@@ -36,6 +36,48 @@ DIFFICULTY_LABELS = {
 SCENARIO_LABELS = {
     "office_explore_detect": "Office: Explore &amp; Detect",
 }
+SCENARIOS_DIR = REPO_ROOT / "config" / "scenarios" / "office_explore_detect"
+SCENARIO_GOAL = (
+    "Explore an unknown indoor environment and detect all mission-target objects "
+    "before the time limit. Scored on Speed, Accuracy, Safety, Efficiency, "
+    "and Effectiveness."
+)
+
+
+def _load_mission_targets(scenario: str, difficulty: str) -> set[str] | None:
+    """Load mission-target object types from the scenario YAML.
+
+    Returns a set of type strings marked mission_target, or None if the
+    config file cannot be found (caller should fall back to all types).
+    """
+    cfg_path = SCENARIOS_DIR / f"{difficulty}.yaml"
+    if not cfg_path.exists():
+        return None
+    try:
+        cfg = yaml.safe_load(cfg_path.read_text())
+    except Exception:
+        return None
+    objs = cfg.get("world", {}).get("objects", [])
+    uses_mt = any("mission_target" in obj for obj in objs)
+    if not uses_mt:
+        return None  # all objects are mission targets
+    return {obj["type"] for obj in objs if obj.get("mission_target", False)}
+
+
+def _load_scenario_info(scenario: str, difficulty: str) -> dict:
+    """Load timeout_seconds and description from the scenario YAML."""
+    cfg_path = SCENARIOS_DIR / f"{difficulty}.yaml"
+    info: dict = {"timeout_seconds": None, "description": ""}
+    if not cfg_path.exists():
+        return info
+    try:
+        cfg = yaml.safe_load(cfg_path.read_text())
+    except Exception:
+        return info
+    sc = cfg.get("scenario", {})
+    info["timeout_seconds"] = sc.get("timeout_seconds")
+    info["description"] = sc.get("description", "")
+    return info
 
 
 def _ms(values: list[float]) -> dict:
@@ -49,6 +91,8 @@ def _ms(values: list[float]) -> dict:
 def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict | None:
     seeds = sub["seeds"]
     runs_per_seed = sub["runs_per_seed"]
+    scenario = sub["scenario"]
+    mission_types = _load_mission_targets(scenario, difficulty)
 
     found_ratios: list[float] = []
     objects_found_list: list[float] = []
@@ -58,6 +102,7 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
     paths: list[float] = []
     coverages: list[float] = []
     elapsed: list[float] = []
+    timeout_seconds: float | None = None
 
     found_files = 0
     for seed in seeds:
@@ -71,11 +116,20 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
 
             found_ratios.append(float(raw.get("found_ratio", 0.0)))
             elapsed.append(float(data.get("elapsed_seconds", 0.0)))
+            if timeout_seconds is None and data.get("timeout_seconds"):
+                timeout_seconds = float(data["timeout_seconds"])
 
             dt = raw.get("detection_by_type", {})
             if dt:
-                objects_found_list.append(float(sum(v["detected"] for v in dt.values())))
-                total_objects_list.append(float(sum(v["total"] for v in dt.values())))
+                has_mt_field = any("mission_target" in v for v in dt.values())
+                if has_mt_field:
+                    mt = {k for k, v in dt.items() if v.get("mission_target", False)}
+                elif mission_types is not None:
+                    mt = mission_types
+                else:
+                    mt = set(dt.keys())
+                objects_found_list.append(float(sum(v["detected"] for k, v in dt.items() if k in mt)))
+                total_objects_list.append(float(sum(v["total"] for k, v in dt.items() if k in mt)))
             if "avg_speed_kmh" in raw:
                 speeds.append(float(raw["avg_speed_kmh"]))
             if "collision_count" in raw:
@@ -89,6 +143,9 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
         return None
 
     total_obj = round(statistics.mean(total_objects_list)) if total_objects_list else None
+    scenario_info = _load_scenario_info(scenario, difficulty)
+    if timeout_seconds is None:
+        timeout_seconds = scenario_info.get("timeout_seconds")
 
     return {
         "stack_name": sub["stack_name"],
@@ -99,7 +156,10 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
         "is_baseline": sub.get("is_baseline", False),
         "n_runs": found_files,
         "seeds": sub["seeds"],
+        "runs_per_seed": runs_per_seed,
         "submitted": sub.get("submitted", ""),
+        "timeout_seconds": timeout_seconds,
+        "difficulty_description": scenario_info.get("description", ""),
         "total_score": _ms(found_ratios),
         "raw_metrics": {
             "objects_found": {**_ms(objects_found_list), "of_total": total_obj},
@@ -143,7 +203,7 @@ def _tooltip(raw: dict) -> str:
     parts = []
     of = raw["objects_found"]
     if of["mean"] is not None:
-        parts.append(f"found {_fmt(of['mean'], 1)}/{of['of_total']}")
+        parts.append(f"found {_fmt(of['mean'], 1)}/{of['of_total']} targets")
     spd = raw["avg_speed_kmh"]
     if spd["mean"] is not None:
         parts.append(f"{_fmt(spd['mean'], 2)} km/h")
@@ -171,9 +231,35 @@ def render_html(entries: list[dict]) -> str:
             scenarios.append(s)
         groups[s][e["difficulty"]].append(e)
 
+    # Build per-scenario info panels
+    info_panels = ""
     rows_html = ""
     for scenario in scenarios:
         label = SCENARIO_LABELS.get(scenario, scenario)
+        # Collect timeout per difficulty from entries
+        timeouts: dict[str, int] = {}
+        for diff in DIFFICULTIES_ORDER:
+            if diff in groups[scenario]:
+                e0 = groups[scenario][diff][0]
+                t = e0.get("timeout_seconds")
+                if t is not None:
+                    timeouts[diff] = int(t)
+                desc = e0.get("difficulty_description", "")
+
+        timeout_parts = " · ".join(
+            f'{DIFFICULTY_LABELS.get(d, d)}: {timeouts[d]}s'
+            for d in DIFFICULTIES_ORDER if d in timeouts
+        )
+        info_panels += f"""<div class="scenario-info">
+  <img class="scenario-img" src="leaderboard_scenario.png" alt="Scenario preview">
+  <div class="scenario-desc">
+    <strong>{label}</strong><br>
+    {SCENARIO_GOAL}<br>
+    <span class="timeouts">Time limits — {timeout_parts}</span>
+  </div>
+</div>
+"""
+
         rows_html += f'<tr class="scenario-header"><td colspan="6">{label}</td></tr>\n'
         for diff in DIFFICULTIES_ORDER:
             if diff not in groups[scenario]:
@@ -187,9 +273,11 @@ def render_html(entries: list[dict]) -> str:
             baselines = [e for e in diff_entries if e["is_baseline"]]
             ordered = non_baselines + baselines
 
+            diff_label = DIFFICULTY_LABELS.get(diff, diff)
+            timeout_str = f" · {timeouts[diff]}s" if diff in timeouts else ""
             rows_html += (
                 f'<tr class="diff-header"><td colspan="6">'
-                f'{DIFFICULTY_LABELS.get(diff, diff)}</td></tr>\n'
+                f'{diff_label}{timeout_str}</td></tr>\n'
             )
             rank = 1
             for e in ordered:
@@ -216,7 +304,7 @@ def render_html(entries: list[dict]) -> str:
                     f'<td>{rank_str}</td>'
                     f'<td>{stack_cell}</td>'
                     f'<td class="score-cell" data-tip="{tip}">{score_str}</td>'
-                    f'<td>{e["n_runs"]}</td>'
+                    f'<td>{len(e["seeds"])}×{e["runs_per_seed"]}</td>'
                     f'<td>{submitted}</td>'
                     f'<td>{e["sandbox_version"]}</td>'
                     f'</tr>\n'
@@ -301,25 +389,60 @@ def render_html(entries: list[dict]) -> str:
     color: #888;
     line-height: 1.8;
   }}
+  .scenario-info {{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #f5f6fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }}
+  .scenario-img {{
+    width: 160px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #e0e2ea;
+    flex-shrink: 0;
+  }}
+  .scenario-desc {{
+    font-size: 0.88rem;
+    color: #333;
+    line-height: 1.6;
+  }}
+  .scenario-desc strong {{
+    font-size: 1rem;
+    color: #1a1a2e;
+  }}
+  .timeouts {{
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    color: #666;
+    background: #e8eaf0;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+  }}
 </style>
 </head>
 <body>
 <h1>robot-sandbox Leaderboard</h1>
 <p class="subtitle">
-  Scenario: <strong>office_explore_detect</strong>&nbsp;&nbsp;·&nbsp;&nbsp;
-  Score&nbsp;=&nbsp;objects found / total objects (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
+  Score&nbsp;=&nbsp;mission targets found / total mission targets (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
   Hover score cell for raw metrics&nbsp;&nbsp;·&nbsp;&nbsp;
   <a href="https://github.com/thaije/robot-sandbox" target="_blank">GitHub ↗</a>
 </p>
+{info_panels}
 <table>
 <thead>
 <tr>
   <th>#</th>
   <th>Stack</th>
   <th>Score (mean ± std)</th>
-  <th>Runs</th>
+  <th>Seeds × Runs</th>
   <th>Submitted</th>
-  <th>Version</th>
+  <th>Sandbox version</th>
 </tr>
 </thead>
 <tbody>
@@ -327,8 +450,9 @@ def render_html(entries: list[dict]) -> str:
 </table>
 <p class="legend">
   Italic rows = baselines (not ranked — reference floor/ceiling only).<br>
-  Score = <code>found_ratio</code>: objects found / total objects in scenario.<br>
-  Hover the score cell to see: objects found, avg speed, collisions, path length, exploration coverage, elapsed time.
+  Seeds × Runs = number of seeds × runs per seed (total runs = seeds × runs_per_seed).<br>
+  Score = <code>found_ratio</code>: mission targets found / total mission targets.<br>
+  Hover the score cell to see: mission targets found, avg speed, collisions, path length, exploration coverage, elapsed time.
 </p>
 </body>
 </html>"""
