@@ -91,18 +91,25 @@ class DetectionMetrics(BaseMetric):
         }
 
     def _compute_by_type(self, events: list[dict]) -> dict[str, dict]:
+        has_mission_flag = any(
+            "mission_target" in entry for entry in self._label_map.values()
+        )
+
         totals: dict[str, int] = {}
         mission: dict[str, bool] = {}
         for entry in self._label_map.values():
             t = entry["type"]
+            is_mt = entry.get("mission_target", False)
+            if has_mission_flag and not is_mt:
+                continue
             totals[t] = totals.get(t, 0) + 1
-            if entry.get("mission_target"):
-                mission[t] = True
+            mission[t] = is_mt
 
         detected: dict[str, int] = {}
         for ev in events:
             t = ev["class_type"]
-            detected[t] = detected.get(t, 0) + 1
+            if t in totals:
+                detected[t] = detected.get(t, 0) + 1
 
         return {
             t: {
