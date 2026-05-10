@@ -33,10 +33,10 @@ The node queries http://localhost:7400/mission at startup to discover target
 types and builds keybindings dynamically.  If the mission server is unavailable,
 the hardcoded defaults above are used.
 
-Detections use the robot's odom-frame (x, y) position as the estimated object
-location.  The scoring engine applies the spawn-offset transform to convert to
-world frame.  This models a human operator reporting "object at my current
-location" — honest human-level localization that relies on robot odometry.
+Detections use the robot's IMU-fused odom-frame (x, y) position as the estimated
+object location.  The scoring engine applies the spawn-offset transform to convert
+to world frame.  The EKF-fused odom corrects differential-drive yaw drift, making
+detections significantly more accurate than raw wheel-encoder odometry.
 
 Notes
 -----

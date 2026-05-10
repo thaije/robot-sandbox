@@ -147,7 +147,7 @@ def _make_actions(context, *args, **kwargs):
 
     # ── 2. Robot state publisher ──────────────────────────────────────────────
     # Subscribes to /<robot_name>/joint_states, publishes TF for all joints.
-    # (Diff drive plugin publishes odom→base_footprint; RSP publishes the rest.)
+    # EKF (below) publishes odom→base_footprint; RSP publishes the rest.
     rsp = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -173,12 +173,16 @@ def _make_actions(context, *args, **kwargs):
     #
     # Bridge argument format: gz_topic@ros_type]gz_type  (ROS→GZ)
     #                         gz_topic@ros_type[gz_type  (GZ→ROS)
+    #
+    # Raw diff-drive odometry bridges to /<robot>/odom_raw (not /odom).
+    # An EKF node (robot_localization) fuses odom_raw + IMU → /odom.
+    # Agents who want raw wheel-encoder data can subscribe to /odom_raw.
     bridge_args = [
         # cmd_vel: ROS 2 → Gazebo
         f"/{robot_name}/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist",
-        # odom: Gazebo → ROS 2
+        # odom (raw wheel-encoder): Gazebo → ROS 2, remapped to odom_raw
         f"/{robot_name}/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
-        # TF from diff drive: Gazebo → ROS 2
+        # TF from diff drive: Gazebo → ROS 2 (EKF publishes its own odom→base_footprint)
         f"/{robot_name}/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
         # Joint states: Gazebo → ROS 2
         f"/{robot_name}/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
@@ -220,14 +224,50 @@ def _make_actions(context, *args, **kwargs):
         name=f"bridge_{robot_name}",
         arguments=bridge_args,
         remappings=[
-            # Merge robot's TF stream into the global /tf topic
-            (f"/{robot_name}/tf", "/tf"),
+            # Raw diff-drive odom → odom_raw (EKF fuses it with IMU → odom)
+            (f"/{robot_name}/odom", f"/{robot_name}/odom_raw"),
+            # Raw diff-drive TF → tf_raw (EKF publishes fused odom→base_footprint)
+            (f"/{robot_name}/tf", f"/{robot_name}/tf_raw"),
         ],
         parameters=[{"use_sim_time": use_sim_time}],
         output="screen",
     )
 
-    actions = [rsp, bridge]
+    # ── 4. EKF — fuse raw odom + IMU → drift-corrected odom ──────────────────
+    # robot_localization fuses wheel-encoder odometry with yaw-rate from the
+    # IMU to produce drift-corrected /odom and TF (odom→base_footprint).
+    # Raw wheel-encoder data remains available on /<robot>/odom_raw.
+    ekf_config = REPO_ROOT / "config" / "robots" / "ekf.yaml"
+    ekf_config_substituted = ekf_config.read_text().replace("ROBOT_NAME", robot_name)
+    # Write substituted config to a temp file so ekf_node can load it.
+    import tempfile
+    ekf_tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", prefix="ekf_", delete=False
+    )
+    ekf_tmp.write(ekf_config_substituted)
+    ekf_tmp.flush()
+
+    ekf = Node(
+        package="robot_localization",
+        executable="ekf_node",
+        name=f"ekf_{robot_name}",
+        namespace=robot_name,
+        parameters=[
+            {"use_sim_time": use_sim_time},
+            ekf_tmp.name,
+        ],
+        remappings=[
+            # EKF publishes odometry/filtered by default; remap to odom
+            # so it publishes /<robot>/odom instead of /<robot>/odometry/filtered.
+            ("odometry/filtered", "odom"),
+            # EKF publishes TF odom→base_footprint to global /tf.
+            ("tf", "/tf"),
+            ("tf_static", "/tf_static"),
+        ],
+        output="screen",
+    )
+
+    actions = [rsp, bridge, ekf]
     if do_spawn:
         actions.insert(0, spawn)
     return actions

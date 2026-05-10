@@ -56,7 +56,8 @@ Ground robot (differential drive — currently the only supported model).
 | RGBD — depth | `/derpbot_0/rgbd/depth_image` | 10 Hz | float32 metres, 0.15–6.0 m range, Gaussian noise σ=0.01 m, `sensor_msgs/Image` |
 | RGBD — intrinsics | `/derpbot_0/rgbd/camera_info` | 10 Hz | `sensor_msgs/CameraInfo` — required for 3-D back-projection |
 | RGBD — point cloud | `/derpbot_0/rgbd/points` | 10 Hz | `sensor_msgs/PointCloud2` — **off by default**, enable with `--enable-pointcloud` |
-| Odometry | `/derpbot_0/odom` | — | `nav_msgs/Odometry`, wheel-encoder dead-reckoning |
+| Odometry | `/derpbot_0/odom` | — | `nav_msgs/Odometry`, IMU-fused (EKF) — yaw drift corrected |
+| Raw wheel odometry | `/derpbot_0/odom_raw` | — | `nav_msgs/Odometry`, raw wheel-encoder dead-reckoning (for custom sensor fusion) |
 
 ### Control & TF
 
@@ -64,7 +65,13 @@ Ground robot (differential drive — currently the only supported model).
 |---|---|
 | `/derpbot_0/cmd_vel` | `geometry_msgs/Twist` — drive command |
 | `/derpbot_0/joint_states` | `sensor_msgs/JointState` |
-| TF tree | `odom → base_footprint → base_link` |
+| TF tree | `odom → base_footprint → base_link → lidar_link / camera_link` |
+
+### Odometry
+
+`/derpbot_0/odom` is **IMU-fused** (EKF via `robot_localization`). It combines wheel-encoder odometry with IMU yaw-rate to correct differential-drive yaw drift. Use this topic for all position and heading estimates.
+
+`/derpbot_0/odom_raw` is the **raw wheel-encoder** odometry before EKF fusion. It is available for agents that want to implement their own sensor fusion (e.g. SLAM). Expect significant yaw drift on long runs — up to several metres after 2–3 minutes of driving.
 
 ### Detection output
 

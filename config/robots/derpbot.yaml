@@ -22,6 +22,8 @@ control:
 odometry:
   topic: "/derpbot_0/odom"
   msg_type: "nav_msgs/Odometry"
+  raw_topic: "/derpbot_0/odom_raw"
+  raw_msg_type: "nav_msgs/Odometry"
 
 joint_states:
   topic: "/derpbot_0/joint_states"

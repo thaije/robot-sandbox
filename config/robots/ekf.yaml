@@ -1,0 +1,73 @@
+# DerpBot EKF configuration — robot_localization
+#
+# Fuses raw wheel-encoder odometry (/ROBOT_NAME/odom_raw) with IMU
+# (/ROBOT_NAME/imu) to produce drift-corrected odometry on /ROBOT_NAME/odom.
+#
+# The IMU's yaw gyro (angular_velocity.z) corrects the differential-drive
+# yaw drift that accumulates significantly on long runs. The EKF also
+# smooths out the linear velocity estimate.
+#
+# Launched by spawn_robot.launch.py alongside the ros_gz_bridge.
+# The ROBOT_NAME placeholder is substituted at launch time.
+
+ekf_filter_node:
+  ros__parameters:
+    frequency: 30.0
+
+    # ── Sensor inputs ──────────────────────────────────────────────────────
+
+    odom0: /ROBOT_NAME/odom_raw
+    odom0_config: [false, false, false,   # x, y, z position
+                   true, true, false,     # roll, pitch, yaw
+                   false, false, false,   # vx, vy, vz
+                   false, false, true,    # vroll, vpitch, vyaw
+                   false, false, false]   # ax, ay, az
+
+    imu0: /ROBOT_NAME/imu
+    imu0_config: [false, false, false,    # x, y, z position
+                   false, false, true,    # roll, pitch, yaw (yaw only)
+                   false, false, false,   # vx, vy, vz
+                   false, false, true,    # vroll, vpitch, vyaw (vyaw only)
+                   false, false, false]   # ax, ay, az
+
+    # ── Frames ─────────────────────────────────────────────────────────────
+
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    # ── Coordinate conventions ─────────────────────────────────────────────
+
+    # 2-D differential-drive robot: yaw only, no 3-D motion
+    two_d_mode: true
+
+    # IMU orientation is in the odom frame (not a separate frame)
+    imu0_orientation_in_odom: true
+
+    # Publish TF odom→base_footprint
+    publish_tf: true
+
+    # ── Covariance tuning ──────────────────────────────────────────────────
+
+    # Process noise — how much we expect the robot to move between updates.
+    # Low values = smoother output but slower to correct; high = noisy but responsive.
+    process_noise_covariance: [0.05, 0.0,  0.0,   0.0,   0.0,  0.0,   0.01, 0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.05, 0.0,   0.0,   0.0,  0.0,   0.0,  0.01,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.06,  0.0,   0.0,  0.0,   0.0,  0.0,   0.01,  0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.03,  0.0,  0.0,   0.0,  0.0,   0.0,   0.01,  0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.03,  0.0,   0.0,  0.0,   0.0,   0.0,   0.01,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,   0.01,  0.0,  0.0,  0.0,
+                                0.01, 0.0,  0.0,   0.0,   0.0,  0.0,   0.25, 0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.01, 0.0,   0.0,   0.0,  0.0,   0.0,  0.25,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.01,  0.0,   0.0,  0.0,   0.0,  0.0,   0.25,  0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.01,  0.0,  0.0,   0.0,  0.0,   0.0,   0.09,  0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.01,  0.0,   0.0,  0.0,   0.0,   0.0,   0.09,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,   0.09,  0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,   0.0,  0.0,   0.01, 0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.01,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,  0.0,  0.0,   0.0,  0.0,  0.01]
+
+    # ── Diagnostics ───────────────────────────────────────────────────────
+
+    debug: false
+    debug_out_file: /tmp/ekf_debug.txt

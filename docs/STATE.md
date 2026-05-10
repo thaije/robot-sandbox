@@ -30,10 +30,12 @@ DerpBot topics (/derpbot_0/...)
   rgbd/camera_info   intrinsics (always on)
   rgbd/points        off by default (--enable-pointcloud)
   detections         oracle bbox camera, off by default (--enable-oracle)
-  cmd_vel / odom     diff-drive
+  odom               IMU-fused (EKF), published by robot_localization
+  odom_raw           raw wheel-encoder dead-reckoning (for custom sensor fusion)
+  cmd_vel            diff-drive command
 ```
 
-TF: `odom → base_footprint → base_link → lidar_link / camera_link`
+TF: `odom → base_footprint → base_link → lidar_link / camera_link` (EKF publishes odom→base_footprint)
 Ends on `SUCCESS` (`found_ratio` = 1.0) or `TIME_LIMIT`.
 
 Benchmark submission: `scripts/validate_submission.py` + `results/submissions/`. Protocol + format → `docs/AUTONOMOUS_AGENT_GUIDE.md §7`.
@@ -48,6 +50,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 ### Runtime / ROS 2
 - **Python interpreter: always `python3.12`.** `python3` may resolve to another venv. `run_scenario.sh` handles this.
 - **`use_sim_time=True` required.** rclpy metrics node must use sim time or messages are silently dropped as future-dated.
+- **Odometry is IMU-fused via EKF.** `/derpbot_0/odom` is published by `robot_localization` (fuses wheel encoders + IMU yaw). Raw wheel-encoder odom is on `/derpbot_0/odom_raw`. The EKF also publishes `odom→base_footprint` TF; the raw diff-drive TF is remapped to `/derpbot_0/tf_raw` and should NOT be republished to `/tf`.
 - **IMU is BEST_EFFORT QoS.** Subscribe with `ReliabilityPolicy.BEST_EFFORT` or receive nothing.
 - **gz-transport Python bindings**: `gz.transport13` lives in `/usr/lib/python3/dist-packages/` (system). `src/utils/gz_transport.py` appends this path so it works with venv active.
 - **Parallel sessions**: isolate with `ROS_DOMAIN_ID=N ./scripts/run_scenario.sh ...`. gz transport is isolated per process; only ROS DDS needs the domain ID.
@@ -65,8 +68,8 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 
 ### Human baselines
 - **Two modes**: `oracle` (nav-only, free detections) and `perception` (human keypresses for detections via `scripts/human_detector_node.py`).
-- **Detection node** publishes `Detection2DArray` with robot odom position. Keybindings from mission server; defaults to `f`=fire_extinguisher, `a`=first_aid_kit, `p`=person.
-- **Caveat**: detection position assumes perfect odom. Real USAR would have drift; revisit when wheel-encoder noise is added.
+- **Detection node** publishes `Detection2DArray` with robot odom position (IMU-fused via EKF). Keybindings from mission server; defaults to `f`=fire_extinguisher, `a`=first_aid_kit, `p`=person.
+- **Odometry is IMU-fused**: `/odom` comes from `robot_localization` EKF (wheel encoders + IMU gyro). Raw wheel-encoder data is on `/odom_raw` for agents that want to do their own fusion.
 
 ### Robot geometry
 - **Camera min height z=0.18 m.** Below this, the DerpBot chassis re-enters the frame and blocks the lower image portion.

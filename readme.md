@@ -74,7 +74,7 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 |---------|-------|-------|
 | RobotModel | `/derpbot_0/robot_description` | Full URDF with lidar drum visible |
 | TF | `/tf` | `odom → base_footprint → base_link → lidar_link / camera_link` |
-| Odometry | `/derpbot_0/odom` | Red arrows, last 100 poses |
+| Odometry | `/derpbot_0/odom` | IMU-fused (EKF), red arrows, last 100 poses |
 | Camera Image | `/derpbot_0/rgbd/image` | Live RGB feed from forward-facing RGBD camera |
 | World Map | `/arst/world_map` | Top-down floor plan with robot + object positions |
 | LiDAR Scan | `/derpbot_0/scan` | Cyan point cloud, 360° 12 m range |
@@ -105,7 +105,7 @@ ros2 run rqt_image_view rqt_image_view
 
 ### Perception mode — navigation + manual detections
 
-Human drives **and** reports detections via keypresses. Measures human nav + perception + localization ceiling. Detection position uses robot odom (perfect SLAM assumption).
+Human drives **and** reports detections via keypresses. Measures human nav + perception + localization ceiling. Detection position uses IMU-fused odom (EKF, minimal drift).
 
 ```bash
 # Terminal 1 — full batch:
