@@ -79,32 +79,60 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 | World Map | `/arst/world_map` | Top-down floor plan with robot + object positions |
 | LiDAR Scan | `/derpbot_0/scan` | Cyan point cloud, 360° 12 m range |
 
-## Human play
+## Human baselines
 
-Drive the scenario yourself to create a baseline for the robot autonomy to compare to..
+Two baseline modes compare human performance against autonomous agents:
 
-The human player gets **only the forward camera** — no map, no object positions, no collision indicators.  Use `rqt_image_view` rather than RViz so there is no information leak.
+### Oracle mode — navigation only (cheat detections)
 
-**Terminal 1 — simulation (headless; metrics still collected):**
+Human drives; the oracle camera auto-detects objects. Measures human navigation ceiling with perfect perception.
+
 ```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless --timeout 300
-```
+# Terminal 1 — full batch (5 difficulties × 5 seeds):
+./scripts/run_human_baseline.sh oracle
 
-**Terminal 2 — camera-only view:**
-```bash
-ros2 run rqt_image_view rqt_image_view /derpbot_0/rgbd/image
-```
+# Or single run:
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui --enable-oracle
 
-**Terminal 3 — keyboard teleop:**
-```bash
+# Terminal 2 — teleop:
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 ```
 
-Teleop keys (default): `i` forward · `,` backward · `j`/`l` rotate · `k` stop · `u`/`o`/`m`/`.` diagonals.
-Speed is capped at 0.5 m/s and 2.0 rad/s by the diff-drive plugin regardless of what you send.
+### Perception mode — navigation + manual detections
 
-Navigate the four rooms and locate all objects as quickly as possible.  When the timeout expires (or all objects are found) the scorecard and JSON result are printed. 
+Human drives **and** reports detections via keypresses. Measures human nav + perception + localization ceiling. Detection position uses robot odom (perfect SLAM assumption).
+
+```bash
+# Terminal 1 — full batch:
+./scripts/run_human_baseline.sh perception
+
+# Or single run (no --enable-oracle):
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
+
+# Terminal 2 — teleop:
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+
+# Terminal 3 — detection keypresses:
+python3.12 scripts/human_detector_node.py
+
+# Terminal 4 — robot camera view (recommended):
+ros2 run rqt_image_view rqt_image_view
+# Select /derpbot_0/rgbd/image
+```
+
+Press `f` (fire_extinguisher), `a` (first_aid_kit), `p` (person) each time you see a target object. Press only once per distinct object. Use `rqt_image_view` — not RViz — to avoid information leaks.
+
+Results go to `results/submissions/human-baseline-oracle/` or `results/submissions/human-baseline-perception/`.
+
+### Quick dev session (GUI + teleop, no baseline)
+
+```bash
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+``` 
 
 ## Sim diagnostics
 

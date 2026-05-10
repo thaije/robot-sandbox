@@ -63,6 +63,11 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **FlickerController**: `/world/<world>/light_config` is a SERVICE, not a topic. gz-sim 8.10.0 bug: only works on lights created dynamically via EntityFactory, not SDF-baked lights — flicker lights must be recreated at startup.
 - **Only one sim run at a time.** Hardware cannot sustain two Gazebo/ROS 2 stacks simultaneously. Always run seeds sequentially, never in parallel.
 
+### Human baselines
+- **Two modes**: `oracle` (nav-only, free detections) and `perception` (human keypresses for detections via `scripts/human_detector_node.py`).
+- **Detection node** publishes `Detection2DArray` with robot odom position. Keybindings from mission server; defaults to `f`=fire_extinguisher, `a`=first_aid_kit, `p`=person.
+- **Caveat**: detection position assumes perfect odom. Real USAR would have drift; revisit when wheel-encoder noise is added.
+
 ### Robot geometry
 - **Camera min height z=0.18 m.** Below this, the DerpBot chassis re-enters the frame and blocks the lower image portion.
 - **Dual casters required.** Both DerpBot (x=±0.13) and PatrolBot (x=±0.20) need front AND rear casters for pitch stability; without them the robot pitches forward under accel.
@@ -83,6 +88,14 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 # Dev session (GUI + teleop)
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+
+# Human baseline — oracle (nav-only, cheat detections)
+./scripts/run_human_baseline.sh oracle
+
+# Human baseline — perception (nav + manual detections)  
+./scripts/run_human_baseline.sh perception
+# + human_detector_node.py in terminal 3
+# + rqt_image_view in terminal 4
 
 # Unit tests (no sim required)
 python3.12 -m pytest tests/
