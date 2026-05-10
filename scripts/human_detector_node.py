@@ -7,13 +7,19 @@ the robot's current odom position.
 
 Usage
 -----
-    # Terminal 1: sim (already running with --gui, no --enable-oracle)
+    # Sim must already be running (headless or GUI):
+    #   ./scripts/run_scenario.sh config/scenarios/.../easy.yaml --headless
+
     # Terminal 2: teleop
     ros2 run teleop_twist_keyboard teleop_twist_keyboard \
         --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 
     # Terminal 3: human detector
     python3.12 scripts/human_detector_node.py
+
+    # Terminal 4: robot camera view (required for perception baseline)
+    ros2 run rqt_image_view rqt_image_view
+    # Select /derpbot_0/rgbd/image
 
 Keybindings
 -----------

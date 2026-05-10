@@ -11,22 +11,26 @@
 # All difficulties, seeds 1–5, 1 run each = 25 runs per mode.
 # Resumable: skips any run whose output file already exists.
 #
+# Runs headless (--headless) — the Gazebo GUI is not needed.
+# The human views the robot camera via rqt_image_view, which subscribes
+# to the ROS topic directly. No X display required.
+#
 # Oracle mode:
-#   Drive in a second terminal:
+#   Terminal 2 — teleop:
 #     ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 #       --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 #
 # Perception mode:
-#   Drive in terminal 2:
+#   Terminal 2 — teleop:
 #     ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 #       --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 #
-#   Detect objects in terminal 3:
+#   Terminal 3 — human detector:
 #     python3.12 scripts/human_detector_node.py
 #
-#   View robot camera in terminal 4:
+#   Terminal 4 — robot camera view:
 #     ros2 run rqt_image_view rqt_image_view
-#     Then select /derpbot_0/rgbd/image
+#     Select /derpbot_0/rgbd/image
 
 set -uo pipefail
 
@@ -96,18 +100,24 @@ for difficulty in "${DIFFICULTIES[@]}"; do
         echo "  Run $run_num / $TOTAL  —  $difficulty  seed=$seed  mode=$MODE"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "  Terminal 2 — start teleop once Gazebo is open:"
+        echo "  Terminal 2 — start teleop (wait for 'Simulation ready'):"
         echo ""
         echo "    ros2 run teleop_twist_keyboard teleop_twist_keyboard \\"
         echo "      --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel"
 
-        if [[ "$MODE" == "perception" ]]; then
+        if [[ "$MODE" == "oracle" ]]; then
+            echo ""
+            echo "  Terminal 3 — view robot camera (optional, helps navigation):"
+            echo ""
+            echo "    ros2 run rqt_image_view rqt_image_view"
+            echo "    Select /derpbot_0/rgbd/image"
+        else
             echo ""
             echo "  Terminal 3 — start human detector (press key when you see an object):"
             echo ""
             echo "    python3.12 scripts/human_detector_node.py"
             echo ""
-            echo "  Terminal 4 — view robot camera (optional but recommended):"
+            echo "  Terminal 4 — view robot camera (required to spot objects):"
             echo ""
             echo "    ros2 run rqt_image_view rqt_image_view"
             echo "    Select /derpbot_0/rgbd/image"
@@ -122,7 +132,7 @@ for difficulty in "${DIFFICULTIES[@]}"; do
         log "Starting sim: $difficulty  seed=$seed  mode=$MODE"
         "${SCRIPT_DIR}/run_scenario.sh" \
             "config/scenarios/office_explore_detect/${difficulty}.yaml" \
-            --gui --seed "$seed" $ORACLE_FLAG &
+            --headless --seed "$seed" $ORACLE_FLAG &
         SIM_PID=$!
 
         wait "$SIM_PID" || true

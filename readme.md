@@ -81,7 +81,7 @@ Requires `spawn_robot.launch.py` (or `run_scenario.sh --gui`) to be running firs
 
 ## Human baselines
 
-Two baseline modes compare human performance against autonomous agents:
+Two baseline modes compare human performance against autonomous agents. Both run **headless** — no Gazebo GUI needed. The human views the robot camera via `rqt_image_view` which subscribes to the ROS image topic directly.
 
 ### Oracle mode — navigation only (cheat detections)
 
@@ -92,11 +92,15 @@ Human drives; the oracle camera auto-detects objects. Measures human navigation 
 ./scripts/run_human_baseline.sh oracle
 
 # Or single run:
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui --enable-oracle
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless --enable-oracle
 
 # Terminal 2 — teleop:
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+
+# Terminal 3 — camera view (optional, helps navigation):
+ros2 run rqt_image_view rqt_image_view
+# Select /derpbot_0/rgbd/image
 ```
 
 ### Perception mode — navigation + manual detections
@@ -108,7 +112,7 @@ Human drives **and** reports detections via keypresses. Measures human nav + per
 ./scripts/run_human_baseline.sh perception
 
 # Or single run (no --enable-oracle):
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
+./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless
 
 # Terminal 2 — teleop:
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
@@ -117,22 +121,14 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 # Terminal 3 — detection keypresses:
 python3.12 scripts/human_detector_node.py
 
-# Terminal 4 — robot camera view (recommended):
+# Terminal 4 — robot camera view (required to spot objects):
 ros2 run rqt_image_view rqt_image_view
 # Select /derpbot_0/rgbd/image
 ```
 
 Press `f` (fire_extinguisher), `a` (first_aid_kit), `p` (person) each time you see a target object. Press only once per distinct object. Use `rqt_image_view` — not RViz — to avoid information leaks.
 
-Results go to `results/submissions/human-baseline-oracle/` or `results/submissions/human-baseline-perception/`.
-
-### Quick dev session (GUI + teleop, no baseline)
-
-```bash
-./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
-ros2 run teleop_twist_keyboard teleop_twist_keyboard \
-  --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
-``` 
+Results go to `results/submissions/human-baseline-oracle/` or `results/submissions/human-baseline-perception/`. 
 
 ## Sim diagnostics
 
