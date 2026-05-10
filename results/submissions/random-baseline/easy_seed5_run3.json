@@ -1,0 +1,190 @@
+{
+  "scenario_name": "office_easy_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 900.288,
+  "timeout_seconds": 900.0,
+  "random_seed": 5,
+  "categories": [
+    "CategoryScore(name='speed', score=7.08, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=34.0, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='efficiency', score=10.65, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=12.63, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 24.9,
+  "overall_grade": "F",
+  "overall_grade_label": "Failed",
+  "raw_metrics": {
+    "meters_traveled": 159.181,
+    "near_miss_count": 13.0,
+    "exploration_coverage": 36.09,
+    "collision_count": 10.0,
+    "found_ratio": 0.0,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "near_miss_events": [
+      {
+        "t": 88.55,
+        "count": 1,
+        "min_range": 0.19
+      },
+      {
+        "t": 102.14,
+        "count": 2,
+        "min_range": 0.176
+      },
+      {
+        "t": 105.98,
+        "count": 3,
+        "min_range": 0.194
+      },
+      {
+        "t": 135.17,
+        "count": 4,
+        "min_range": 0.189
+      },
+      {
+        "t": 147.03,
+        "count": 5,
+        "min_range": 0.192
+      },
+      {
+        "t": 210.11,
+        "count": 6,
+        "min_range": 0.181
+      },
+      {
+        "t": 232.14,
+        "count": 7,
+        "min_range": 0.187
+      },
+      {
+        "t": 340.37,
+        "count": 8,
+        "min_range": 0.198
+      },
+      {
+        "t": 348.0,
+        "count": 9,
+        "min_range": 0.194
+      },
+      {
+        "t": 355.1,
+        "count": 10,
+        "min_range": 0.187
+      },
+      {
+        "t": 358.88,
+        "count": 11,
+        "min_range": 0.182
+      },
+      {
+        "t": 394.33,
+        "count": 12,
+        "min_range": 0.197
+      },
+      {
+        "t": 397.66,
+        "count": 13,
+        "min_range": 0.194
+      }
+    ],
+    "collision_events": [
+      {
+        "t": 88.48,
+        "count": 1
+      },
+      {
+        "t": 102.03,
+        "count": 2
+      },
+      {
+        "t": 105.91,
+        "count": 3
+      },
+      {
+        "t": 135.11,
+        "count": 4
+      },
+      {
+        "t": 209.98,
+        "count": 5
+      },
+      {
+        "t": 232.03,
+        "count": 6
+      },
+      {
+        "t": 347.96,
+        "count": 7
+      },
+      {
+        "t": 355.01,
+        "count": 8
+      },
+      {
+        "t": 358.76,
+        "count": 9
+      },
+      {
+        "t": 397.54,
+        "count": 10
+      }
+    ],
+    "detection_events": [],
+    "detection_by_type": {
+      "drill": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": false
+      },
+      "drink_can": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": false
+      },
+      "exit_sign": {
+        "detected": 0,
+        "total": 4,
+        "mission_target": false
+      },
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "office_chair": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": false
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      },
+      "suitcase": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": false
+      },
+      "trash_can": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": false
+      }
+    },
+    "task_completion_time": 900.29,
+    "avg_speed_kmh": 0.637
+  }
+}

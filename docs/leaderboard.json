@@ -2,7 +2,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-29773fe",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
     "is_baseline": false,
@@ -53,7 +53,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-29773fe",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
     "is_baseline": false,
@@ -104,7 +104,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-29773fe",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
     "is_baseline": false,
@@ -155,7 +155,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-29773fe",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
     "is_baseline": false,
@@ -206,7 +206,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-29773fe",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
     "is_baseline": false,
@@ -257,7 +257,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
-    "sandbox_version": "main-58e5a1f",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
     "is_baseline": true,
@@ -271,7 +271,7 @@
     ],
     "runs_per_seed": 3,
     "submitted": "2026-05-04",
-    "timeout_seconds": 300.0,
+    "timeout_seconds": 900.0,
     "difficulty_description": "Easy office exploration \u2014 bright lighting, open doors, comfortable timeout",
     "total_score": {
       "mean": 0.0,
@@ -284,31 +284,31 @@
         "of_total": 6
       },
       "avg_speed_kmh": {
-        "mean": 0.6253,
-        "std": 0.0496
+        "mean": 0.6342,
+        "std": 0.0265
       },
       "collision_count": {
-        "mean": 5.8667,
-        "std": 3.3778
+        "mean": 9.6,
+        "std": 3.7759
       },
       "path_length_m": {
-        "mean": 52.6645,
-        "std": 4.3243
+        "mean": 158.8399,
+        "std": 6.6632
       },
       "exploration_coverage_pct": {
-        "mean": 56.2107,
-        "std": 16.1253
+        "mean": 62.692,
+        "std": 17.0961
       },
       "elapsed_s": {
-        "mean": 303.1659,
-        "std": 1.3413
+        "mean": 901.7664,
+        "std": 1.158
       }
     }
   },
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
-    "sandbox_version": "main-58e5a1f",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
     "is_baseline": true,
@@ -359,7 +359,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
-    "sandbox_version": "main-58e5a1f",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
     "is_baseline": true,
@@ -410,7 +410,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
-    "sandbox_version": "main-58e5a1f",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
     "is_baseline": true,
@@ -461,7 +461,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
-    "sandbox_version": "main-58e5a1f",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
     "is_baseline": true,
