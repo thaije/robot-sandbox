@@ -28,8 +28,17 @@ Runs are scored 0–100 across five categories, combined as a weighted sum.
 | **Efficiency** | Coverage-per-metre (0.60) + path length vs par (0.40) |
 | **Effectiveness** | Detection completeness (0.65) + exploration coverage % (0.35) |
 
+Par values are derived from a **human perception baseline** (teleop + manual keypress detections, 5 seeds per tier). At par, a category scores ~70 (B grade). Faster, more accurate, or more efficient than par scores above 70; worse scores below.
+
 Grade thresholds: **S** ≥ 95 · **A** ≥ 85 · **B** ≥ 70 · **C** ≥ 55 · **D** ≥ 40 · **F** < 40.
-A B-grade means *competent performance for that difficulty level*.
+
+| Tier | `completion_time_par` (s) | `path_length_par` (m) | `coverage_per_meter_par` |
+|---|---|---|---|
+| easy | 167.1 | 39.8 | 2.36 |
+| medium | 160.2 | 43.8 | 2.10 |
+| hard | 212.9 | 61.9 | 1.58 |
+| brutal | 182.3 | 64.1 | 1.56 |
+| perception_stress | 176.1 | 56.3 | 1.79 |
 
 Full score breakdown is written to `results/` as JSON after each run.
 

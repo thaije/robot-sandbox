@@ -16,6 +16,7 @@ ScenarioRunner — scripts/run_scenario.sh config/scenarios/<tier>/<name>.yaml [
   rclpy metrics node   MetersTraveled, CollisionCount, RevisitRatio, ExplorationCoverage, DetectionMetrics, NearMissTracker
   MissionServer        HTTP :7400/mission — mission brief + live status
   ScoringEngine        Speed 0.20 / Accuracy 0.30 / Safety 0.20 / Efficiency 0.10 / Effectiveness 0.15 → JSON in results/
+                       Par values from human perception baseline (n=5/tier). Par = B grade (~70).
 
 worlds/templates/indoor_office/   20×15 m, 4 rooms, PGM ground-truth map
 objects                           fire_extinguisher ×3, first_aid_kit ×2, hazard_sign ×4 — unique per-instance labels
