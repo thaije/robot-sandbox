@@ -82,9 +82,9 @@ scoring:
     first_aid_kit: 40
     person: 20
   par_values:
-    completion_time_par: 91.1   # baseline avg (n=4)
-    path_length_par: 36.4       # baseline avg (n=4)
-    coverage_per_meter_par: 2.24 # baseline avg (n=4)
+    completion_time_par: 167.1   # human perception baseline (n=5)
+    path_length_par: 39.8        # human perception baseline (n=5)
+    coverage_per_meter_par: 2.36 # human perception baseline (n=5)
     near_miss_threshold: 0.2
   collision_thresholds: [0, 2, 5, 10]
   collision_scores: [100, 80, 60, 40, 20]
