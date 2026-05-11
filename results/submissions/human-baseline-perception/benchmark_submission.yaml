@@ -1,0 +1,18 @@
+# Human teleop baseline — perception mode (navigation + manual detections)
+# Validates with: python3.12 scripts/validate_submission.py results/submissions/human-baseline-perception/benchmark_submission.yaml
+
+stack_name: "Human Teleop (perception)"
+repo_url: "https://github.com/thaije/robot-sandbox"
+sandbox_version: "main-4eeaa3c"
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+  - medium
+  - hard
+  - brutal
+  - perception_stress
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 1
+results_dir: "results/submissions/human-baseline-perception/"
+is_baseline: true
+description: "Human operator via teleop_twist_keyboard with manual keypress detections. Full-task baseline — navigation + perception + localization ceiling for leaderboard."

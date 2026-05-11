@@ -1,0 +1,111 @@
+{
+  "scenario_name": "office_hard_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 300.952,
+  "timeout_seconds": 300.0,
+  "random_seed": 2,
+  "categories": [
+    "CategoryScore(name='speed', score=23.63, grade='F', grade_label='Failed', weight=0.25)",
+    "CategoryScore(name='accuracy', score=90.0, grade='A', grade_label='Excellent', weight=0.3)",
+    "CategoryScore(name='safety', score=88.0, grade='A', grade_label='Excellent', weight=0.2)",
+    "CategoryScore(name='efficiency', score=39.93, grade='F', grade_label='Failed', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=90.75, grade='A', grade_label='Excellent', weight=0.15)"
+  ],
+  "overall_score": 68.1,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "exploration_coverage": 98.34,
+    "near_miss_count": 4.0,
+    "collision_count": 0.0,
+    "meters_traveled": 73.096,
+    "found_ratio": 0.8333,
+    "precision": 1.0,
+    "duplicate_rate": 0.2857,
+    "mean_localization_error": 0.648,
+    "time_to_all_detections": 106.42,
+    "average_time_per_detection": 21.28,
+    "false_positive_count": 0.0,
+    "duplicate_count": 2.0,
+    "detection_count": 5.0,
+    "near_miss_events": [
+      {
+        "t": 40.1,
+        "count": 1,
+        "min_range": 0.198
+      },
+      {
+        "t": 41.27,
+        "count": 2,
+        "min_range": 0.19
+      },
+      {
+        "t": 42.48,
+        "count": 3,
+        "min_range": 0.195
+      },
+      {
+        "t": 43.96,
+        "count": 4,
+        "min_range": 0.199
+      }
+    ],
+    "collision_events": [],
+    "detection_events": [
+      {
+        "label_key": "5",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #2",
+        "timestamp": 7.77,
+        "location_error": 0.707
+      },
+      {
+        "label_key": "10",
+        "class_type": "person",
+        "class_name": "person #1",
+        "timestamp": 42.05,
+        "location_error": 0.322
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 85.01,
+        "location_error": 0.598
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 94.89,
+        "location_error": 0.914
+      },
+      {
+        "label_key": "2",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #2",
+        "timestamp": 106.42,
+        "location_error": 0.699
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 2,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 2,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 1,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 300.95,
+    "avg_speed_kmh": 0.874
+  }
+}
