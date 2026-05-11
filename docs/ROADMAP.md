@@ -13,23 +13,10 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ---
 
-## Completed
-
-- [#8](https://github.com/thaije/robot-sandbox/issues/8) — Random agent baseline runs ✅
-- [#10](https://github.com/thaije/robot-sandbox/issues/10) — Static leaderboard page ✅
-
----
-
 ## Next
 
-### Benchmark: human teleop baseline runs · [#9](https://github.com/thaije/robot-sandbox/issues/9)
-Two modes — oracle (nav-only) and perception (nav+human keypress detections). All 5 difficulties, seeds 1–5 × 1 run = 25 per mode. Uses `human_detector_node.py`. Blocked by #16 (EKF fused odom needed for detection accuracy).
-
-### feat(odom): IMU-fused EKF odometry · [#16](https://github.com/thaije/robot-sandbox/issues/16)
-Add robot_localization EKF node fusing wheel encoders + IMU gyro → yaw-drift-corrected `/odom`. Raw encoders on `/odom_raw`. WIP: config and launch done, verifying EKF output.
-
 ### Benchmark: versioned release v1.0-benchmark · [#11](https://github.com/thaije/robot-sandbox/issues/11)
-Freeze scenario/scoring/seeds/protocol; git tag v1.0.0. Depends on #8–#10 (done).
+Freeze scenario/scoring/seeds/protocol; git tag v1.0.0. Depends on #8–#10, #16 (done) and #9 (perception done; oracle pending).
 
 ---
 
