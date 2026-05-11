@@ -3,7 +3,7 @@
 
 stack_name: "Human Teleop (oracle detections)"
 repo_url: "https://github.com/thaije/robot-sandbox"
-sandbox_version: "main-58e5a1f"           # update to git tag after #11
+sandbox_version: "v1.0.0"
 scenario: "office_explore_detect"
 difficulties:
   - easy

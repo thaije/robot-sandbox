@@ -3,7 +3,7 @@
 
 stack_name: "Human Teleop (perception)"
 repo_url: "https://github.com/thaije/robot-sandbox"
-sandbox_version: "main-4eeaa3c"
+sandbox_version: "v1.0.0"
 scenario: "office_explore_detect"
 difficulties:
   - easy
