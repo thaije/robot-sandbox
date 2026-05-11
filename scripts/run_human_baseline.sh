@@ -54,6 +54,21 @@ mkdir -p "$OUTPUT_DIR"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
+_kill_sim() {
+    log "Killing leftover sim processes …"
+    pkill -KILL -f "ros2 launch.*spawn_robot" 2>/dev/null || true
+    pkill -KILL -f "ros2 launch.*arst_sim" 2>/dev/null || true
+    pkill -KILL -f "ekf_node" 2>/dev/null || true
+    pkill -KILL -f "robot_state_publisher" 2>/dev/null || true
+    pkill -KILL -f "ros_gz_bridge" 2>/dev/null || true
+    pkill -KILL -f "gz sim" 2>/dev/null || true
+    pkill -KILL -f "scenario_runner" 2>/dev/null || true
+    pkill -KILL -f "map_publisher.py" 2>/dev/null || true
+    fuser -k 7400/tcp 2>/dev/null || true
+    sleep 2
+    log "Sim processes killed."
+}
+
 set +u
 # shellcheck disable=SC1091
 source /opt/ros/jazzy/setup.bash
@@ -130,12 +145,14 @@ for difficulty in "${DIFFICULTIES[@]}"; do
         before=$(ls -t "${REPO_ROOT}/results"/*.json 2>/dev/null | head -1 || true)
 
         log "Starting sim: $difficulty  seed=$seed  mode=$MODE"
+        _kill_sim
         "${SCRIPT_DIR}/run_scenario.sh" \
             "config/scenarios/office_explore_detect/${difficulty}.yaml" \
-            --headless --seed "$seed" $ORACLE_FLAG &
+            --headless --seed "$seed" --speed 2 $ORACLE_FLAG &
         SIM_PID=$!
 
         wait "$SIM_PID" || true
+        _kill_sim
 
         after=$(ls -t "${REPO_ROOT}/results"/*.json 2>/dev/null | head -1 || true)
 

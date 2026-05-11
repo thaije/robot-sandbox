@@ -208,8 +208,21 @@ class MissionServer:
 
         return _Handler
 
-    def start(self) -> None:
-        self._server = _ReusableTCPServer(("", self._port), self._make_handler())
+    def start(self, retries: int = 10, delay: float = 1.0) -> None:
+        for attempt in range(1, retries + 1):
+            try:
+                self._server = _ReusableTCPServer(("", self._port), self._make_handler())
+                break
+            except OSError as exc:
+                if exc.errno == 98 and attempt < retries:
+                    log.warning(
+                        "Port %d still in use (attempt %d/%d), retrying in %.1fs",
+                        self._port, attempt, retries, delay,
+                    )
+                    import time
+                    time.sleep(delay)
+                else:
+                    raise
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
         log.info("Mission server on http://localhost:%d/mission", self._port)

@@ -64,6 +64,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Header
@@ -120,7 +121,10 @@ class HumanDetectorNode(Node):
     """ROS 2 node that publishes detections from keypresses."""
 
     def __init__(self, robot: str, bindings: dict[str, str]) -> None:
-        super().__init__("human_detector")
+        super().__init__(
+            "human_detector",
+            parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
+        )
         self._robot = robot
         self._bindings = bindings
         self._track_counter = 0

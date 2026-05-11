@@ -238,7 +238,13 @@ def _make_actions(context, *args, **kwargs):
     # IMU to produce drift-corrected /odom and TF (odom→base_footprint).
     # Raw wheel-encoder data remains available on /<robot>/odom_raw.
     ekf_config = REPO_ROOT / "config" / "robots" / "ekf.yaml"
-    ekf_config_substituted = ekf_config.read_text().replace("ROBOT_NAME", robot_name)
+    ekf_node_name = f"ekf_{robot_name}"
+    ekf_fqn = f"/{robot_name}/{ekf_node_name}"
+    ekf_config_substituted = (
+        ekf_config.read_text()
+        .replace("ROBOT_NAME", robot_name)
+        .replace("ekf_filter_node", ekf_fqn)
+    )
     # Write substituted config to a temp file so ekf_node can load it.
     import tempfile
     ekf_tmp = tempfile.NamedTemporaryFile(
