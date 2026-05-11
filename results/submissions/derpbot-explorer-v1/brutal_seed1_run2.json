@@ -5,15 +5,15 @@
   "timeout_seconds": 180.0,
   "random_seed": 1,
   "categories": [
-    "CategoryScore(name='speed', score=39.49, grade='F', grade_label='Failed', weight=0.3)",
+    "CategoryScore(name='speed', score=69.76, grade='C', grade_label='Adequate', weight=0.3)",
     "CategoryScore(name='accuracy', score=40.0, grade='D', grade_label='Poor', weight=0.25)",
     "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.2)",
-    "CategoryScore(name='efficiency', score=61.32, grade='C', grade_label='Adequate', weight=0.1)",
+    "CategoryScore(name='efficiency', score=73.62, grade='B', grade_label='Good', weight=0.1)",
     "CategoryScore(name='effectiveness', score=7.88, grade='F', grade_label='Failed', weight=0.15)"
   ],
-  "overall_score": 49.2,
-  "overall_grade": "D",
-  "overall_grade_label": "Poor",
+  "overall_score": 59.5,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
   "raw_metrics": {
     "meters_traveled": 18.032,
     "collision_count": 0.0,
