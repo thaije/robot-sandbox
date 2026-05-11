@@ -15,8 +15,14 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ## Next
 
-### Benchmark: versioned release v1.0-benchmark · [#11](https://github.com/thaije/robot-sandbox/issues/11)
-Freeze scenario/scoring/seeds/protocol; git tag v1.0.0. Depends on #8–#10, #16 (done) and #9 (perception done; oracle pending).
+### V2 scenario: proximity-goal type ("find and reach X") · [#13](https://github.com/thaije/robot-sandbox/issues/13)
+New scenario variant where the agent must navigate to and reach detected objects, not just detect them.
+
+### V2 world: basement environment template · [#14](https://github.com/thaije/robot-sandbox/issues/14)
+New indoor environment template (basement) for scenario diversity.
+
+### V2 agent: VLM-steered robot · [#15](https://github.com/thaije/robot-sandbox/issues/15)
+Vision-language model agent that uses the camera feed to decide actions.
 
 ---
 
@@ -28,9 +34,6 @@ Known issues not currently prioritised. Full details in the linked issues.
 - [#2](https://github.com/thaije/robot-sandbox/issues/2) — Add sensor jitter
 - [#5](https://github.com/thaije/robot-sandbox/issues/5) — Multiple simulator instances (SIM-12, parallel runs via Docker + GZ_PARTITION)
 - [#12](https://github.com/thaije/robot-sandbox/issues/12) — Record all submitted detections (position + outcome) in results JSON
-- [#13](https://github.com/thaije/robot-sandbox/issues/13) — V2 scenario: proximity-goal type ("find and reach X")
-- [#14](https://github.com/thaije/robot-sandbox/issues/14) — V2 world: basement environment template
-- [#15](https://github.com/thaije/robot-sandbox/issues/15) — V2 agent: VLM-steered robot
 
 Run `gh issue list --state open --label backlog` for the live list.
 
