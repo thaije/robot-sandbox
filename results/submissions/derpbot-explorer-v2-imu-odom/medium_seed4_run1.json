@@ -1,0 +1,82 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.824,
+  "timeout_seconds": 600.0,
+  "random_seed": 4,
+  "categories": [
+    "CategoryScore(name='speed', score=18.6, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=50.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=94.0, grade='A', grade_label='Excellent', weight=0.25)",
+    "CategoryScore(name='efficiency', score=64.26, grade='C', grade_label='Adequate', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=52.9, grade='D', grade_label='Poor', weight=0.15)"
+  ],
+  "overall_score": 56.6,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "collision_count": 0.0,
+    "near_miss_count": 1.0,
+    "meters_traveled": 35.302,
+    "exploration_coverage": 52.1,
+    "found_ratio": 0.5,
+    "precision": 0.5,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.197,
+    "time_to_all_detections": 188.67,
+    "average_time_per_detection": 62.89,
+    "false_positive_count": 3.0,
+    "duplicate_count": 0.0,
+    "detection_count": 3.0,
+    "collision_events": [],
+    "near_miss_events": [
+      {
+        "t": 291.87,
+        "count": 1,
+        "min_range": 0.188
+      }
+    ],
+    "detection_events": [
+      {
+        "label_key": "5",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #2",
+        "timestamp": 102.43,
+        "location_error": 0.251
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 152.58,
+        "location_error": 0.317
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 188.67,
+        "location_error": 0.023
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 1,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 2,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 602.82,
+    "avg_speed_kmh": 0.211
+  }
+}

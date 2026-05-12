@@ -1,0 +1,53 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 600.704,
+  "timeout_seconds": 600.0,
+  "random_seed": 2,
+  "categories": [
+    "CategoryScore(name='speed', score=18.67, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=0.0, grade='F', grade_label='Failed', weight=0.3)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.25)",
+    "CategoryScore(name='efficiency', score=79.12, grade='B', grade_label='Good', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=20.78, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 39.8,
+  "overall_grade": "F",
+  "overall_grade_label": "Failed",
+  "raw_metrics": {
+    "meters_traveled": 30.359,
+    "near_miss_count": 0.0,
+    "collision_count": 0.0,
+    "exploration_coverage": 59.38,
+    "found_ratio": 0.0,
+    "precision": 0.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 3.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "near_miss_events": [],
+    "collision_events": [],
+    "detection_events": [],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 600.7,
+    "avg_speed_kmh": 0.182
+  }
+}
