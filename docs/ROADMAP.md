@@ -21,8 +21,8 @@ New scenario variant where the agent must navigate to and reach detected objects
 ### V2 world: basement environment template · [#14](https://github.com/thaije/robot-sandbox/issues/14)
 New indoor environment template (basement) for scenario diversity.
 
-### V2 agent: VLM-steered robot · [#15](https://github.com/thaije/robot-sandbox/issues/15)
-Vision-language model agent that uses the camera feed to decide actions.
+### V2 agent: VLM-steered robot · [derpbot-vlm](https://github.com/thaije/derpbot-vlm)
+Moved to its own repo. Issue #15 closed.
 
 ---
 
