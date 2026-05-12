@@ -3,6 +3,7 @@
 
 stack_name: "Human Teleop (perception)"
 repo_url: "https://github.com/thaije/robot-sandbox"
+code_url: "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections"
 sandbox_version: "v1.0.0"
 scenario: "office_explore_detect"
 difficulties:

@@ -2,6 +2,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
@@ -53,6 +54,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
@@ -104,6 +106,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
@@ -155,6 +158,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
@@ -206,6 +210,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v1",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
@@ -257,6 +262,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v2-imu-odom",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
@@ -308,6 +314,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v2-imu-odom",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
@@ -359,6 +366,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v2-imu-odom",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
@@ -410,6 +418,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v2-imu-odom",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
@@ -461,6 +470,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v2-imu-odom",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
@@ -512,6 +522,7 @@
   {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
@@ -563,6 +574,7 @@
   {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
@@ -614,6 +626,7 @@
   {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
@@ -665,6 +678,7 @@
   {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
@@ -716,6 +730,7 @@
   {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
@@ -767,6 +782,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
@@ -818,6 +834,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
@@ -869,6 +886,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
@@ -920,6 +938,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
@@ -971,6 +990,7 @@
   {
     "stack_name": "Random Baseline",
     "repo_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
+    "code_url": "https://github.com/thaije/robot-sandbox/blob/main/scripts/random_agent.py",
     "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",

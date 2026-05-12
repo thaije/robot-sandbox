@@ -150,6 +150,7 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
     return {
         "stack_name": sub["stack_name"],
         "repo_url": sub.get("repo_url", ""),
+        "code_url": sub.get("code_url", ""),
         "sandbox_version": sub["sandbox_version"],
         "scenario": sub["scenario"],
         "difficulty": difficulty,
@@ -199,27 +200,46 @@ def _fmt(val: float | None, decimals: int = 2) -> str:
     return f"{val:.{decimals}f}" if val is not None else "—"
 
 
-def _tooltip(raw: dict) -> str:
-    parts = []
+def _detail_cells(raw: dict) -> str:
+    """Build the inner HTML for the expandable detail row (mean ± std per metric)."""
     of = raw["objects_found"]
-    if of["mean"] is not None:
-        parts.append(f"found {_fmt(of['mean'], 1)}/{of['of_total']} targets")
+    found_line = (
+        f'{_fmt(of["mean"], 1)} <span class="d-std">± {_fmt(of["std"], 1)}</span> / {of["of_total"]}'
+        if of["mean"] is not None else "—"
+    )
+    parts = [f'<span class="d-pair"><span class="d-label">Found</span><span class="d-val">{found_line}</span></span>']
+
     spd = raw["avg_speed_kmh"]
     if spd["mean"] is not None:
-        parts.append(f"{_fmt(spd['mean'], 2)} km/h")
+        parts.append(
+            f'<span class="d-pair"><span class="d-label">Speed</span>'
+            f'<span class="d-val">{_fmt(spd["mean"], 2)} <span class="d-std">± {_fmt(spd["std"], 2)}</span> km/h</span></span>'
+        )
     col = raw["collision_count"]
     if col["mean"] is not None:
-        parts.append(f"{_fmt(col['mean'], 1)} collisions")
+        parts.append(
+            f'<span class="d-pair"><span class="d-label">Collisions</span>'
+            f'<span class="d-val">{_fmt(col["mean"], 1)} <span class="d-std">± {_fmt(col["std"], 1)}</span></span></span>'
+        )
     pth = raw["path_length_m"]
     if pth["mean"] is not None:
-        parts.append(f"{_fmt(pth['mean'], 0)} m path")
+        parts.append(
+            f'<span class="d-pair"><span class="d-label">Path</span>'
+            f'<span class="d-val">{_fmt(pth["mean"], 0)} <span class="d-std">± {_fmt(pth["std"], 0)}</span> m</span></span>'
+        )
     cov = raw["exploration_coverage_pct"]
     if cov["mean"] is not None:
-        parts.append(f"{_fmt(cov['mean'], 1)}% coverage")
+        parts.append(
+            f'<span class="d-pair"><span class="d-label">Coverage</span>'
+            f'<span class="d-val">{_fmt(cov["mean"], 1)} <span class="d-std">± {_fmt(cov["std"], 1)}</span>%</span></span>'
+        )
     ela = raw["elapsed_s"]
     if ela["mean"] is not None:
-        parts.append(f"{_fmt(ela['mean'], 0)}s")
-    return " · ".join(parts)
+        parts.append(
+            f'<span class="d-pair"><span class="d-label">Time</span>'
+            f'<span class="d-val">{_fmt(ela["mean"], 0)} <span class="d-std">± {_fmt(ela["std"], 0)}</span>s</span></span>'
+        )
+    return "".join(parts)
 
 
 def render_html(entries: list[dict]) -> str:
@@ -289,25 +309,30 @@ def render_html(entries: list[dict]) -> str:
 
                 ts = e["total_score"]
                 score_str = f"{_fmt(ts['mean'], 3)} <span class=\"score-std\">± {_fmt(ts['std'], 3)}</span>"
-                tip = _tooltip(e["raw_metrics"])
 
                 repo_url = e.get("repo_url", "")
+                code_url = e.get("code_url", "")
                 stack = e["stack_name"]
                 stack_cell = (
                     f'<a href="{repo_url}" target="_blank">{stack}</a>'
                     if repo_url else stack
                 )
+                if code_url:
+                    stack_cell += f' <a href="{code_url}" target="_blank" class="code-link">code</a>'
                 submitted = e.get("submitted") or ""
 
                 rows_html += (
                     f'<tr{row_cls}>'
                     f'<td>{rank_str}</td>'
                     f'<td>{stack_cell}</td>'
-                    f'<td class="score-cell" data-tip="{tip}">{score_str}</td>'
+                    f'<td class="score-cell">{score_str}</td>'
                     f'<td>{len(e["seeds"])}×{e["runs_per_seed"]}</td>'
                     f'<td>{submitted}</td>'
                     f'<td>{e["sandbox_version"]}</td>'
                     f'</tr>\n'
+                    f'<tr class="detail-row"><td colspan="6"><div class="detail-inner">'
+                    f'{_detail_cells(e["raw_metrics"])}'
+                    f'</div></td></tr>\n'
                 )
 
     return f"""<!DOCTYPE html>
@@ -359,30 +384,38 @@ def render_html(entries: list[dict]) -> str:
   a {{ color: #0969da; text-decoration: none; }}
   a:hover {{ text-decoration: underline; }}
   .score-cell {{
-    cursor: help;
-    position: relative;
+    cursor: pointer;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }}
-  .score-cell::after {{
-    content: attr(data-tip);
+  .detail-row {{
     display: none;
-    position: absolute;
-    background: #1a1a2e;
-    color: #dde;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-style: normal;
-    white-space: nowrap;
-    z-index: 100;
-    bottom: calc(100% + 5px);
-    left: 50%;
-    transform: translateX(-50%);
-    pointer-events: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
   }}
-  .score-cell:hover::after {{ display: block; }}
+  .detail-row.open {{
+    display: table-row;
+  }}
+  .detail-inner {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.5rem;
+    padding: 6px 12px 8px;
+    font-size: 0.82rem;
+    color: #555;
+  }}
+  .detail-inner .d-pair {{
+    display: inline-flex;
+    gap: 0.35rem;
+  }}
+  .detail-inner .d-label {{
+    color: #888;
+  }}
+  .detail-inner .d-val {{
+    font-variant-numeric: tabular-nums;
+  }}
+  .detail-inner .d-std {{
+    font-size: 0.88em;
+    opacity: 0.6;
+  }}
   .legend {{
     margin-top: 1.5rem;
     font-size: 0.78rem;
@@ -427,6 +460,12 @@ def render_html(entries: list[dict]) -> str:
     font-size: 0.85em;
     opacity: 0.7;
   }}
+  .code-link {{
+    font-size: 0.78em;
+    opacity: 0.55;
+    margin-left: 0.15em;
+  }}
+  .code-link:hover {{ opacity: 1; }}
   @media (max-width: 640px) {{
     body {{
       margin: 0;
@@ -458,16 +497,8 @@ def render_html(entries: list[dict]) -> str:
     tr.diff-header td {{ padding: 4px 4px; font-size: 0.7rem; }}
     .score-cell {{ white-space: normal; }}
     .score-std {{ display: block; }}
-    .score-cell::after {{
-      white-space: normal;
-      width: max-content;
-      max-width: min(85vw, 280px);
-      left: 0;
-      transform: none;
-      bottom: calc(100% + 5px);
-      font-size: 0.72rem;
-      word-break: break-word;
-    }}
+    .detail-inner {{ font-size: 0.76rem; gap: 0.2rem 1rem; }}
+    .detail-inner .d-pair {{ gap: 0.2rem; }}
   }}
 </style>
 </head>
@@ -475,7 +506,7 @@ def render_html(entries: list[dict]) -> str:
 <h1>robot-sandbox Leaderboard</h1>
 <p class="subtitle">
   Score&nbsp;=&nbsp;mission targets found / total mission targets (0–1)&nbsp;&nbsp;·&nbsp;&nbsp;
-  Hover score cell for raw metrics&nbsp;&nbsp;·&nbsp;&nbsp;
+  Click a score to show raw metrics&nbsp;&nbsp;·&nbsp;&nbsp;
   <a href="https://github.com/thaije/robot-sandbox" target="_blank">GitHub ↗</a>
 </p>
 {info_panels}
@@ -497,9 +528,19 @@ def render_html(entries: list[dict]) -> str:
   Italic rows = baselines (not ranked — reference floor/ceiling only).<br>
   Seeds × Runs = number of seeds × runs per seed (total runs = seeds × runs_per_seed).<br>
   Score = <code>found_ratio</code>: mission targets found / total mission targets.<br>
-  Hover the score cell to see: mission targets found, avg speed, collisions, path length, exploration coverage, elapsed time.
+  Click a score cell to expand raw metrics (mean ± std across runs).
 </p>
-</body>
+<script>
+document.querySelectorAll('.score-cell').forEach(function(cell) {{
+  cell.addEventListener('click', function() {{
+    var row = this.closest('tr');
+    var detail = row ? row.nextElementSibling : null;
+    if (detail && detail.classList.contains('detail-row')) {{
+      detail.classList.toggle('open');
+    }}
+  }});
+}});
+</script>
 </html>"""
 
 

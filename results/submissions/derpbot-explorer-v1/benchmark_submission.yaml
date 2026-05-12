@@ -1,5 +1,6 @@
 stack_name: "DerpBot Explorer — derpbot-explorer-v1"
 repo_url: "https://github.com/thaije/derpbot-explorer"
+code_url: "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v1"
 sandbox_version: "v1.0.0"
 scenario: "office_explore_detect"
 difficulties:

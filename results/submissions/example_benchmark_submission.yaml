@@ -5,6 +5,7 @@
 
 stack_name: "DerpBot Explorer v1"
 repo_url: "https://github.com/example/your-agent"
+code_url: "https://github.com/example/your-agent/releases/tag/v1.0"  # link to the exact tag/commit of your agent code
 sandbox_version: "v1.0-benchmark"        # git tag of robot-sandbox used for your runs (use the latest release tag)
 scenario: "office_explore_detect"
 difficulties:                            # list of completed difficulties
