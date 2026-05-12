@@ -77,13 +77,17 @@ class ScoringEngine:
             ``collision_count``, ``near_miss_count``,
             ``detection_by_type``.
         scenario_config:
-            Full scenario YAML dict; used for ``timeout_seconds`` and
-            ``scenario.name``.
+            Full scenario YAML dict; used for ``timeout_seconds``,
+            ``scenario.name``, and ``goal_type``.
         """
         scenario = scenario_config["scenario"]
         timeout = float(scenario["timeout_seconds"])
         par = self._cfg.get("par_values", {})
         weights = self._cfg.get("category_weights", {})
+        goal_type = scenario.get("goal_type", "explore_detect")
+
+        if goal_type == "proximity":
+            return self._compute_proximity(metrics, scenario_config, par, weights, timeout)
 
         speed      = self._speed_score(metrics, par, timeout)
         accuracy   = self._accuracy_score(metrics)
@@ -106,7 +110,7 @@ class ScoringEngine:
 
         return Scorecard(
             scenario_name=scenario["name"],
-            status="",          # runner overwrites this
+            status="",
             elapsed_seconds=metrics.get("task_completion_time", timeout),
             timeout_seconds=timeout,
             categories=cats,
@@ -114,6 +118,77 @@ class ScoringEngine:
             overall_grade=overall_g,
             overall_grade_label=overall_gl,
             raw_metrics=metrics,
+        )
+
+    def _compute_proximity(
+        self,
+        metrics: dict[str, Any],
+        scenario_config: dict,
+        par: dict,
+        weights: dict,
+        timeout: float,
+    ) -> Scorecard:
+        """Compute scorecard for proximity-goal scenarios.
+
+        Categories:
+        * success   — binary: 100 if reached, 0 if not
+        * time      — time-to-proximity vs par (0 if not reached)
+        * safety    — collision/near-miss (same as explore_detect)
+        * efficiency — path_length / straight_line_distance (lower = better)
+        """
+        scenario = scenario_config["scenario"]
+        proximity_reached = bool(metrics.get("proximity_reached", False))
+
+        # Success (binary)
+        success_score = 100.0 if proximity_reached else 0.0
+
+        # Time: par → 70, faster → higher, capped at 100
+        elapsed = float(metrics.get("task_completion_time", timeout))
+        par_time = float(par.get("completion_time_par", timeout * 0.5))
+        if proximity_reached and elapsed > 0:
+            time_score = round(min(100.0, par_time / elapsed * 70), 2)
+        else:
+            time_score = 0.0
+
+        # Safety
+        safety = self._safety_score(metrics, self._cfg)
+
+        # Efficiency: path_length / straight_line_distance
+        path_length = float(metrics.get("proximity_path_length", metrics.get("meters_traveled", 0.0)))
+        straight_line = float(metrics.get("straight_line_distance", 0.0))
+        if proximity_reached and path_length > 0 and straight_line > 0:
+            efficiency_ratio = straight_line / path_length
+            efficiency_score = round(min(100.0, efficiency_ratio * 100), 2)
+        else:
+            efficiency_score = 0.0
+
+        cats = [
+            CategoryScore("success",     success_score,    *self._grade(success_score),    weights.get("success", 0.30)),
+            CategoryScore("time",        time_score,       *self._grade(time_score),       weights.get("time",     0.25)),
+            CategoryScore("safety",       safety,           *self._grade(safety),           weights.get("safety",  0.20)),
+            CategoryScore("efficiency",   efficiency_score, *self._grade(efficiency_score), weights.get("efficiency", 0.25)),
+        ]
+
+        total_w = sum(c.weight for c in cats) or 1.0
+        overall = sum(c.score * c.weight for c in cats) / total_w
+        overall_g, overall_gl = self._grade(overall)
+
+        raw = dict(metrics)
+        raw["goal_type"] = "proximity"
+        raw["proximity_reached"] = proximity_reached
+        raw["min_distance_to_target"] = metrics.get("min_distance_to_target")
+        raw["straight_line_distance"] = metrics.get("straight_line_distance")
+
+        return Scorecard(
+            scenario_name=scenario["name"],
+            status="",
+            elapsed_seconds=elapsed,
+            timeout_seconds=timeout,
+            categories=cats,
+            overall_score=round(overall, 1),
+            overall_grade=overall_g,
+            overall_grade_label=overall_gl,
+            raw_metrics=raw,
         )
 
     # ── Category scorers ───────────────────────────────────────────────────────

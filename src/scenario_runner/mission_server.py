@@ -26,6 +26,11 @@ _W = 60  # terminal box width, matches SCORECARD_WIDTH in reporter.py
 def build_mission_data(cfg: dict) -> dict[str, Any]:
     """Build the mission data dict from a loaded scenario config.
 
+    Supports two goal types:
+
+    * ``explore_detect`` (default) — find and report all target objects.
+    * ``proximity`` — navigate within proximity_radius of a single target object.
+
     Each target entry carries:
       - type          : object type string
       - count_exact   : True when the exact count is disclosed
@@ -37,6 +42,7 @@ def build_mission_data(cfg: dict) -> dict[str, Any]:
     """
     scenario = cfg["scenario"]
     objects = cfg.get("world", {}).get("objects", [])
+    goal_type = scenario.get("goal_type", "explore_detect")
 
     # Group by type — scenarios may list the same type multiple times with
     # different placement strategies (e.g. some on desk, some on floor).
@@ -78,8 +84,32 @@ def build_mission_data(cfg: dict) -> dict[str, Any]:
 
     time_limit = int(scenario.get("timeout_seconds", 600))
 
+    if goal_type == "proximity":
+        target_object = scenario.get("target_object", targets[0]["type"] if targets else "unknown")
+        proximity_radius = float(scenario.get("proximity_radius", 2.0))
+        target_desc = target_object.replace("_", " ")
+        goal_text = (
+            f"Find the {target_desc} and navigate within {proximity_radius:.0f} "
+            f"metre{'s' if proximity_radius != 1.0 else ''} of it before the time limit expires."
+        )
+        return {
+            "scenario": scenario.get("name", "unknown"),
+            "goal_type": "proximity",
+            "goal": goal_text,
+            "target_object": target_object,
+            "target_description": f"find the {target_desc} and navigate within {proximity_radius:.0f}m",
+            "proximity_radius": proximity_radius,
+            "time_limit_seconds": time_limit,
+            "targets": targets,
+            "status": "running",
+            "description": _build_description_proximity(
+                target_object, proximity_radius, time_limit, "running"
+            ),
+        }
+
     return {
         "scenario": scenario.get("name", "unknown"),
+        "goal_type": "explore_detect",
         "goal": (
             "Explore the environment and locate all required target objects. "
             "Report detections before the time limit expires. "
@@ -107,6 +137,16 @@ def _build_description(targets: list[dict], time_limit: int, status: str) -> str
     )
 
 
+def _build_description_proximity(
+    target_object: str, proximity_radius: float, time_limit: int, status: str
+) -> str:
+    label = target_object.replace("_", " ")
+    return (
+        f"Navigate within {proximity_radius:.0f}m of the {label} within {time_limit}s. "
+        f"Status: {status}."
+    )
+
+
 # ── Terminal render ────────────────────────────────────────────────────────────
 
 def render_mission_brief(data: dict[str, Any]) -> str:
@@ -114,23 +154,36 @@ def render_mission_brief(data: dict[str, Any]) -> str:
     w = _W
     lines = []
     lines.append("╔" + "═" * (w - 2) + "╗")
-    lines.append(f"║  MISSION BRIEF{' ' * (w - 17)}║")
+
+    goal_type = data.get("goal_type", "explore_detect")
+    if goal_type == "proximity":
+        lines.append(f"║  MISSION BRIEF — PROXIMITY{' ' * (w - 31)}║")
+    else:
+        lines.append(f"║  MISSION BRIEF{' ' * (w - 17)}║")
     lines.append("╠" + "═" * (w - 2) + "╣")
     scenario = data.get("scenario", "unknown")
     lines.append(f"║  Scenario : {scenario:<{w - 15}}║")
     time_limit = data.get("time_limit_seconds", "?")
     status = data.get("status", "?")
     lines.append(f"║  Time limit: {time_limit}s   Status: {status:<{w - 27}}║")
-    lines.append("║" + " " * (w - 2) + "║")
-    lines.append(f"║  Targets:{' ' * (w - 11)}║")
-    for t in data.get("targets", []):
-        label = t["type"].replace("_", " ")
-        if t["count_exact"]:
-            detail = f"×{t['count']}"
-        else:
-            detail = f"≥{t['min_count']}  (exact count unknown)"
-        row = f"║    • {label:<22} {detail}"
-        lines.append(row + " " * (w - 2 - len(row) + 2) + "║")
+
+    if goal_type == "proximity":
+        target = data.get("target_object", "?").replace("_", " ")
+        radius = data.get("proximity_radius", 2.0)
+        lines.append("║" + " " * (w - 2) + "║")
+        lines.append(f"║  Goal: Navigate within {radius:.0f}m of the {target:<{w - 34}}║")
+    else:
+        lines.append("║" + " " * (w - 2) + "║")
+        lines.append(f"║  Targets:{' ' * (w - 11)}║")
+        for t in data.get("targets", []):
+            label = t["type"].replace("_", " ")
+            if t["count_exact"]:
+                detail = f"×{t['count']}"
+            else:
+                detail = f"≥{t['min_count']}  (exact count unknown)"
+            row = f"║    • {label:<22} {detail}"
+            lines.append(row + " " * (w - 2 - len(row) + 2) + "║")
+
     lines.append("║" + " " * (w - 2) + "║")
     endpoint = f"http://localhost:{MISSION_PORT}/mission"
     ep_line = f"║  Endpoint: {endpoint}"

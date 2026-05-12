@@ -260,6 +260,7 @@ class ScenarioRunner:
         from metrics.detection_metrics import DetectionMetrics       # noqa: PLC0415
         from metrics.near_miss_tracker import NearMissTracker        # noqa: PLC0415
         from metrics.exploration_coverage import ExplorationCoverage  # noqa: PLC0415
+        from metrics.proximity_tracker import ProximityTracker        # noqa: PLC0415
 
         # All detection-related metric names served by one DetectionMetrics instance.
         _DETECTION_METRIC_NAMES = {
@@ -275,7 +276,7 @@ class ScenarioRunner:
 
         _implemented = {
             "meters_traveled", "collision_count", "revisit_ratio",
-            "near_miss_count", "exploration_coverage",
+            "near_miss_count", "exploration_coverage", "proximity_tracker",
         } | _DETECTION_METRIC_NAMES
 
         requested = set(self._cfg.get("metrics", {}).get("collect", []))
@@ -335,6 +336,14 @@ class ScenarioRunner:
                         odom_topic=f"/{robot_name}/odom",
                         node=node,
                     )
+                elif metric_name == "proximity_tracker":
+                    built[key] = ProximityTracker(
+                        odom_topic=f"/{robot_name}/odom",
+                        target_object=self._cfg["scenario"].get("target_object", ""),
+                        proximity_radius=float(self._cfg["scenario"].get("proximity_radius", 2.0)),
+                        scenario_config=self._cfg,
+                        node=node,
+                    )
                 log.debug("Metric registered: %s", key)
 
             if needs_detection:
@@ -382,7 +391,14 @@ class ScenarioRunner:
             "average_time_per_detection",
             "exploration_coverage",
             "avg_speed_kmh",
+            "proximity_reached",
+            "min_distance_to_target",
+            "straight_line_distance",
+            "proximity_path_length",
         }
+        # Boolean metrics — logical AND across robots (true only if all true)
+        _bool_and_metrics = {"proximity_reached"}
+        # When aggregating booleans, treat True=1, False=0 for averaging
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}
         dicts: dict[str, dict] = {}
@@ -395,14 +411,26 @@ class ScenarioRunner:
                     # For dict metrics (e.g. detection_by_type), last-write wins
                     # (they are identical across robots since the world is shared).
                     dicts[mname] = value
+                elif isinstance(value, bool):
+                    sums[mname] = sums.get(mname, 0.0) + int(value)
+                    counts[mname] = counts.get(mname, 0) + 1
                 elif isinstance(value, (int, float)):
                     sums[mname] = sums.get(mname, 0.0) + value
                     counts[mname] = counts.get(mname, 0) + 1
+                elif value is None:
+                    # Skip None values (e.g. time_to_proximity before reaching target)
+                    pass
 
         combined: dict[str, Any] = {}
         for mname, total in sums.items():
             n = counts[mname]
-            combined[mname] = total / n if mname in _avg_metrics else total
+            if mname in _bool_and_metrics:
+                # Boolean AND across robots: True only if all reached
+                combined[mname] = bool(total == n)
+            elif mname in _avg_metrics:
+                combined[mname] = total / n
+            else:
+                combined[mname] = total
         combined.update(lists)
         combined.update(dicts)
 
@@ -431,6 +459,10 @@ class ScenarioRunner:
         start    = get_time()
         deadline = start + timeout
         while get_time() < deadline:
+            # Update metrics that need periodic tick (e.g. ProximityTracker)
+            for m in metrics.values():
+                if hasattr(m, "update"):
+                    m.update()
             raw = self._collect_metrics(metrics)
             passed, _ = evaluate_criteria(self._cfg["success_criteria"], raw)
             if passed:

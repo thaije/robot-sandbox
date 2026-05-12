@@ -1,0 +1,75 @@
+scenario:
+  name: "basement_find_medium"
+  description: "Medium basement proximity — dim lighting, find the sewer pipe"
+  timeout_seconds: 300
+  goal_type: "proximity"
+  target_object: "sewer_pipe"
+  proximity_radius: 2.0
+
+world:
+  template: "basement"
+  variations:
+    lighting: "dim"
+    door_states: "open"
+  objects:
+    # ── Primary target ────────────────────────────────────────────────────
+    - type: "sewer_pipe"
+      count: 1
+      placement: "random"
+      mission_target: true
+    # ── Landmarks ──────────────────────────────────────────────────────────
+    - type: "water_heater"
+      count: 1
+      placement: "random"
+    - type: "electrical_panel"
+      count: 1
+      placement: "random"
+
+robots:
+  - platform: "derpbot"
+    name: "derpbot_0"
+    spawn_pose:
+      random: true
+      zones: ["basement"]
+
+metrics:
+  collect:
+    - meters_traveled
+    - task_completion_time
+    - exploration_coverage
+    - collision_count
+    - near_miss_count
+    - proximity_tracker
+
+success_criteria:
+  mode: "all_of"
+  conditions:
+    - metric: "proximity_reached"
+      operator: "=="
+      value: true
+      description: "Robot must reach within 2m of the sewer pipe"
+
+scoring:
+  category_weights:
+    success: 0.30
+    time: 0.25
+    safety: 0.20
+    efficiency: 0.25
+  par_values:
+    completion_time_par: 90.0
+    near_miss_threshold: 0.2
+  collision_thresholds: [0, 2, 5, 10]
+  collision_scores: [100, 80, 60, 40, 20]
+  grade_thresholds:
+    S: 95
+    A: 85
+    B: 70
+    C: 55
+    D: 40
+
+output:
+  format: "json"
+  directory: "./results/"
+  include_trajectory: true
+  include_detection_log: false
+  include_scorecard: true

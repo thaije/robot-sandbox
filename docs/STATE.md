@@ -1,6 +1,6 @@
 # STATE — robot-sandbox
 
-Gazebo Harmonic + ROS 2 Jazzy sim testbed. DerpBot (custom diff-drive) explores indoor office + detects objects, scored on Speed / Accuracy / Safety / Efficiency / Effectiveness.
+Gazebo Harmonic + ROS 2 Jazzy sim testbed. DerpBot (custom diff-drive) explores indoor environments, detects objects or navigates to targets. Scored on Speed/Accuracy/Safety/Efficiency/Effectiveness (explore-detect) or Success/Time/Safety/Efficiency (proximity-goal).
 Load this every session. What's next lives in [`ROADMAP.md`](ROADMAP.md); history lives in GitHub issues + commits.
 
 Agent-facing spec: [`AUTONOMOUS_AGENT_GUIDE.md`](AUTONOMOUS_AGENT_GUIDE.md)
@@ -10,18 +10,22 @@ Agent-facing spec: [`AUTONOMOUS_AGENT_GUIDE.md`](AUTONOMOUS_AGENT_GUIDE.md)
 ## What's running
 
 ```
-ScenarioRunner — scripts/run_scenario.sh config/scenarios/<tier>/<name>.yaml [--headless|--gui] [--seed N]
+ScenarioRunner — scripts/run_scenario.sh config/scenarios/<scenario>/<tier>.yaml [--headless|--gui] [--seed N]
   WorldGenerator       SDF from template + placed objects + embedded robots (gz sdf -p)
   SimulationLauncher   gz sim + robot_state_publisher + ros_gz bridges
-  rclpy metrics node   MetersTraveled, CollisionCount, RevisitRatio, ExplorationCoverage, DetectionMetrics, NearMissTracker
-  MissionServer        HTTP :7400/mission — mission brief + live status
-  ScoringEngine        Speed 0.20 / Accuracy 0.30 / Safety 0.20 / Efficiency 0.10 / Effectiveness 0.15 → JSON in results/
-                       Par values from human perception baseline (n=5/tier). Par = B grade (~70).
+  rclpy metrics node   MetersTraveled, CollisionCount, RevisitRatio, ExplorationCoverage, DetectionMetrics, NearMissTracker, ProximityTracker
+  MissionServer        HTTP :7400/mission — mission brief (explore_detect or proximity type) + live status
+  ScoringEngine        explore_detect: Speed/Accuracy/Safety/Efficiency/Effectiveness → JSON
+                        proximity-goal: Success/Time/Safety/Efficiency → JSON
+                        Par values from human perception baseline (n=5/tier). Par = B grade (~70).
 
 worlds/templates/indoor_office/   20×15 m, 4 rooms, PGM ground-truth map
-objects                           fire_extinguisher ×3, first_aid_kit ×2, hazard_sign ×4 — unique per-instance labels
-difficulty tiers                  easy / medium / hard / brutal / perception_stress
-                                  lighting, door states, dynamic obstacles, timeout — all YAML-driven
+worlds/templates/basement/       12×8 m, single room, 2.2 m ceiling, PGM ground-truth map
+scenario types                    explore_detect (find all targets) / proximity (reach target)
+objects                           fire_extinguisher, first_aid_kit, hazard_sign, exit_sign, person, sewer_pipe, water_heater, electrical_panel — unique per-instance labels
+difficulty tiers                  easy / medium / hard / brutal / perception_stress (office)
+                                   easy / medium (basement_find — proximity-goal)
+                                   lighting, door states, dynamic obstacles, timeout — all YAML-driven
 
 DerpBot topics (/derpbot_0/...)
   scan               LaserScan @ 9.8 Hz, 720 samples, 360°, 0.15–12 m
@@ -58,6 +62,8 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **Detection pose frame**: tracker expects agent detections in odom/map frame (odom origin = robot spawn). Applies spawn offset to convert to world frame. Oracle uses GT world positions directly.
 - **Leaderboard `detection_by_type` includes `mission_target`**: per-object-type boolean marking whether that type counts toward `found_ratio`. Leaderboard generator falls back to scenario YAML config for legacy JSONs lacking this field.
 - **Easy timeout is 900s** (not 300s). `easy_900s.yaml` has been merged into `easy.yaml`.
+- **Proximity-goal scenarios**: `goal_type: proximity` in scenario YAML switches scoring from 5-category explore-detect to 4-category (Success/Time/Safety/Efficiency). ProximityTracker metric uses ground-truth object positions from `world_state.json` + robot odom to compute distance. Success criterion is `proximity_reached == true` (robot within `proximity_radius` metres of `target_object`).
+- **Basement ceiling is 2.2 m** (vs 3.0 m in office). DerpBot camera at z=0.18 m still works; no ceiling collision issue.
 
 ### Gazebo / SDF
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Robots must be embedded in world SDF at generation time.
@@ -88,6 +94,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 ```bash
 # Automated (agent)
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/medium.yaml --headless --timeout 300 [--seed N]
+./scripts/run_scenario.sh config/scenarios/basement_find/easy.yaml --headless --seed 1
 
 # Dev session (GUI + teleop)
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui

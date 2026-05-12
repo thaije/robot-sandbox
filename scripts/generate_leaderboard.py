@@ -35,13 +35,25 @@ DIFFICULTY_LABELS = {
 }
 SCENARIO_LABELS = {
     "office_explore_detect": "Office: Explore &amp; Detect",
+    "basement_find": "Basement: Find &amp; Reach",
 }
-SCENARIOS_DIR = REPO_ROOT / "config" / "scenarios" / "office_explore_detect"
-SCENARIO_GOAL = (
-    "Explore an unknown indoor environment and detect all mission-target objects "
-    "before the time limit. Scored on Speed, Accuracy, Safety, Efficiency, "
-    "and Effectiveness."
-)
+SCENARIOS_DIR = REPO_ROOT / "config" / "scenarios"
+SCENARIO_GOALS = {
+    "office_explore_detect": (
+        "Explore an unknown indoor environment and detect all mission-target objects "
+        "before the time limit. Scored on Speed, Accuracy, Safety, Efficiency, "
+        "and Effectiveness."
+    ),
+    "basement_find": (
+        "Navigate to within a radius of the target object before the time limit. "
+        "Scored on Success, Time, Safety, and Efficiency."
+    ),
+}
+
+
+def _scenarios_dir(scenario: str) -> Path:
+    """Return the config directory for a scenario type."""
+    return SCENARIOS_DIR / scenario
 
 
 def _load_mission_targets(scenario: str, difficulty: str) -> set[str] | None:
@@ -50,7 +62,7 @@ def _load_mission_targets(scenario: str, difficulty: str) -> set[str] | None:
     Returns a set of type strings marked mission_target, or None if the
     config file cannot be found (caller should fall back to all types).
     """
-    cfg_path = SCENARIOS_DIR / f"{difficulty}.yaml"
+    cfg_path = _scenarios_dir(scenario) / f"{difficulty}.yaml"
     if not cfg_path.exists():
         return None
     try:
@@ -66,7 +78,7 @@ def _load_mission_targets(scenario: str, difficulty: str) -> set[str] | None:
 
 def _load_scenario_info(scenario: str, difficulty: str) -> dict:
     """Load timeout_seconds and description from the scenario YAML."""
-    cfg_path = SCENARIOS_DIR / f"{difficulty}.yaml"
+    cfg_path = _scenarios_dir(scenario) / f"{difficulty}.yaml"
     info: dict = {"timeout_seconds": None, "description": ""}
     if not cfg_path.exists():
         return info
@@ -102,6 +114,7 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
     paths: list[float] = []
     coverages: list[float] = []
     elapsed: list[float] = []
+    proximity_reached: list[bool] = []
     timeout_seconds: float | None = None
 
     found_files = 0
@@ -138,6 +151,8 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
                 paths.append(float(raw["meters_traveled"]))
             if "exploration_coverage" in raw:
                 coverages.append(float(raw["exploration_coverage"]))
+            if "proximity_reached" in raw:
+                proximity_reached.append(bool(raw["proximity_reached"]))
 
     if found_files == 0:
         return None
@@ -147,7 +162,7 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
     if timeout_seconds is None:
         timeout_seconds = scenario_info.get("timeout_seconds")
 
-    return {
+    result = {
         "stack_name": sub["stack_name"],
         "repo_url": sub.get("repo_url", ""),
         "code_url": sub.get("code_url", ""),
@@ -171,6 +186,12 @@ def aggregate_difficulty(sub: dict, results_dir: Path, difficulty: str) -> dict 
             "elapsed_s": _ms(elapsed),
         },
     }
+    if proximity_reached:
+        result["raw_metrics"]["proximity_success_rate"] = {
+            "mean": sum(proximity_reached) / len(proximity_reached),
+            "std": 0.0,
+        }
+    return result
 
 
 def build_leaderboard() -> list[dict]:
@@ -274,7 +295,7 @@ def render_html(entries: list[dict]) -> str:
   <img class="scenario-img" src="leaderboard_scenario.png" alt="Scenario preview">
   <div class="scenario-desc">
     <strong>{label}</strong><br>
-    {SCENARIO_GOAL}<br>
+    {SCENARIO_GOALS.get(scenario, SCENARIO_GOALS.get("office_explore_detect", ""))}<br>
     <span class="timeouts">Time limits — {timeout_parts}</span>
   </div>
 </div>
