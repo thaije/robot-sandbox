@@ -288,7 +288,7 @@ def render_html(entries: list[dict]) -> str:
                     rank += 1
 
                 ts = e["total_score"]
-                score_str = f"{_fmt(ts['mean'], 3)} ± {_fmt(ts['std'], 3)}"
+                score_str = f"{_fmt(ts['mean'], 3)} <span class=\"score-std\">± {_fmt(ts['std'], 3)}</span>"
                 tip = _tooltip(e["raw_metrics"])
 
                 repo_url = e.get("repo_url", "")
@@ -400,8 +400,7 @@ def render_html(entries: list[dict]) -> str:
   }}
   .scenario-img {{
     width: 160px;
-    height: 120px;
-    object-fit: cover;
+    height: auto;
     border-radius: 6px;
     background: #e0e2ea;
     flex-shrink: 0;
@@ -424,6 +423,52 @@ def render_html(entries: list[dict]) -> str:
     border-radius: 4px;
     padding: 0.15rem 0.5rem;
   }}
+  .score-std {{
+    font-size: 0.85em;
+    opacity: 0.7;
+  }}
+  @media (max-width: 640px) {{
+    body {{
+      margin: 0;
+      padding: 0.5rem 0;
+    }}
+    .scenario-info {{
+      flex-direction: column;
+      padding: 0.5rem;
+      margin: 0 0.25rem 0.75rem;
+      border-radius: 0;
+    }}
+    .scenario-img {{
+      width: 100%;
+      height: auto;
+    }}
+    h1 {{ font-size: 1.2rem; padding: 0 0.25rem; margin-bottom: 0.1rem; }}
+    .subtitle {{ font-size: 0.78rem; margin-bottom: 1rem; padding: 0 0.25rem; }}
+    .legend {{ padding: 0 0.25rem; }}
+    table {{ font-size: 0.72rem; table-layout: fixed; }}
+    th {{ padding: 6px 3px; font-size: 0.68rem; }}
+    td {{ padding: 4px 3px; overflow: hidden; text-overflow: ellipsis; }}
+    th:nth-child(1), td:nth-child(1) {{ width: 1.5rem; }}
+    th:nth-child(2), td:nth-child(2) {{ width: auto; }}
+    th:nth-child(3), td:nth-child(3) {{ width: 4.5rem; }}
+    th:nth-child(4), td:nth-child(4) {{ width: 3rem; }}
+    th:nth-child(5), td:nth-child(5) {{ width: 4.5rem; }}
+    th:nth-child(6), td:nth-child(6) {{ width: 3.5rem; }}
+    tr.scenario-header td {{ padding: 7px 4px; font-size: 0.82rem; }}
+    tr.diff-header td {{ padding: 4px 4px; font-size: 0.7rem; }}
+    .score-cell {{ white-space: normal; }}
+    .score-std {{ display: block; }}
+    .score-cell::after {{
+      white-space: normal;
+      width: max-content;
+      max-width: min(85vw, 280px);
+      left: 0;
+      transform: none;
+      bottom: calc(100% + 5px);
+      font-size: 0.72rem;
+      word-break: break-word;
+    }}
+  }}
 </style>
 </head>
 <body>
@@ -439,10 +484,10 @@ def render_html(entries: list[dict]) -> str:
 <tr>
   <th>#</th>
   <th>Stack</th>
-  <th>Score (mean ± std)</th>
+  <th>Score (mean <span class="score-std">± std</span>)</th>
   <th>Seeds × Runs</th>
   <th>Submitted</th>
-  <th>Sandbox version</th>
+  <th>Version</th>
 </tr>
 </thead>
 <tbody>

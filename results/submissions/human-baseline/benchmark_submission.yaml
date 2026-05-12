@@ -15,4 +15,5 @@ seeds: [1, 2, 3, 4, 5]
 runs_per_seed: 1
 results_dir: "results/submissions/human-baseline/"
 is_baseline: true
+submitted: "2026-05-11"
 description: "Human operator via teleop_twist_keyboard. Oracle detections enabled — isolates navigation skill. Score ceiling reference for leaderboard."

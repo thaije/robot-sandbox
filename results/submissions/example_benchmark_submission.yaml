@@ -5,7 +5,7 @@
 
 stack_name: "DerpBot Explorer v1"
 repo_url: "https://github.com/example/your-agent"
-sandbox_version: "v1.0-benchmark"        # git tag of robot-sandbox used for your runs
+sandbox_version: "v1.0-benchmark"        # git tag of robot-sandbox used for your runs (use the latest release tag)
 scenario: "office_explore_detect"
 difficulties:                            # list of completed difficulties
   - easy
@@ -15,6 +15,7 @@ difficulties:                            # list of completed difficulties
   - perception_stress
 seeds: [1, 2, 3, 4, 5]
 runs_per_seed: 3
+submitted: "2026-01-01"                  # ISO date (YYYY-MM-DD)
 # results_dir must contain one JSON per run named <difficulty>_seed<N>_run<K>.json
 results_dir: "results/submissions/your-agent-name/"
 description: "Brief description of your navigation + detection approach"

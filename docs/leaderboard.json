@@ -257,7 +257,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-5dd09e5",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "easy",
     "is_baseline": false,
@@ -270,7 +270,7 @@
       5
     ],
     "runs_per_seed": 3,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 900.0,
     "difficulty_description": "Easy office exploration \u2014 bright lighting, open doors, comfortable timeout",
     "total_score": {
@@ -308,7 +308,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-5dd09e5",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "medium",
     "is_baseline": false,
@@ -321,7 +321,7 @@
       5
     ],
     "runs_per_seed": 3,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 600.0,
     "difficulty_description": "Medium office exploration \u2014 calibrated baseline, normal lighting, random doors",
     "total_score": {
@@ -359,7 +359,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-5dd09e5",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "hard",
     "is_baseline": false,
@@ -372,7 +372,7 @@
       5
     ],
     "runs_per_seed": 3,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 300.0,
     "difficulty_description": "Hard office exploration \u2014 dim localized lighting, closed doors, vertical objects, far spawn",
     "total_score": {
@@ -410,7 +410,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-5dd09e5",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "brutal",
     "is_baseline": false,
@@ -423,7 +423,7 @@
       5
     ],
     "runs_per_seed": 3,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 180.0,
     "difficulty_description": "Brutal office exploration \u2014 flickering dim lights, closed doors, patrol bot, vertical objects, tight timeout",
     "total_score": {
@@ -461,7 +461,7 @@
   {
     "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v2-imu-odom",
     "repo_url": "https://github.com/thaije/derpbot-explorer",
-    "sandbox_version": "main-5dd09e5",
+    "sandbox_version": "v1.0.0",
     "scenario": "office_explore_detect",
     "difficulty": "perception_stress",
     "is_baseline": false,
@@ -474,7 +474,7 @@
       5
     ],
     "runs_per_seed": 3,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 600.0,
     "difficulty_description": "Perception stress test \u2014 flicker red emergency lighting, smoke, fast patrol bot, cornered exit signs",
     "total_score": {
@@ -525,7 +525,7 @@
       5
     ],
     "runs_per_seed": 1,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 900.0,
     "difficulty_description": "Easy office exploration \u2014 bright lighting, open doors, comfortable timeout",
     "total_score": {
@@ -576,7 +576,7 @@
       5
     ],
     "runs_per_seed": 1,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 600.0,
     "difficulty_description": "Medium office exploration \u2014 calibrated baseline, normal lighting, random doors",
     "total_score": {
@@ -627,7 +627,7 @@
       5
     ],
     "runs_per_seed": 1,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 300.0,
     "difficulty_description": "Hard office exploration \u2014 dim localized lighting, closed doors, vertical objects, far spawn",
     "total_score": {
@@ -678,7 +678,7 @@
       5
     ],
     "runs_per_seed": 1,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 180.0,
     "difficulty_description": "Brutal office exploration \u2014 flickering dim lights, closed doors, patrol bot, vertical objects, tight timeout",
     "total_score": {
@@ -729,7 +729,7 @@
       5
     ],
     "runs_per_seed": 1,
-    "submitted": "",
+    "submitted": "2026-05-11",
     "timeout_seconds": 600.0,
     "difficulty_description": "Perception stress test \u2014 flicker red emergency lighting, smoke, fast patrol bot, cornered exit signs",
     "total_score": {

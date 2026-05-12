@@ -221,6 +221,8 @@ Example: `easy_seed1_run1.json`, `brutal_seed3_run2.json`.
 
 Copy `results/submissions/example_benchmark_submission.yaml`, fill in your details, and place it alongside your results directory.
 
+**`sandbox_version`** must be the **latest release tag** of robot-sandbox (e.g. `v1.0.0`), not a branch name or commit hash. This ensures reproducibility — the tag pins the exact benchmark version used for your runs. Check available tags with `git tag --list`.
+
 ### Validate before submitting
 
 ```bash

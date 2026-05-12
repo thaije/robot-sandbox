@@ -25,6 +25,7 @@ REQUIRED_SUBMISSION_KEYS = {
     "seeds",
     "runs_per_seed",
     "results_dir",
+    "submitted",
 }
 
 REQUIRED_RESULT_KEYS = {
