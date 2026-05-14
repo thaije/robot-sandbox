@@ -41,7 +41,7 @@ All tiers use the same indoor office map and object set; difficulty is controlle
 
 ## Difficulty tiers — basement_find
 
-Proximity-goal: navigate to within 2 m of the sewer pipe. Single room (12 × 8 m, 2.2 m ceiling). No detection reporting needed — success is automatic when the robot enters the proximity radius.
+Proximity-goal: navigate to within 1 m of the target AND report a valid detection. You must both reach the target and confirm it via a detection message — random driving won't succeed.
 
 | Tier | YAML | Lighting | Timeout |
 |------|------|----------|---------|
@@ -146,7 +146,7 @@ Press `f` (fire_extinguisher), `a` (first_aid_kit), `p` (person) each time you s
 
 ### Basement proximity — manual navigation baseline
 
-For proximity-goal scenarios, no detection reporting is needed — just drive the robot to the target. The run ends automatically when you enter the 2 m proximity radius.
+For proximity-goal scenarios, you must both drive to within 1 m of the target AND report a detection. Use `human_detector_node.py` to publish detections while teleoping:
 
 ```bash
 # Terminal 1 — run scenario:
@@ -156,10 +156,15 @@ For proximity-goal scenarios, no detection reporting is needed — just drive th
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
   --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
 
-# Terminal 3 — camera view (recommended, helps identify the sewer pipe):
+# Terminal 3 — detection keypresses (required for proximity scenarios):
+python3.12 scripts/human_detector_node.py
+
+# Terminal 4 — camera view (recommended, helps identify the target):
 ros2 run rqt_image_view rqt_image_view
 # Select /derpbot_0/rgbd/image
 ```
+
+The `human_detector_node.py` script fetches target types from the mission server at startup and maps them to keypresses. Press the corresponding key once when you see the target object — the script publishes a detection at your current robot position.
 
 Results go to `results/submissions/human-baseline-oracle/` or `results/submissions/human-baseline-perception/`. 
 
