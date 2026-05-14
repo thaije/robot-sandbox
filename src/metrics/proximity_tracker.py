@@ -69,6 +69,7 @@ class ProximityTracker(BaseMetric):
         self._min_distance: float = float("inf")
         self._path_length: float = 0.0
         self._start_time: float | None = None
+        self._sim_start: float | None = None
 
         self._prev_x: float | None = None
         self._prev_y: float | None = None
@@ -127,6 +128,7 @@ class ProximityTracker(BaseMetric):
             pass
 
         self._load_target_position()
+        self._start_time = self._node.get_clock().now().nanoseconds * 1e-9
 
         from nav_msgs.msg import Odometry  # noqa: PLC0415
 
@@ -177,6 +179,8 @@ class ProximityTracker(BaseMetric):
 
         if not self._reached and dist <= self._proximity_radius:
             self._reached = True
+            now = self._node.get_clock().now().nanoseconds * 1e-9
+            self._time_to_target = round(now - self._start_time, 2) if self._start_time else None
 
     def get_result(self) -> dict[str, Any]:
         return {

@@ -131,21 +131,27 @@ class ScoringEngine:
         """Compute scorecard for proximity-goal scenarios.
 
         Categories:
-        * success   — binary: 100 if reached, 0 if not
+        * success   — binary: 100 if reached AND target detected, 0 if not
         * time      — time-to-proximity vs par (0 if not reached)
         * safety    — collision/near-miss (same as explore_detect)
         * efficiency — path_length / straight_line_distance (lower = better)
+
+        Proximity success requires BOTH reaching the proximity radius AND
+        confirming the target via a true-positive detection (found_ratio >= 1.0).
+        This prevents random driving or standing still from succeeding.
         """
         scenario = scenario_config["scenario"]
         proximity_reached = bool(metrics.get("proximity_reached", False))
+        found_ratio = float(metrics.get("found_ratio", 0.0))
 
-        # Success (binary)
-        success_score = 100.0 if proximity_reached else 0.0
+        # Success: both proximity and detection must be satisfied
+        proximity_success = proximity_reached and found_ratio >= 1.0
+        success_score = 100.0 if proximity_success else 0.0
 
         # Time: par → 70, faster → higher, capped at 100
         elapsed = float(metrics.get("task_completion_time", timeout))
         par_time = float(par.get("completion_time_par", timeout * 0.5))
-        if proximity_reached and elapsed > 0:
+        if proximity_success and elapsed > 0:
             time_score = round(min(100.0, par_time / elapsed * 70), 2)
         else:
             time_score = 0.0
@@ -156,7 +162,7 @@ class ScoringEngine:
         # Efficiency: path_length / straight_line_distance
         path_length = float(metrics.get("proximity_path_length", metrics.get("meters_traveled", 0.0)))
         straight_line = float(metrics.get("straight_line_distance", 0.0))
-        if proximity_reached and path_length > 0 and straight_line > 0:
+        if proximity_success and path_length > 0 and straight_line > 0:
             efficiency_ratio = straight_line / path_length
             efficiency_score = round(min(100.0, efficiency_ratio * 100), 2)
         else:
@@ -176,6 +182,8 @@ class ScoringEngine:
         raw = dict(metrics)
         raw["goal_type"] = "proximity"
         raw["proximity_reached"] = proximity_reached
+        raw["target_detected"] = found_ratio >= 1.0
+        raw["proximity_success"] = proximity_success
         raw["min_distance_to_target"] = metrics.get("min_distance_to_target")
         raw["straight_line_distance"] = metrics.get("straight_line_distance")
 

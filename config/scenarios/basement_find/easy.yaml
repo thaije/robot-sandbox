@@ -1,10 +1,10 @@
 scenario:
   name: "basement_find_easy"
-  description: "Easy basement proximity — bright lighting, find the drink can"
+  description: "Easy basement proximity — bright lighting, find and detect the drink can"
   timeout_seconds: 300
   goal_type: "proximity"
   target_object: "drink_can"
-  proximity_radius: 2.0
+  proximity_radius: 1.0
 
 world:
   template: "basement"
@@ -37,6 +37,7 @@ metrics:
     - collision_count
     - near_miss_count
     - proximity_tracker
+    - detection_metrics
 
 success_criteria:
   mode: "all_of"
@@ -44,7 +45,11 @@ success_criteria:
     - metric: "proximity_reached"
       operator: "=="
       value: true
-      description: "Robot must reach within 2m of the drink can"
+      description: "Robot must reach within 1m of the drink can"
+    - metric: "found_ratio"
+      operator: ">="
+      value: 1.0
+      description: "Robot must detect the target object (true positive confirmed)"
 
 scoring:
   category_weights:
@@ -68,5 +73,5 @@ output:
   format: "json"
   directory: "./results/"
   include_trajectory: true
-  include_detection_log: false
+  include_detection_log: true
   include_scorecard: true

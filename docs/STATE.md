@@ -62,7 +62,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **Detection pose frame**: tracker expects agent detections in odom/map frame (odom origin = robot spawn). Applies spawn offset to convert to world frame. Oracle uses GT world positions directly.
 - **Leaderboard `detection_by_type` includes `mission_target`**: per-object-type boolean marking whether that type counts toward `found_ratio`. Leaderboard generator falls back to scenario YAML config for legacy JSONs lacking this field.
 - **Easy timeout is 900s** (not 300s). `easy_900s.yaml` has been merged into `easy.yaml`.
-- **Proximity-goal scenarios**: `goal_type: proximity` in scenario YAML switches scoring from 5-category explore-detect to 4-category (Success/Time/Safety/Efficiency). ProximityTracker metric uses ground-truth object positions from `world_state.json` + robot odom to compute distance. Success criterion is `proximity_reached == true` (robot within `proximity_radius` metres of `target_object`).
+- **Proximity-goal scenarios**: `goal_type: proximity` in scenario YAML switches scoring from 5-category explore-detect to 4-category (Success/Time/Safety/Efficiency). ProximityTracker uses ground-truth positions from `world_state.json` + robot odom. Success requires BOTH `proximity_reached == true` AND `found_ratio >= 1.0` — the robot must reach within `proximity_radius` metres of the target AND publish a valid Detection2DArray for it. Proximity radius changed from 2.0 m to 1.0 m.
 - **Basement ceiling is 0.8 m** (80 cm — very low, was 2.2 m). DerpBot camera at z=0.18 m; ceiling at 0.8 m means only 0.62 m clearance above camera. No ceiling collision issue currently but very tight.
 
 ### Gazebo / SDF

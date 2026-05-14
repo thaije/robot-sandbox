@@ -89,16 +89,18 @@ def build_mission_data(cfg: dict) -> dict[str, Any]:
         proximity_radius = float(scenario.get("proximity_radius", 2.0))
         target_desc = target_object.replace("_", " ")
         goal_text = (
-            f"Find the {target_desc} and navigate within {proximity_radius:.0f} "
-            f"metre{'s' if proximity_radius != 1.0 else ''} of it before the time limit expires."
+            f"Find the {target_desc}, navigate within {proximity_radius:.0f} "
+            f"metre{'s' if proximity_radius != 1.0 else ''} of it, and report "
+            f"a detection via /derpbot_0/detections before the time limit expires."
         )
         return {
             "scenario": scenario.get("name", "unknown"),
             "goal_type": "proximity",
             "goal": goal_text,
             "target_object": target_object,
-            "target_description": f"find the {target_desc} and navigate within {proximity_radius:.0f}m",
+            "target_description": f"find the {target_desc}, navigate within {proximity_radius:.0f}m, and detect it",
             "proximity_radius": proximity_radius,
+            "requires_detection": True,
             "time_limit_seconds": time_limit,
             "targets": targets,
             "status": "running",
@@ -142,8 +144,8 @@ def _build_description_proximity(
 ) -> str:
     label = target_object.replace("_", " ")
     return (
-        f"Navigate within {proximity_radius:.0f}m of the {label} within {time_limit}s. "
-        f"Status: {status}."
+        f"Navigate within {proximity_radius:.0f}m of the {label} AND report a valid "
+        f"detection for it within {time_limit}s. Status: {status}."
     )
 
 
@@ -171,7 +173,8 @@ def render_mission_brief(data: dict[str, Any]) -> str:
         target = data.get("target_object", "?").replace("_", " ")
         radius = data.get("proximity_radius", 2.0)
         lines.append("║" + " " * (w - 2) + "║")
-        lines.append(f"║  Goal: Navigate within {radius:.0f}m of the {target:<{w - 34}}║")
+        lines.append(f"║  Goal: Navigate within {radius:.0f}m of the {target:<{w - 38}}║")
+        lines.append(f"║        AND report a valid detection{' ' * (w - 39)}║")
     else:
         lines.append("║" + " " * (w - 2) + "║")
         lines.append(f"║  Targets:{' ' * (w - 11)}║")
@@ -228,11 +231,19 @@ class MissionServer:
             self._data["status"] = status
             if outcome is not None:
                 self._data["outcome"] = outcome
-            self._data["description"] = _build_description(
-                self._data["targets"],
-                self._data["time_limit_seconds"],
-                status,
-            )
+            if self._data.get("goal_type") == "proximity":
+                self._data["description"] = _build_description_proximity(
+                    self._data.get("target_object", "unknown"),
+                    self._data.get("proximity_radius", 2.0),
+                    self._data["time_limit_seconds"],
+                    status,
+                )
+            else:
+                self._data["description"] = _build_description(
+                    self._data["targets"],
+                    self._data["time_limit_seconds"],
+                    status,
+                )
 
     def snapshot(self) -> dict[str, Any]:
         """Return a thread-safe copy of the current mission data."""

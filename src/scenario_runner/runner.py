@@ -392,12 +392,14 @@ class ScenarioRunner:
             "exploration_coverage",
             "avg_speed_kmh",
             "proximity_reached",
+            "target_detected",
+            "proximity_success",
             "min_distance_to_target",
             "straight_line_distance",
             "proximity_path_length",
         }
         # Boolean metrics — logical AND across robots (true only if all true)
-        _bool_and_metrics = {"proximity_reached"}
+        _bool_and_metrics = {"proximity_reached", "target_detected", "proximity_success"}
         # When aggregating booleans, treat True=1, False=0 for averaging
         sums: dict[str, float] = {}
         lists: dict[str, list] = {}
