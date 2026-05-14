@@ -1,37 +1,20 @@
 <?xml version="1.0" ?>
 <!--
-  Basement World — ARST V2 (Your actual basement)
+  Basement World — ARST V2
 
-  Layout (8 m × 6 m outer, 0.8 m ceiling):
+  Layout (6 m wide E-W × 8 m long N-S, 0.8 m ceiling):
 
-  y=6 ┌─────────────────────┐
-      │       Room 2         │
-      │   x=[6,8] y=[4,6]   │
-      │   2m wide × 2m deep │
-      │   (utility room)    │
-  y=4 ├──passage─────────────┤  passage at (6,4) ≈ 0.8m wide
-      │     ║                │
-      │     ║ passage(5.5,2.5)→Room 3
-      │ R1  ║    Room 3      │
-      │     ║ x=[5.5,8]      │
-      │     ║ y=[0,3]        │
-      │     ║ 2.5m×3m storage│
-  y=0 └────╨─────────────────┘
-       x=0 x=4/5.5   x=8
+  Room 1 (main, west):   x=[0,4] y=[0,8]  — 4m × 8m
+  Room 2 (SE side):     x=[4,6] y=[0,3]  — 2m × 3m
+  Room 3 (NE side):     x=[4,6] y=[3,8]  — 2m × 5m
 
-  Room 1 (main):              x=[0,8] y=[0,4]  → 8m × 4m
-  Room 2 (utility, NE corner): x=[6,8] y=[4,6] → 2m × 2m
-  Room 3 (storage, east side):  x=[5.5,8] y=[0,3] → 2.5m × 3m
+  Passages (~0.8 m wide, arched at top):
+    Room 1 ↔ Room 2: wall at x=4, gap at y≈1.5
+    Room 1 ↔ Room 3: wall at x=4, gap at y≈5.5
+    Wall between R2 and R3 at y=3, full span from x=4 to x=6
 
-  Passages (~0.8 m wide, with 0.5 m arch on top):
-    - Main ↔ Room 3: wall at x=5.5, gap at y≈2.5  (0.8m wide)
-    - Main ↔ Room 2: wall at y≈4, gap at x≈6      (0.8m wide)
-      Also wall at x=6, y=[4,6] for Room 2 west wall with passage at y≈4.5
-
-  Ceiling: 0.8 m (80 cm) — low basement crawl-through height.
-  Walls: Brick texture. Floor: Sand texture.
-  Objects: Yellow electrical conduits on ceiling, gray sewer pipes hanging,
-           blue water pipes on walls, cardboard boxes, drink cans, mouse.
+  Ceiling: 0.8 m.  Walls: brick.  Floor: sand/concrete.
+  Infrastructure: yellow conduits, gray sewer pipes, blue water pipes.
 -->
 <sdf version="1.9">
   <world name="basement">
@@ -59,10 +42,9 @@
       <grid>false</grid>
     </scene>
 
-    <!-- Room 1 bare-bulb ceiling light (centre of main room) -->
     <light type="point" name="light_room1">
       <cast_shadows>false</cast_shadows>
-      <pose>2.5 2.0 0.75 0 0 0</pose>
+      <pose>2.0 4.0 0.75 0 0 0</pose>
       <diffuse>1.0 0.95 0.85 1</diffuse>
       <specular>0.3 0.28 0.25 1</specular>
       <attenuation>
@@ -73,10 +55,9 @@
       </attenuation>
     </light>
 
-    <!-- Room 2 bare-bulb ceiling light (utility room NE) -->
     <light type="point" name="light_room2">
       <cast_shadows>false</cast_shadows>
-      <pose>7.0 5.0 0.75 0 0 0</pose>
+      <pose>5.0 1.5 0.75 0 0 0</pose>
       <diffuse>0.7 0.68 0.62 1</diffuse>
       <specular>0.15 0.14 0.12 1</specular>
       <attenuation>
@@ -87,10 +68,9 @@
       </attenuation>
     </light>
 
-    <!-- Room 3 bare-bulb ceiling light (storage room) -->
     <light type="point" name="light_room3">
       <cast_shadows>false</cast_shadows>
-      <pose>6.75 1.5 0.75 0 0 0</pose>
+      <pose>5.0 5.5 0.75 0 0 0</pose>
       <diffuse>0.7 0.68 0.62 1</diffuse>
       <specular>0.15 0.14 0.12 1</specular>
       <attenuation>
@@ -120,17 +100,16 @@
     </model>
 
     <!-- ═════════════════════════════ OUTER WALLS ══════════════════════════════ -->
-    <!-- Wall thickness = 0.1 m (thin interior walls for basement concrete/brick) -->
-    <!-- Ceiling height = 0.8 m -->
+    <!-- Layout: 6m wide (x) × 8m long (y), wall thickness 0.1m, ceiling 0.8m -->
 
-    <!-- South wall — y=0, x=[0,8] -->
+    <!-- South wall — y=0, x=[0,6] -->
     <model name="wall_south">
       <static>true</static>
-      <pose>4 0 0.4 0 0 0</pose>
+      <pose>3 0 0.4 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>8.2 0.1 0.8</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>6.2 0.1 0.8</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>8.2 0.1 0.8</size></box></geometry>
+          <geometry><box><size>6.2 0.1 0.8</size></box></geometry>
           <material>
             <ambient>0.55 0.35 0.22 1</ambient>
             <diffuse>0.70 0.45 0.28 1</diffuse>
@@ -139,14 +118,14 @@
       </link>
     </model>
 
-    <!-- North wall — y=6, x=[0,8] -->
+    <!-- North wall — y=8, x=[0,6] -->
     <model name="wall_north">
       <static>true</static>
-      <pose>4 6 0.4 0 0 0</pose>
+      <pose>3 8 0.4 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>8.2 0.1 0.8</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>6.2 0.1 0.8</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>8.2 0.1 0.8</size></box></geometry>
+          <geometry><box><size>6.2 0.1 0.8</size></box></geometry>
           <material>
             <ambient>0.55 0.35 0.22 1</ambient>
             <diffuse>0.70 0.45 0.28 1</diffuse>
@@ -155,14 +134,14 @@
       </link>
     </model>
 
-    <!-- West wall — x=0, y=[0,6] -->
+    <!-- West wall — x=0, y=[0,8] -->
     <model name="wall_west">
       <static>true</static>
-      <pose>0 3 0.4 0 0 0</pose>
+      <pose>0 4 0.4 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>0.1 6.2 0.8</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>0.1 8.2 0.8</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>0.1 6.2 0.8</size></box></geometry>
+          <geometry><box><size>0.1 8.2 0.8</size></box></geometry>
           <material>
             <ambient>0.55 0.35 0.22 1</ambient>
             <diffuse>0.70 0.45 0.28 1</diffuse>
@@ -171,14 +150,14 @@
       </link>
     </model>
 
-    <!-- East wall — x=8, y=[0,6] -->
+    <!-- East wall — x=6, y=[0,8] -->
     <model name="wall_east">
       <static>true</static>
-      <pose>8 3 0.4 0 0 0</pose>
+      <pose>6 4 0.4 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>0.1 6.2 0.8</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>0.1 8.2 0.8</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>0.1 6.2 0.8</size></box></geometry>
+          <geometry><box><size>0.1 8.2 0.8</size></box></geometry>
           <material>
             <ambient>0.55 0.35 0.22 1</ambient>
             <diffuse>0.70 0.45 0.28 1</diffuse>
@@ -188,46 +167,13 @@
     </model>
 
     <!-- ═════════════════════════════ INTERNAL WALLS ═══════════════════════════ -->
-    <!-- Room 3 west wall: x=5.5, y=[0, 2.1] (below passage at y≈2.5, 0.8m gap) -->
-    <model name="wall_r3_west_lower">
-      <static>true</static>
-      <pose>5.5 1.05 0.4 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>0.1 2.1 0.8</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>0.1 2.1 0.8</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
+    <!-- Internal wall at x=4 with two passage gaps (0.8m wide, arched at top) -->
+    <!-- R1↔R2 passage: y=[1.1, 1.9]  R1↔R3 passage: y=[5.1, 5.9] -->
 
-    <!-- Room 3 west wall: x=5.5, y=[2.9, 3.0] (above passage) — tiny section to ceiling -->
-    <!-- Actually: passage from y=2.1 to y=2.9, so wall gap. Wall continues above passage: y=[2.9, 3.0] is very thin. -->
-    <!-- Instead: passage arch — 0.5m tall arch on top of 0.3m opening -->
-    <!-- Passage opening: y=[2.1, 2.9] (0.8m wide), full 0.8m tall -->
-    <!-- Arch above passage: thin curved wall from y=[2.1, 2.9] at z=[0.55, 0.8] approximated as box -->
-    <model name="wall_r3_west_upper">
+    <!-- Wall below R2 passage: x=4, y=[0, 1.1] -->
+    <model name="wall_divide_lower">
       <static>true</static>
-      <pose>5.5 2.5 0.675 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>0.1 0.8 0.25</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>0.1 0.8 0.25</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Room 3 west wall: x=5.5, y=[2.9, 4.0] (between passage and top of Room 3) -->
-    <model name="wall_r3_west_mid">
-      <static>true</static>
-      <pose>5.5 3.45 0.4 0 0 0</pose>
+      <pose>4 0.55 0.4 0 0 0</pose>
       <link name="link">
         <collision name="col"><geometry><box><size>0.1 1.1 0.8</size></box></geometry></collision>
         <visual name="vis">
@@ -240,81 +186,10 @@
       </link>
     </model>
 
-    <!-- Room 3 north wall: y=3, x=[5.5, 8.0] -->
-    <model name="wall_r3_north">
+    <!-- R2 passage arch: x=4, y=[1.1, 1.9], z=[0.55, 0.8] -->
+    <model name="wall_divide_arch_r2">
       <static>true</static>
-      <pose>6.75 3 0.4 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>2.5 0.1 0.8</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>2.5 0.1 0.8</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Room 1 north wall segment: y=4, x=[0, 5.5] -->
-    <!-- This wall separates Room 1 from the Room 2 corridor area above -->
-    <model name="wall_r1_north_left">
-      <static>true</static>
-      <pose>2.75 4 0.4 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>5.5 0.1 0.8</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>5.5 0.1 0.8</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Wall between Room 2/3 corridor and Room 1: x=[5.5, 6] at y=4 to y=5 -->
-    <!-- This is the corner piece connecting R3 north wall to R2 area -->
-    <!-- Corridor segment: y=[3, 4], x=[5.5, 8] is part of Room 1's east extension -->
-    <!-- Wall at y=4, x=[5.5, 6]: short segment before passage -->
-    <model name="wall_corridor_west_above_r3">
-      <static>true</static>
-      <pose>5.75 3.5 0.4 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>0.5 0.1 0.8</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>0.5 0.1 0.8</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Room 2 west wall: x=6, y=[4, 6] with passage at bottom (y≈4 to y≈4.8) -->
-    <!-- Wall below passage: x=6, y=[4.0, 4.0] — nothing, passage starts here -->
-    <!-- Wall x=6, y=[0, 4] is already handled as wall_r3_west_upper area -->
-    <!-- Room 2 west wall: x=6, y=[4.8, 6] (above passage) -->
-    <model name="wall_r2_west_above">
-      <static>true</static>
-      <pose>6 5.4 0.4 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>0.1 1.2 0.8</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>0.1 1.2 0.8</size></box></geometry>
-          <material>
-            <ambient>0.55 0.35 0.22 1</ambient>
-            <diffuse>0.70 0.45 0.28 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Room 2 west wall passage arch (above y=[4.0, 4.8] opening) -->
-    <model name="wall_r2_west_arch">
-      <static>true</static>
-      <pose>6 4.4 0.675 0 0 0</pose>
+      <pose>4 1.5 0.675 0 0 0</pose>
       <link name="link">
         <collision name="col"><geometry><box><size>0.1 0.8 0.25</size></box></geometry></collision>
         <visual name="vis">
@@ -327,12 +202,78 @@
       </link>
     </model>
 
+    <!-- Wall between passages: x=4, y=[1.9, 5.1] -->
+    <model name="wall_divide_mid">
+      <static>true</static>
+      <pose>4 3.5 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.1 3.2 0.8</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.1 3.2 0.8</size></box></geometry>
+          <material>
+            <ambient>0.55 0.35 0.22 1</ambient>
+            <diffuse>0.70 0.45 0.28 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- R3 passage arch: x=4, y=[5.1, 5.9], z=[0.55, 0.8] -->
+    <model name="wall_divide_arch_r3">
+      <static>true</static>
+      <pose>4 5.5 0.675 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.1 0.8 0.25</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.1 0.8 0.25</size></box></geometry>
+          <material>
+            <ambient>0.55 0.35 0.22 1</ambient>
+            <diffuse>0.70 0.45 0.28 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Wall above R3 passage: x=4, y=[5.9, 8] -->
+    <model name="wall_divide_upper">
+      <static>true</static>
+      <pose>4 6.95 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.1 2.1 0.8</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.1 2.1 0.8</size></box></geometry>
+          <material>
+            <ambient>0.55 0.35 0.22 1</ambient>
+            <diffuse>0.70 0.45 0.28 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Wall between R2 and R3: y=3, x=[4, 6] -->
+    <model name="wall_r2_r3_divide">
+      <static>true</static>
+      <pose>5 3 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>2.0 0.1 0.8</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>2.0 0.1 0.8</size></box></geometry>
+          <material>
+            <ambient>0.55 0.35 0.22 1</ambient>
+            <diffuse>0.70 0.45 0.28 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+
+
     <!-- ═════════════════════════════ FURNITURE ════════════════════════════════ -->
 
     <!-- Cardboard boxes cluster (SW corner of Room 1) -->
     <model name="cardboard_box_1">
       <static>true</static>
-      <pose>1.0 1.0 0.15 0 0 0.3</pose>
+      <pose>0.8 0.8 0.15 0 0 0.3</pose>
       <link name="link">
         <collision name="col"><geometry><box><size>0.3 0.25 0.3</size></box></geometry></collision>
         <visual name="vis">
@@ -344,7 +285,7 @@
 
     <model name="cardboard_box_2">
       <static>true</static>
-      <pose>1.3 1.2 0.1 0 0 -0.2</pose>
+      <pose>1.1 1.0 0.1 0 0 -0.2</pose>
       <link name="link">
         <collision name="col"><geometry><box><size>0.25 0.2 0.2</size></box></geometry></collision>
         <visual name="vis">
@@ -356,7 +297,7 @@
 
     <model name="cardboard_box_3">
       <static>true</static>
-      <pose>0.8 1.3 0.25 0 0 0.1</pose>
+      <pose>0.6 1.1 0.25 0 0 0.1</pose>
       <link name="link">
         <collision name="col"><geometry><box><size>0.2 0.18 0.25</size></box></geometry></collision>
         <visual name="vis">
@@ -368,10 +309,26 @@
 
     <!-- ═════════════════════════════ INFRASTRUCTURE ══════════════════════════ -->
 
-    <!-- Yellow electrical conduits on ceiling (Room 1) — runs along west wall at ceiling level -->
+    <!-- Yellow electrical conduit along west wall, N-S at ceiling -->
     <model name="conduit_west_wall">
       <static>true</static>
-      <pose>0.15 2.0 0.76 0 0 0</pose>
+      <pose>0.15 4.0 0.76 1.5708 0 0</pose>
+      <link name="link">
+        <visual name="vis">
+          <geometry><cylinder><radius>0.015</radius><length>8.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.95 0.80 0.10 1</ambient>
+            <diffuse>1.0 0.85 0.15 1</diffuse>
+          </material>
+        </visual>
+        <collision name="col"><geometry><cylinder><radius>0.015</radius><length>8.0</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <!-- Yellow conduit — E-W cross at y=4 -->
+    <model name="conduit_cross_1">
+      <static>true</static>
+      <pose>2.0 4.0 0.78 0 1.5708 0</pose>
       <link name="link">
         <visual name="vis">
           <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
@@ -384,60 +341,44 @@
       </link>
     </model>
 
-    <!-- Yellow conduit — cross-connection on ceiling (more conduit density near x=2) -->
-    <model name="conduit_cross_1">
+    <!-- Yellow conduit — E-W cross at y=2 -->
+    <model name="conduit_cross_2">
       <static>true</static>
       <pose>2.0 2.0 0.78 0 1.5708 0</pose>
       <link name="link">
         <visual name="vis">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material>
             <ambient>0.95 0.80 0.10 1</ambient>
             <diffuse>1.0 0.85 0.15 1</diffuse>
           </material>
         </visual>
-        <collision name="col"><geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry></collision>
+        <collision name="col"><geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry></collision>
       </link>
     </model>
 
-    <!-- Yellow conduit — more density near x=3 (junction box area) -->
-    <model name="conduit_cross_2">
+    <!-- Yellow conduit — E-W cross at y=6 -->
+    <model name="conduit_cross_3">
       <static>true</static>
-      <pose>3.0 0.5 0.78 0 1.5708 0</pose>
+      <pose>1.5 6.0 0.78 0 1.5708 0</pose>
       <link name="link">
         <visual name="vis">
-          <geometry><cylinder><radius>0.015</radius><length>1.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>3.0</length></cylinder></geometry>
           <material>
             <ambient>0.95 0.80 0.10 1</ambient>
             <diffuse>1.0 0.85 0.15 1</diffuse>
           </material>
         </visual>
-        <collision name="col"><geometry><cylinder><radius>0.015</radius><length>1.0</length></cylinder></geometry></collision>
-      </link>
-    </model>
-
-    <!-- Junction box on ceiling where conduits converge -->
-    <model name="junction_box">
-      <static>true</static>
-      <pose>2.0 2.0 0.76 0 0 0</pose>
-      <link name="link">
-        <visual name="vis">
-          <geometry><box><size>0.15 0.15 0.06</size></box></geometry>
-          <material>
-            <ambient>0.85 0.80 0.10 1</ambient>
-            <diffuse>0.90 0.85 0.15 1</diffuse>
-          </material>
-        </visual>
-        <collision name="col"><geometry><box><size>0.15 0.15 0.06</size></box></geometry></collision>
+        <collision name="col"><geometry><cylinder><radius>0.015</radius><length>3.0</length></cylinder></geometry></collision>
       </link>
     </model>
 
     <!-- ═══════════════════════ GRAY SEWER PIPES (ceiling-mounted) ═══════════ -->
 
-    <!-- Sewer pipe along north wall of Room 1, hanging from ceiling -->
-    <model name="sewer_pipe_north">
+    <!-- Sewer pipe running E-W across Room 1 ceiling (along X) -->
+    <model name="sewer_pipe_ew">
       <static>true</static>
-      <pose>2.0 3.85 0.72 0 0 0</pose>
+      <pose>2.0 7.85 0.72 0 1.5708 0</pose>
       <link name="link">
         <visual name="vis">
           <geometry><cylinder><radius>0.05</radius><length>4.0</length></cylinder></geometry>
@@ -451,60 +392,27 @@
       </link>
     </model>
 
-    <!-- Sewer pipe — heavier concentration near SE corner (Room 3 entrance area) -->
-    <model name="sewer_pipe_se_1">
+    <!-- Sewer pipe running N-S near the dividing wall (along Y) -->
+    <model name="sewer_pipe_ns">
       <static>true</static>
-      <pose>5.2 1.5 0.72 0 1.5708 0</pose>
+      <pose>3.85 4.0 0.72 1.5708 0 0</pose>
       <link name="link">
         <visual name="vis">
-          <geometry><cylinder><radius>0.06</radius><length>3.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.06</radius><length>8.0</length></cylinder></geometry>
           <material>
             <ambient>0.45 0.45 0.42 1</ambient>
             <diffuse>0.50 0.50 0.47 1</diffuse>
             <specular>0.15 0.15 0.15 1</specular>
           </material>
         </visual>
-        <collision name="col"><geometry><cylinder><radius>0.06</radius><length>3.0</length></cylinder></geometry></collision>
+        <collision name="col"><geometry><cylinder><radius>0.06</radius><length>8.0</length></cylinder></geometry></collision>
       </link>
     </model>
 
-    <!-- Sewer pipe going up (vertical) near east wall -->
-    <model name="sewer_pipe_vertical">
-      <static>true</static>
-      <pose>7.8 2.5 0.4 0 0 0</pose>
-      <link name="link">
-        <visual name="vis">
-          <geometry><cylinder><radius>0.05</radius><length>0.8</length></cylinder></geometry>
-          <material>
-            <ambient>0.50 0.50 0.47 1</ambient>
-            <diffuse>0.55 0.55 0.52 1</diffuse>
-          </material>
-        </visual>
-        <collision name="col"><geometry><cylinder><radius>0.05</radius><length>0.8</length></cylinder></geometry></collision>
-      </link>
-    </model>
-
-    <!-- Sewer pipe horizontal along east wall in Room 3 area -->
-    <model name="sewer_pipe_r3">
-      <static>true</static>
-      <pose>6.75 0.5 0.72 0 0 0</pose>
-      <link name="link">
-        <visual name="vis">
-          <geometry><cylinder><radius>0.05</radius><length>2.5</length></cylinder></geometry>
-          <material>
-            <ambient>0.45 0.45 0.42 1</ambient>
-            <diffuse>0.50 0.50 0.47 1</diffuse>
-            <specular>0.15 0.15 0.15 1</specular>
-          </material>
-        </visual>
-        <collision name="col"><geometry><cylinder><radius>0.05</radius><length>2.5</length></cylinder></geometry></collision>
-      </link>
-    </model>
-
-    <!-- Pipe hanger brackets (small boxes supporting sewer pipe) -->
+    <!-- Pipe hanger bracket near west wall -->
     <model name="pipe_hanger_1">
       <static>true</static>
-      <pose>0.5 3.85 0.55 0 0 0</pose>
+      <pose>0.5 7.85 0.55 0 0 0</pose>
       <link name="link">
         <visual name="vis">
           <geometry><box><size>0.04 0.04 0.3</size></box></geometry>
@@ -515,7 +423,7 @@
 
     <model name="pipe_hanger_2">
       <static>true</static>
-      <pose>3.5 3.85 0.55 0 0 0</pose>
+      <pose>3.5 7.85 0.55 0 0 0</pose>
       <link name="link">
         <visual name="vis">
           <geometry><box><size>0.04 0.04 0.3</size></box></geometry>
@@ -526,67 +434,101 @@
 
     <!-- ═══════════════════ BLUE WATER / HEATING PIPES (wall-mounted) ══════════ -->
 
-    <!-- Blue water pipe along south wall of Room 1 -->
+    <!-- Blue water pipe along south wall of Room 1 (E-W) -->
     <model name="water_pipe_south">
       <static>true</static>
-      <pose>3.0 0.08 0.5 0 0 0</pose>
+      <pose>2.0 0.08 0.5 0 1.5708 0</pose>
       <link name="link">
         <visual name="vis">
-          <geometry><cylinder><radius>0.0125</radius><length>6.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.0125</radius><length>4.0</length></cylinder></geometry>
           <material>
             <ambient>0.15 0.30 0.85 1</ambient>
             <diffuse>0.20 0.40 0.95 1</diffuse>
             <specular>0.3 0.3 0.3 1</specular>
           </material>
         </visual>
-        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>6.0</length></cylinder></geometry></collision>
+        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>4.0</length></cylinder></geometry></collision>
       </link>
     </model>
 
-    <!-- Blue water pipe — more density near SE corner (junction area) -->
-    <model name="water_pipe_se_corner">
-      <static>true</static>
-      <pose>4.5 0.08 0.35 0 0 0</pose>
-      <link name="link">
-        <visual name="vis">
-          <geometry><cylinder><radius>0.0125</radius><length>3.0</length></cylinder></geometry>
-          <material>
-            <ambient>0.15 0.30 0.85 1</ambient>
-            <diffuse>0.20 0.40 0.95 1</diffuse>
-            <specular>0.3 0.3 0.3 1</specular>
-          </material>
-        </visual>
-        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>3.0</length></cylinder></geometry></collision>
-      </link>
-    </model>
-
-    <!-- Blue water pipe along west wall -->
+    <!-- Blue water pipe along west wall (N-S) -->
     <model name="water_pipe_west">
       <static>true</static>
-      <pose>0.08 2.5 0.5 0 1.5708 0</pose>
+      <pose>0.08 4.0 0.5 1.5708 0 0</pose>
       <link name="link">
         <visual name="vis">
-          <geometry><cylinder><radius>0.0125</radius><length>5.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.0125</radius><length>8.0</length></cylinder></geometry>
           <material>
             <ambient>0.15 0.30 0.85 1</ambient>
             <diffuse>0.20 0.40 0.95 1</diffuse>
             <specular>0.3 0.3 0.3 1</specular>
           </material>
         </visual>
-        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>5.0</length></cylinder></geometry></collision>
+        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>8.0</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <!-- Blue water pipe along north wall of Room 1 (E-W, higher level near ceiling) -->
+    <model name="water_pipe_north">
+      <static>true</static>
+      <pose>2.0 7.92 0.35 0 1.5708 0</pose>
+      <link name="link">
+        <visual name="vis">
+          <geometry><cylinder><radius>0.0125</radius><length>4.0</length></cylinder></geometry>
+          <material>
+            <ambient>0.15 0.30 0.85 1</ambient>
+            <diffuse>0.20 0.40 0.95 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+          </material>
+        </visual>
+        <collision name="col"><geometry><cylinder><radius>0.0125</radius><length>4.0</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <!-- ═════════════════════════════ PILLARS ══════════════════════════════════ -->
+    <!-- Two support pillars in Room 1, running floor to ceiling -->
+
+    <model name="pillar_1">
+      <static>true</static>
+      <pose>2.0 3.0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.1</radius><length>0.8</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.1</radius><length>0.8</length></cylinder></geometry>
+          <material>
+            <ambient>0.55 0.53 0.50 1</ambient>
+            <diffuse>0.65 0.62 0.58 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pillar_2">
+      <static>true</static>
+      <pose>2.0 5.5 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.1</radius><length>0.8</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.1</radius><length>0.8</length></cylinder></geometry>
+          <material>
+            <ambient>0.55 0.53 0.50 1</ambient>
+            <diffuse>0.65 0.62 0.58 1</diffuse>
+          </material>
+        </visual>
       </link>
     </model>
 
     <!-- ═════════════════════════════ CEILING ═════════════════════════════════ -->
-    <!-- Ceiling at 0.8 m height covering all three rooms -->
-    <!-- Room 1 ceiling -->
+    <!-- Ceiling at 0.8 m covering all three rooms -->
+
+    <!-- Room 1 ceiling (big room, west) -->
     <model name="ceiling_r1">
       <static>true</static>
-      <pose>2.75 2 0.8 0 0 0</pose>
+      <pose>2 4 0.8 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>5.6 4.1 0.02</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>4.1 8.1 0.02</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>5.6 4.1 0.02</size></box></geometry>
+          <geometry><box><size>4.1 8.1 0.02</size></box></geometry>
           <material>
             <ambient>0.35 0.33 0.30 1</ambient>
             <diffuse>0.40 0.38 0.35 1</diffuse>
@@ -595,30 +537,14 @@
       </link>
     </model>
 
-    <!-- Room 3 ceiling -->
-    <model name="ceiling_r3">
-      <static>true</static>
-      <pose>6.75 1.5 0.8 0 0 0</pose>
-      <link name="link">
-        <collision name="col"><geometry><box><size>2.5 3.0 0.02</size></box></geometry></collision>
-        <visual name="vis">
-          <geometry><box><size>2.5 3.0 0.02</size></box></geometry>
-          <material>
-            <ambient>0.35 0.33 0.30 1</ambient>
-            <diffuse>0.40 0.38 0.35 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Room 2 ceiling -->
+    <!-- Room 2 ceiling (SE side room) -->
     <model name="ceiling_r2">
       <static>true</static>
-      <pose>7 5 0.8 0 0 0</pose>
+      <pose>5 1.5 0.8 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>2.0 2.0 0.02</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>2.1 3.1 0.02</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>2.0 2.0 0.02</size></box></geometry>
+          <geometry><box><size>2.1 3.1 0.02</size></box></geometry>
           <material>
             <ambient>0.35 0.33 0.30 1</ambient>
             <diffuse>0.40 0.38 0.35 1</diffuse>
@@ -627,14 +553,14 @@
       </link>
     </model>
 
-    <!-- Ceiling over corridor area between R1 and R2 (x=[5.5,8], y=[3,4]) -->
-    <model name="ceiling_corridor">
+    <!-- Room 3 ceiling (NE side room) -->
+    <model name="ceiling_r3">
       <static>true</static>
-      <pose>6.75 3.5 0.8 0 0 0</pose>
+      <pose>5 5.5 0.8 0 0 0</pose>
       <link name="link">
-        <collision name="col"><geometry><box><size>2.5 1.0 0.02</size></box></geometry></collision>
+        <collision name="col"><geometry><box><size>2.1 5.1 0.02</size></box></geometry></collision>
         <visual name="vis">
-          <geometry><box><size>2.5 1.0 0.02</size></box></geometry>
+          <geometry><box><size>2.1 5.1 0.02</size></box></geometry>
           <material>
             <ambient>0.35 0.33 0.30 1</ambient>
             <diffuse>0.40 0.38 0.35 1</diffuse>
@@ -642,16 +568,6 @@
         </visual>
       </link>
     </model>
-
-    <!-- Ceiling over gap between R1 north wall and R2/R3 area (x=[0, 5.5], y=[3, 4]) -->
-    <!-- This area is actually Room 1 — ceiling_r1 already covers it -->
-    <!-- No, ceiling_r1 covers x=[0,5.5] y=[0,4]. That's the big room. Corridor area y=[3,4] x=[5.5,8] needs its own piece. -->
-    <!-- Actually R1 = x=[0,8] y=[0,4], but R3 = x=[5.5,8] y=[0,3] is inside that. -->
-    <!-- Let me reconsider. ceiling_r1 covers x=-0.05 to 5.55 y=-0.05 to 4.05. That's the main room. -->
-    <!-- ceiling_r3 covers the storage room. ceiling_corridor covers the corridor. -->
-    <!-- ceiling_r2 covers the utility room. -->
-    <!-- But the east part of Room 1 (x=[5.5,8] y=[3,4]) needs a ceiling too. -->
-    <!-- Handled by ceiling_corridor. -->
 
   </world>
 </sdf>

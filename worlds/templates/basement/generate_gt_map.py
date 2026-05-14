@@ -22,14 +22,14 @@ from pathlib import Path
 import numpy as np
 
 # ─── World parameters ────────────────────────────────────────────────────────
-RESOLUTION  = 0.05         # meters per pixel (higher res for 80cm ceiling + tight passages)
-WORLD_W     = 8.0          # meters  (x axis)
-WORLD_H     = 6.0          # meters  (y axis)
-COLS        = int(WORLD_W / RESOLUTION)   # 160
-ROWS        = int(WORLD_H / RESOLUTION)   # 120
+RESOLUTION  = 0.05         # meters per pixel
+WORLD_W     = 6.0          # meters  (x axis, E-W)
+WORLD_H     = 8.0          # meters  (y axis, N-S)
+COLS        = int(WORLD_W / RESOLUTION)   # 120
+ROWS        = int(WORLD_H / RESOLUTION)   # 160
 
-FREE        = 254   # ROS convention: >free_thresh → free
-OCCUPIED    = 0     # ROS convention: <occ_thresh  → occupied
+FREE        = 254
+OCCUPIED    = 0
 
 WALL_T      = 0.1   # wall thickness (m)
 
@@ -68,32 +68,28 @@ def generate() -> np.ndarray:
     grid = np.full((ROWS, COLS), FREE, dtype=np.uint8)
 
     # ── Outer walls ──────────────────────────────────────────────────────────
-    _mark(grid, 4.0, 0.0, 8.2, WALL_T)      # south (y=0)
-    _mark(grid, 4.0, 6.0, 8.2, WALL_T)      # north (y=6)
-    _mark(grid, 0.0, 3.0, WALL_T, 6.2)       # west (x=0)
-    _mark(grid, 8.0, 3.0, WALL_T, 6.2)       # east (x=8)
+    _mark(grid, 3.0, 0.0, 6.2, WALL_T)       # south (y=0)
+    _mark(grid, 3.0, 8.0, 6.2, WALL_T)       # north (y=8)
+    _mark(grid, 0.0, 4.0, WALL_T, 8.2)       # west (x=0)
+    _mark(grid, 6.0, 4.0, WALL_T, 8.2)       # east (x=6)
 
-    # ── Internal walls ───────────────────────────────────────────────────────
-    # Room 3 west wall: x=5.5, y=[0, 2.1] (below passage)
-    _mark(grid, 5.5, 1.05, WALL_T, 2.1)
-    # Room 3 west wall: x=5.5, y=[2.1, 2.9] is PASSAGE (0.8m wide) — leave open
-    # Passage arch above: box at (5.5, 2.5, 0.1, 0.8) z=[0.55, 0.8] — not in 2D map
-    # Room 3 west wall: x=5.5, y=[2.9, 4.0] (above passage to ceiling area)
-    _mark(grid, 5.5, 3.45, WALL_T, 1.1)
+    # ── Internal wall at x=4 (divides big room from side rooms) ─────────────
+    # R1↔R2 passage at y=[1.1, 1.9], R1↔R3 passage at y=[5.1, 5.9]
 
-    # Room 3 north wall: y=3, x=[5.5, 8]
-    _mark(grid, 6.75, 3.0, 2.5, WALL_T)
+    # Below R2 passage: x=4, y=[0, 1.1]
+    _mark(grid, 4.0, 0.55, WALL_T, 1.1)
+    # Between passages: x=4, y=[1.9, 5.1]
+    _mark(grid, 4.0, 3.5, WALL_T, 3.2)
+    # Above R3 passage: x=4, y=[5.9, 8]
+    _mark(grid, 4.0, 6.95, WALL_T, 2.1)
 
-    # Room 1 north wall: y=4, x=[0, 5.5]
-    _mark(grid, 2.75, 4.0, 5.5, WALL_T)
+    # ── Wall between R2 and R3: y=3, x=[4, 6] ──────────────────────────────
+    _mark(grid, 5.0, 3.0, 2.0, WALL_T)
 
-    # Corridor wall: y=[3,4] x=[5.5,6] — south side of corridor
-    _mark(grid, 5.75, 3.5, 0.5, WALL_T)
-
-    # Room 2 west wall above passage: x=6, y=[4.8, 6]
-    _mark(grid, 6.0, 5.4, WALL_T, 1.2)
-    # Passage arch at y=[4.0, 4.8] — leave open
-    # (arch is above, at z level, not in 2D map)
+    # ── Support pillars in Room 1 ──────────────────────────────────────────
+    PILLAR_R = 0.1   # pillar radius (m)
+    _mark(grid, 2.0, 3.0, PILLAR_R * 2, PILLAR_R * 2)
+    _mark(grid, 2.0, 5.5, PILLAR_R * 2, PILLAR_R * 2)
 
     return grid
 
