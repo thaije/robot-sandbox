@@ -37,7 +37,9 @@ metrics:
     - collision_count
     - near_miss_count
     - proximity_tracker
-    - detection_metrics
+    - found_ratio
+    - precision
+    - false_positive_count
 
 success_criteria:
   mode: "all_of"
