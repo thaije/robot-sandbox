@@ -20,9 +20,9 @@ ScenarioRunner — scripts/run_scenario.sh config/scenarios/<scenario>/<tier>.ya
                         Par values from human perception baseline (n=5/tier). Par = B grade (~70).
 
 worlds/templates/indoor_office/   20×15 m, 4 rooms, PGM ground-truth map
-worlds/templates/basement/       12×8 m, single room, 2.2 m ceiling, PGM ground-truth map
+worlds/templates/basement/       8×6 m, 3 rooms (main+utility+storage), 0.8 m ceiling, PGM ground-truth map
 scenario types                    explore_detect (find all targets) / proximity (reach target)
-objects                           fire_extinguisher, first_aid_kit, hazard_sign, exit_sign, person, sewer_pipe, water_heater, electrical_panel — unique per-instance labels
+objects                           fire_extinguisher, first_aid_kit, hazard_sign, exit_sign, person, drink_can, mouse, conduit_yellow, pipe_sewer, pipe_water — unique per-instance labels
 difficulty tiers                  easy / medium / hard / brutal / perception_stress (office)
                                    easy / medium (basement_find — proximity-goal)
                                    lighting, door states, dynamic obstacles, timeout — all YAML-driven
@@ -63,7 +63,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **Leaderboard `detection_by_type` includes `mission_target`**: per-object-type boolean marking whether that type counts toward `found_ratio`. Leaderboard generator falls back to scenario YAML config for legacy JSONs lacking this field.
 - **Easy timeout is 900s** (not 300s). `easy_900s.yaml` has been merged into `easy.yaml`.
 - **Proximity-goal scenarios**: `goal_type: proximity` in scenario YAML switches scoring from 5-category explore-detect to 4-category (Success/Time/Safety/Efficiency). ProximityTracker metric uses ground-truth object positions from `world_state.json` + robot odom to compute distance. Success criterion is `proximity_reached == true` (robot within `proximity_radius` metres of `target_object`).
-- **Basement ceiling is 2.2 m** (vs 3.0 m in office). DerpBot camera at z=0.18 m still works; no ceiling collision issue.
+- **Basement ceiling is 0.8 m** (80 cm — very low, was 2.2 m). DerpBot camera at z=0.18 m; ceiling at 0.8 m means only 0.62 m clearance above camera. No ceiling collision issue currently but very tight.
 
 ### Gazebo / SDF
 - **Dynamic spawn contact sensors (gz-sim 8.10.0 bug)**: `EachNew<ContactSensor>` never fires for dynamically spawned models. Robots must be embedded in world SDF at generation time.

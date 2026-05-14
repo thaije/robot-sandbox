@@ -267,8 +267,11 @@ class WorldGenerator:
         rng = _random.Random(seed + 7777)
 
         spawn_poses = template_cfg.get("spawn_poses", {})
+        obstacles = template_cfg.get("obstacles", [])
         if not spawn_poses:
             return
+
+        robot_radius = 0.3  # DerpBot footprint clearance (m)
 
         for robot in robots_cfg:
             sp = robot.get("spawn_pose", {})
@@ -284,7 +287,13 @@ class WorldGenerator:
             if not candidates:
                 continue
 
-            chosen = rng.choice(candidates)
+            # Filter out candidates that overlap with static obstacles
+            valid_candidates = [
+                c for c in candidates
+                if not _spawn_overlaps_obstacle(c, obstacles, robot_radius)
+            ] or candidates  # fall back to all if every candidate is blocked
+
+            chosen = rng.choice(valid_candidates)
             robot["spawn_pose"] = {
                 "x":   float(chosen["x"]),
                 "y":   float(chosen["y"]),
@@ -671,6 +680,16 @@ class WorldGenerator:
 
 
 # ── Module-level helpers ──────────────────────────────────────────────────────
+
+
+def _spawn_overlaps_obstacle(pose: dict, obstacles: list[dict], margin: float) -> bool:
+    sx, sy = float(pose["x"]), float(pose["y"])
+    for obs in obstacles:
+        hw = obs["w"] / 2 + margin
+        hh = obs["h"] / 2 + margin
+        if abs(sx - obs["x"]) < hw and abs(sy - obs["y"]) < hh:
+            return True
+    return False
 
 
 def _resolve_pgm_path(template_cfg: dict, project_root: Path) -> None:

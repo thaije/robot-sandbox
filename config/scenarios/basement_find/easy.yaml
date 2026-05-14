@@ -1,9 +1,9 @@
 scenario:
   name: "basement_find_easy"
-  description: "Easy basement proximity — bright lighting, find the sewer pipe"
+  description: "Easy basement proximity — bright lighting, find the drink can"
   timeout_seconds: 300
   goal_type: "proximity"
-  target_object: "sewer_pipe"
+  target_object: "drink_can"
   proximity_radius: 2.0
 
 world:
@@ -12,25 +12,22 @@ world:
     lighting: "bright"
     door_states: "open"
   objects:
-    # ── Primary target ────────────────────────────────────────────────────
-    - type: "sewer_pipe"
+    # ── Primary target (mission) ────────────────────────────────────────
+    - type: "drink_can"
       count: 1
-      placement: "random"
+      placement: "cornered"
       mission_target: true
-    # ── Landmarks ──────────────────────────────────────────────────────────
-    - type: "water_heater"
+    # ── Clutter (positions shuffle with seed) ───────────────────────────
+    - type: "mouse"
       count: 1
-      placement: "random"
-    - type: "electrical_panel"
-      count: 1
-      placement: "random"
+      placement: "cornered"
 
 robots:
   - platform: "derpbot"
     name: "derpbot_0"
     spawn_pose:
       random: true
-      zones: ["basement"]
+      zones: ["room_1"]
 
 metrics:
   collect:
@@ -47,7 +44,7 @@ success_criteria:
     - metric: "proximity_reached"
       operator: "=="
       value: true
-      description: "Robot must reach within 2m of the sewer pipe"
+      description: "Robot must reach within 2m of the drink can"
 
 scoring:
   category_weights:

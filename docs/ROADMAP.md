@@ -15,18 +15,7 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ## Next
 
-### V2 agent: VLM-steered robot · [derpbot-vlm](https://github.com/thaije/derpbot-vlm)
-Moved to its own repo. Issue #15 closed.
-
----
-
-## In progress
-
-### V2 scenario: proximity-goal type ("find and reach X") · [#13](https://github.com/thaije/robot-sandbox/issues/13)
-Implemented: ProximityTracker metric, proximity-goal scoring (Success/Time/Safety/Efficiency), MissionServer proximity response, basement_find scenario configs.
-
-### V2 world: basement environment template · [#14](https://github.com/thaije/robot-sandbox/issues/14)
-Implemented: Basement template (12×8 m, 2.2 m ceiling), sewer_pipe/water_heater/electrical_panel models, basement_find easy+medium configs.
+_Nothing currently in progress. Check the backlog or open a new issue._
 
 ---
 
