@@ -39,9 +39,21 @@ All tiers use the same indoor office map and object set; difficulty is controlle
 | Brutal | `office_explore_detect/brutal.yaml` | dim + flicker | closed | patrol bot + elevated | 180 s |
 | Perception stress | `office_explore_detect/perception_stress.yaml` | flicker + red emergency | random | patrol bot + smoke | 600 s |
 
+## Difficulty tiers — basement_find
+
+Proximity-goal: navigate to within 2 m of the sewer pipe. Single room (12 × 8 m, 2.2 m ceiling). No detection reporting needed — success is automatic when the robot enters the proximity radius.
+
+| Tier | YAML | Lighting | Timeout |
+|------|------|----------|---------|
+| Easy | `basement_find/easy.yaml` | bright | 300 s |
+| Medium | `basement_find/medium.yaml` | dim | 300 s |
+
 ```bash
 # Run a specific tier (all accept --headless / --gui / --timeout / --seed):
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless
+
+# Basement proximity scenario:
+./scripts/run_scenario.sh config/scenarios/basement_find/easy.yaml --headless --seed 1
 ```
 
 Pass `--seed N` to pin a specific layout; omit for a fresh random layout each run.
@@ -49,7 +61,11 @@ Pass `--seed N` to pin a specific layout; omit for a fresh random layout each ru
 ## Interactive dev session (GUI + teleoperation)
 
 ```bash
+# Office explore-detect:
 ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --gui
+
+# Basement proximity-goal:
+./scripts/run_scenario.sh config/scenarios/basement_find/easy.yaml --gui
 ```
 
 Then in a separate terminal:
@@ -127,6 +143,23 @@ ros2 run rqt_image_view rqt_image_view
 ```
 
 Press `f` (fire_extinguisher), `a` (first_aid_kit), `p` (person) each time you see a target object. Press only once per distinct object. Use `rqt_image_view` — not RViz — to avoid information leaks.
+
+### Basement proximity — manual navigation baseline
+
+For proximity-goal scenarios, no detection reporting is needed — just drive the robot to the target. The run ends automatically when you enter the 2 m proximity radius.
+
+```bash
+# Terminal 1 — run scenario:
+./scripts/run_scenario.sh config/scenarios/basement_find/easy.yaml --headless
+
+# Terminal 2 — teleop:
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args --remap cmd_vel:=/derpbot_0/cmd_vel
+
+# Terminal 3 — camera view (recommended, helps identify the sewer pipe):
+ros2 run rqt_image_view rqt_image_view
+# Select /derpbot_0/rgbd/image
+```
 
 Results go to `results/submissions/human-baseline-oracle/` or `results/submissions/human-baseline-perception/`. 
 
