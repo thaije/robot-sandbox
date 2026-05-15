@@ -85,6 +85,13 @@ class WorldGenerator:
             raise FileNotFoundError(f"Template SDF not found: {sdf_path}")
         sdf_text = sdf_path.read_text()
 
+        # ── Resolve texture path placeholders ─────────────────────────────────
+        # Templates may contain __TEXTURES_DIR__ placeholders that resolve to the
+        # absolute file:// URI of worlds/media/textures/ so PBR <albedo_map> etc.
+        # work.  Gazebo requires the file:// scheme for absolute paths in SDF URIs.
+        textures_dir = "file://" + str((self._root / "worlds" / "media" / "textures").resolve())
+        sdf_text = sdf_text.replace("__TEXTURES_DIR__", textures_dir)
+
         # ObjectPlacer reads the PGM via a relative path stored in config.yaml.
         # Resolve it to absolute so placer works regardless of CWD.
         _resolve_pgm_path(template_cfg, self._root)
@@ -224,7 +231,7 @@ class WorldGenerator:
         ceiling_color = cfg.get("ceiling_color")
         if ceiling_color:
             for model in world_elem.findall("model"):
-                if model.get("name") == "ceiling":
+                if model.get("name", "").startswith("ceiling"):
                     for vis in model.iter("visual"):
                         for mat in vis.findall("material"):
                             amb = mat.find("ambient")
