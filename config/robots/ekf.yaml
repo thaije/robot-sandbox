@@ -3,9 +3,18 @@
 # Fuses raw wheel-encoder odometry (/ROBOT_NAME/odom_raw) with IMU
 # (/ROBOT_NAME/imu) to produce drift-corrected odometry on /ROBOT_NAME/odom.
 #
-# The IMU's yaw gyro (angular_velocity.z) corrects the differential-drive
-# yaw drift that accumulates significantly on long runs. The EKF also
-# smooths out the linear velocity estimate.
+# Key design decisions:
+# - odom0 uses differential mode so the EKF only sees *relative* pose changes
+#   between updates.  This eliminates yaw quantization artefacts from the
+#   Gazebo diff-drive plugin (which publishes only ~3 distinct quaternions
+#   per orientation).  In differential mode the EKF integrates deltas
+#   instead of snapping to those quantised absolutes.
+# - IMU provides yaw orientation and yaw-rate.  The orientation overrides
+#   the diff-drive's quantised yaw whenever the two disagree.
+# - Covariance overrides ensure the EKF can properly weight both sensors.
+#   Gazebo publishes zero covariances, which would make robot_localization
+#   treat the inputs as infinitely certain — causing oscillation when two
+#   "perfect" sources disagree.
 #
 # Launched by spawn_robot.launch.py alongside the ros_gz_bridge.
 # The ROBOT_NAME placeholder is substituted at launch time.
@@ -17,11 +26,27 @@ ekf_filter_node:
     # ── Sensor inputs ──────────────────────────────────────────────────────
 
     odom0: /ROBOT_NAME/odom_raw
-    odom0_config: [false, false, false,   # x, y, z position
-                    false, false, true,    # roll, pitch, yaw
+    odom0_config: [false, false, false,   # x, y, z position (ignored: we use differential)
+                    false, false, false,   # roll, pitch, yaw (ignored in differential mode)
                     true, false, false,    # vx, vy, vz
                     false, false, true,    # vroll, vpitch, vyaw
                     false, false, false]   # ax, ay, az
+    odom0_differential: true              # Use relative pose changes, not absolute.
+                                           # Fixes yaw quantization from Gazebo diff-drive
+                                           # (plugin outputs ~3 discrete quaternions; differential
+                                           # mode turns these into small smooth deltas).
+    odom0_pose_covariance: [1e-3, 0.0,  0.0,   0.0,   0.0,  0.0,
+                             0.0,  1e-3, 0.0,   0.0,   0.0,  0.0,
+                             0.0,  0.0,  1e-9,  0.0,   0.0,  0.0,
+                             0.0,  0.0,  0.0,   1e-9,  0.0,  0.0,
+                             0.0,  0.0,  0.0,   0.0,   1e-9,  0.0,
+                             0.0,  0.0,  0.0,   0.0,   0.0,  1e-3]  # yaw: 1e-3 ≈ 1.8°
+    odom0_twist_covariance: [1e-3, 0.0,  0.0,   0.0,   0.0,  0.0,
+                               0.0,  1e-3, 0.0,   0.0,   0.0,  0.0,
+                               0.0,  0.0,  1e-9,  0.0,   0.0,  0.0,
+                               0.0,  0.0,  0.0,   1e-9,  0.0,  0.0,
+                               0.0,  0.0,  0.0,   0.0,   1e-9,  0.0,
+                               0.0,  0.0,  0.0,   0.0,   0.0,  1e-3]  # vyaw: 1e-3 ≈ 1.8°/s
 
     imu0: /ROBOT_NAME/imu
     imu0_config: [false, false, false,    # x, y, z position
@@ -29,6 +54,13 @@ ekf_filter_node:
                    false, false, false,   # vx, vy, vz
                    false, false, true,    # vroll, vpitch, vyaw (vyaw only)
                    false, false, false]   # ax, ay, az
+    imu0_differential: false              # IMU orientation is already in odom frame; keep absolute.
+    imu0_orientation_covariance: [1e-9, 0.0,  0.0,
+                                    0.0,  1e-9, 0.0,
+                                    0.0,  0.0,  0.01]  # yaw: 0.01 ≈ 5.7° — trust IMU yaw
+    imu0_twist_covariance: [1e-9, 0.0,  0.0,
+                             0.0,  1e-9, 0.0,
+                             0.0,  0.0,  0.01]  # vyaw: trust gyro rate
 
     # ── Frames ─────────────────────────────────────────────────────────────
 
@@ -38,34 +70,36 @@ ekf_filter_node:
 
     # ── Coordinate conventions ─────────────────────────────────────────────
 
-    # 2-D differential-drive robot: yaw only, no 3-D motion
     two_d_mode: true
-
-    # IMU orientation is in the odom frame (not a separate frame)
     imu0_orientation_in_odom: true
-
-    # Publish TF odom→base_footprint
     publish_tf: true
 
     # ── Covariance tuning ──────────────────────────────────────────────────
 
+    # Initial state covariance — high uncertainty at startup, converges quickly.
+    initial_estimate_covariance: [1.0, 0.0,  0.0,   0.0,   0.0,  0.0,
+                                   0.0,  1.0,  0.0,   0.0,   0.0,  0.0,
+                                   0.0,  0.0,  1e-9,  0.0,   0.0,  0.0,
+                                   0.0,  0.0,  0.0,   1e-9,  0.0,  0.0,
+                                   0.0,  0.0,  0.0,   0.0,   1e-9,  0.0,
+                                   0.0,  0.0,  0.0,   0.0,   0.0,  1.0]  # yaw: 1.0 ≈ 57°
+
     # Process noise — how much we expect the robot to move between updates.
-    # Low values = smoother output but slower to correct; high = noisy but responsive.
     process_noise_covariance: [0.05, 0.0,  0.0,   0.0,   0.0,  0.0,   0.01, 0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.05, 0.0,   0.0,   0.0,  0.0,   0.0,  0.01,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.0,  0.06,  0.0,   0.0,  0.0,   0.0,  0.0,   0.01,  0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
-                                0.0,  0.0,  0.0,   0.03,  0.0,  0.0,   0.0,  0.0,   0.0,   0.01,  0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.03,  0.0,  0.0,   0.0,  0.0,   0.0,   0.01,  0.0,   0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.0,  0.0,   0.0,   0.03,  0.0,   0.0,  0.0,   0.0,   0.0,   0.01,  0.0,   0.0,  0.0,  0.0,
-                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,   0.01,  0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,  0.01,  0.0,  0.0,  0.0,
                                 0.01, 0.0,  0.0,   0.0,   0.0,  0.0,   0.25, 0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.01, 0.0,   0.0,   0.0,  0.0,   0.0,  0.25,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.0,  0.01,  0.0,   0.0,  0.0,   0.0,  0.0,   0.25,  0.0,   0.0,  0.0,   0.0,  0.0,  0.0,
-                                0.0,  0.0,  0.0,   0.01,  0.0,  0.0,   0.0,  0.0,   0.0,   0.09,  0.0,  0.0,   0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.01,  0.0,  0.0,   0.0,  0.0,   0.0,   0.09,  0.0,   0.0,   0.0,  0.0,  0.0,
                                 0.0,  0.0,  0.0,   0.0,   0.01,  0.0,   0.0,  0.0,   0.0,   0.0,   0.09,  0.0,   0.0,  0.0,  0.0,
-                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,   0.09,  0.0,  0.0,  0.0,
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.01,  0.0,  0.0,   0.0,   0.0,   0.0,  0.09,  0.0,  0.0,  0.0,
                                 0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,   0.0,  0.0,   0.01, 0.0,  0.0,
                                 0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.01,  0.0,
-                                0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,  0.0,  0.0,   0.0,  0.0,  0.01]
+                                0.0,  0.0,  0.0,   0.0,   0.0,  0.0,   0.0,  0.0,   0.0,   0.0,   0.0,  0.0,   0.0,  0.0,  0.01]
 
     # ── Diagnostics ───────────────────────────────────────────────────────
 
