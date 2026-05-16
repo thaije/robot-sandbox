@@ -42,9 +42,9 @@ def _box_mesh(
         {"verts": [0, 1, 5, 4], "normal": (0, -1, 0),
          "u_size": sx, "v_size": sz, "u_tile": tile_u, "v_tile": tile_side},
         {"verts": [5, 1, 2, 6], "normal": (1, 0, 0),
-         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v},
+         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v, "uv_swap": True},
         {"verts": [0, 4, 7, 3], "normal": (-1, 0, 0),
-         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v},
+         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v, "uv_swap": True},
     ]
 
     corners = [
@@ -111,8 +111,12 @@ def _box_mesh(
 
                 uv_u1_partial = quad_u_size / tile_u
                 uv_v1_partial = quad_v_size / tile_v
-                uvs.extend([0, 0, uv_u1_partial, 0,
-                            uv_u1_partial, uv_v1_partial, 0, uv_v1_partial])
+                if face.get("uv_swap"):
+                    uvs.extend([0, 0, 0, uv_u1_partial,
+                                uv_v1_partial, uv_u1_partial, uv_v1_partial, 0])
+                else:
+                    uvs.extend([0, 0, uv_u1_partial, 0,
+                                uv_u1_partial, uv_v1_partial, 0, uv_v1_partial])
 
                 triangles.append([base, base + 1, base + 2])
                 triangles.append([base, base + 2, base + 3])
