@@ -468,7 +468,7 @@ def main() -> None:
         print(
             f"ERROR: {state_path} not found.\n"
             "Simulation is not running — start one with:\n"
-            "  ./scripts/run_scenario.sh config/scenarios/office_explore_detect.yaml --headless",
+            "  ./scripts/run_scenario.sh config/scenarios/office_explore_detect/easy.yaml --headless",
             file=sys.stderr,
         )
         sys.exit(1)

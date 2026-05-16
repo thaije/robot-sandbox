@@ -89,6 +89,7 @@ Ground robot (differential drive — currently the only supported model).
 | RGBD — intrinsics | `/derpbot_0/rgbd/camera_info` | 10 Hz | `sensor_msgs/CameraInfo` — required for 3-D back-projection |
 | RGBD — point cloud | `/derpbot_0/rgbd/points` | 10 Hz | `sensor_msgs/PointCloud2` — **off by default**, enable with `--enable-pointcloud` |
 | Odometry | `/derpbot_0/odom` | — | `nav_msgs/Odometry`, IMU-fused (EKF) — yaw drift corrected |
+| Bumper (contact) | `/derpbot_0/bumper_contact` | 10 Hz | `ros_gz_interfaces/msg/Contacts` — fires for **all** contacts including ground plane; filter ground-plane contacts to detect collisions |
 | Raw wheel odometry | `/derpbot_0/odom_raw` | — | `nav_msgs/Odometry`, raw wheel-encoder dead-reckoning (for custom sensor fusion) |
 
 ### Control & TF

@@ -15,7 +15,7 @@ Current state lives in [`STATE.md`](STATE.md). History lives in closed issues + 
 
 ## Next
 
-_Nothing currently in progress. Check the backlog or open a new issue._
+- [#18](https://github.com/thaije/robot-sandbox/issues/18) — Butter Bot scenario (diner table push-delivery, new robot + world template + pushable physics)
 
 ---
 
