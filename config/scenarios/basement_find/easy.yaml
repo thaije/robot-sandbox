@@ -24,10 +24,6 @@ world:
       count: 1
       placement: "random"
       target_pool: true
-    - type: "mouse"
-      count: 1
-      placement: "cornered"
-      target_pool: true
     - type: "pipe_sewer_floor"
       count: 1
       placement: "cornered"
