@@ -5,6 +5,17 @@ Load this every session. What's next lives in [`ROADMAP.md`](ROADMAP.md); histor
 
 Agent-facing spec: [`AUTONOMOUS_AGENT_GUIDE.md`](AUTONOMOUS_AGENT_GUIDE.md)
 
+## Environment
+
+| Component   | Version              |
+|-------------|----------------------|
+| OS          | Ubuntu 24.04 LTS     |
+| Python      | 3.12.3               |
+| ROS         | Jazzy Jalisco        |
+| Gazebo      | Harmonic (gz-sim 8.11.0) |
+
+Pinned Python deps: [`requirements.txt`](../requirements.txt)
+
 ---
 
 ## What's running

@@ -1,8 +1,12 @@
-# Core deps (ROS 2 packages are system-installed, not listed here)
-pyyaml>=6.0
-numpy>=1.24
-scikit-image>=0.21   # Bresenham raycasting for coverage metrics
-opencv-python>=4.8   # PGM map loading
+# Pinned versions — tested against this exact stack.
+# ROS 2 + Gazebo packages are system-installed (apt), not listed here.
+
+# Core deps
+pyyaml==6.0.1
+numpy==1.26.4
+scikit-image>=0.21      # Bresenham raycasting for coverage metrics
+opencv-python-headless>=4.6   # PGM map loading + detection_viz.py
 
 # Dev / test
-pytest>=7.4
+pytest==7.4.4
+pytest-cov==4.1.0
