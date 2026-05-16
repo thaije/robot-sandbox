@@ -69,6 +69,10 @@ def _box_mesh(
         c2 = corners[vs[2]]
         c3 = corners[vs[3]]
 
+        # World-space UV scaling: each tile_* unit of world distance = 1 UV unit
+        us = face["u_size"] / face["u_tile"]
+        vs = face["v_size"] / face["v_tile"]
+
         # Subdivide into nu×nv grid of quads
         for j in range(nv):
             for i in range(nu):
@@ -90,7 +94,10 @@ def _box_mesh(
                 for p in (bl, br, tr, tl):
                     positions.extend(p)
                     normals.extend(normal)
-                uvs.extend([0, 0, 1, 0, 1, 1, 0, 1])
+                uvs.extend([u0 * us, v0 * vs,
+                            u1 * us, v0 * vs,
+                            u1 * us, v1 * vs,
+                            u0 * us, v1 * vs])
 
                 triangles.append([base, base + 1, base + 2])
                 triangles.append([base, base + 2, base + 3])
@@ -115,12 +122,17 @@ def _cylinder_mesh(name: str, radius: float, height: float,
     uvs = []
     triangles = []
 
-    # Side: grid of n_u columns × n_v rows, each sub-quad has UV [0,1]×[0,1]
+    uv_span_u = circumference / u_tile
+    uv_span_v = height / v_tile
+
+    # Side: grid of n_u columns × n_v rows, UVs proportional to world distance
     for j in range(n_v):
         v0_frac = j / n_v
         v1_frac = (j + 1) / n_v
         z0 = -hz + v0_frac * height
         z1 = -hz + v1_frac * height
+        uv_v0 = v0_frac * uv_span_v
+        uv_v1 = v1_frac * uv_span_v
         for i in range(n_u):
             u0_frac = i / n_u
             u1_frac = (i + 1) / n_u
@@ -128,12 +140,14 @@ def _cylinder_mesh(name: str, radius: float, height: float,
             theta1 = u1_frac * 2 * math.pi
             c0, s0 = math.cos(theta0), math.sin(theta0)
             c1, s1 = math.cos(theta1), math.sin(theta1)
+            uv_u0 = u0_frac * uv_span_u
+            uv_u1 = u1_frac * uv_span_u
 
             base = len(positions) // 3
             # 4 corners: bottom-left, bottom-right, top-right, top-left
             for (ct, st, z, uv_u, uv_v) in [
-                (c0, s0, z0, 0.0, 0.0), (c1, s1, z0, 1.0, 0.0),
-                (c1, s1, z1, 1.0, 1.0), (c0, s0, z1, 0.0, 1.0),
+                (c0, s0, z0, uv_u0, uv_v0), (c1, s1, z0, uv_u1, uv_v0),
+                (c1, s1, z1, uv_u1, uv_v1), (c0, s0, z1, uv_u0, uv_v1),
             ]:
                 positions.extend([radius * ct, radius * st, z])
                 normals.extend([ct, st, 0.0])
@@ -142,17 +156,21 @@ def _cylinder_mesh(name: str, radius: float, height: float,
             triangles.append([base, base + 1, base + 2])
             triangles.append([base, base + 2, base + 3])
 
+    cap_scale_u = radius / u_tile
+    cap_scale_v = radius / v_tile
+
     # Top cap — fan from centre
     center_top = len(positions) // 3
     positions.extend([0.0, 0.0, hz])
     normals.extend([0.0, 0.0, 1.0])
-    uvs.extend([0.5, 0.5])
+    uvs.extend([cap_scale_u * 0.5, cap_scale_v * 0.5])
     for i in range(n_u):
         theta = i / n_u * 2 * math.pi
         ct, st = math.cos(theta), math.sin(theta)
         positions.extend([radius * ct, radius * st, hz])
         normals.extend([0.0, 0.0, 1.0])
-        uvs.extend([0.5 + 0.5 * ct, 0.5 + 0.5 * st])
+        uvs.extend([cap_scale_u * (0.5 + 0.5 * ct),
+                     cap_scale_v * (0.5 + 0.5 * st)])
     for i in range(n_u):
         i_next = (i + 1) % n_u
         triangles.append([center_top, center_top + 1 + i, center_top + 1 + i_next])
@@ -161,13 +179,14 @@ def _cylinder_mesh(name: str, radius: float, height: float,
     center_bot = len(positions) // 3
     positions.extend([0.0, 0.0, -hz])
     normals.extend([0.0, 0.0, -1.0])
-    uvs.extend([0.5, 0.5])
+    uvs.extend([cap_scale_u * 0.5, cap_scale_v * 0.5])
     for i in range(n_u):
         theta = i / n_u * 2 * math.pi
         ct, st = math.cos(theta), math.sin(theta)
         positions.extend([radius * ct, radius * st, -hz])
         normals.extend([0.0, 0.0, -1.0])
-        uvs.extend([0.5 - 0.5 * ct, 0.5 + 0.5 * st])
+        uvs.extend([cap_scale_u * (0.5 - 0.5 * ct),
+                     cap_scale_v * (0.5 + 0.5 * st)])
     for i in range(n_u):
         i_next = (i + 1) % n_u
         triangles.append([center_bot, center_bot + 1 + i_next, center_bot + 1 + i])
