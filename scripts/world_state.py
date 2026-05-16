@@ -485,7 +485,7 @@ def main() -> None:
     if args.results:
         rj = json.loads(Path(args.results).read_text())
         for ev in rj.get("raw_metrics", {}).get("detection_events", []):
-            found.add(str(ev["class_id"]))
+            found.add(str(ev["label_key"]))
     elif LIVE_DETECTIONS.exists():
         try:
             live = json.loads(LIVE_DETECTIONS.read_text())
