@@ -19,6 +19,7 @@ Event taxonomy:
   DP  – duplicate positive: correct type + location but that physical object
         is already confirmed, OR the tracking ID was already seen.
   FP  – known type, but no matching object within threshold or no line of sight.
+  FP_LOS – known type, within threshold but line of sight blocked.
   IGN – unknown / background type; silently dropped, not penalised.
 """
 from __future__ import annotations
@@ -99,6 +100,7 @@ class ObjectDetectionTracker:
         self._fp_count: int = 0
         self._dp_count: int = 0
         self._location_errors: list[float] = []  # metres error per TP (non-oracle only)
+        self._submission_log: list[dict] = []
 
         # LOS state — camera world position
         self._robot_pose: tuple[float, float] | None = None
@@ -295,6 +297,18 @@ class ObjectDetectionTracker:
 
             # 1. Unknown type → IGN (silently dropped, not penalised)
             if class_type not in self._valid_types:
+                self._submission_log.append({
+                    "timestamp": round(elapsed, 2),
+                    "class_type": class_type,
+                    "submitted_x": round(wx, 3),
+                    "submitted_y": round(wy, 3),
+                    "nearest_gt_key": None,
+                    "nearest_gt_x": None,
+                    "nearest_gt_y": None,
+                    "distance_to_nearest": None,
+                    "outcome": "IGN",
+                    "tracking_id": tracking_id,
+                })
                 continue
 
             # 2. Dedup: real-agent only — oracle uses _confirmed_objects below.
@@ -313,6 +327,18 @@ class ObjectDetectionTracker:
                 if not self._has_line_of_sight(float(actual["x"]), float(actual["y"])):
                     # LOS failure — count FP but do NOT blacklist tracking_id;
                     # robot may gain LOS on a future message.
+                    self._submission_log.append({
+                        "timestamp": round(elapsed, 2),
+                        "class_type": class_type,
+                        "submitted_x": round(wx, 3),
+                        "submitted_y": round(wy, 3),
+                        "nearest_gt_key": label_key,
+                        "nearest_gt_x": round(float(actual["x"]), 3),
+                        "nearest_gt_y": round(float(actual["y"]), 3),
+                        "distance_to_nearest": round(dist, 3),
+                        "outcome": "FP_LOS",
+                        "tracking_id": tracking_id,
+                    })
                     if not is_oracle and tracking_id not in _fp_seen_this_msg:
                         self._fp_count += 1
                         _fp_seen_this_msg.add(tracking_id)
@@ -320,12 +346,36 @@ class ObjectDetectionTracker:
 
                 if label_key in self._confirmed_objects:
                     # Physical object already confirmed → duplicate positive
+                    self._submission_log.append({
+                        "timestamp": round(elapsed, 2),
+                        "class_type": class_type,
+                        "submitted_x": round(wx, 3),
+                        "submitted_y": round(wy, 3),
+                        "nearest_gt_key": label_key,
+                        "nearest_gt_x": round(float(actual["x"]), 3),
+                        "nearest_gt_y": round(float(actual["y"]), 3),
+                        "distance_to_nearest": round(dist, 3),
+                        "outcome": "DP",
+                        "tracking_id": tracking_id,
+                    })
                     self._dp_count += 1
                     if not is_oracle and tracking_id:
                         self._seen_tracking_ids.add(tracking_id)
                 else:
                     # True positive
                     location_error = 0.0 if is_oracle else dist
+                    self._submission_log.append({
+                        "timestamp": round(elapsed, 2),
+                        "class_type": class_type,
+                        "submitted_x": round(wx, 3),
+                        "submitted_y": round(wy, 3),
+                        "nearest_gt_key": label_key,
+                        "nearest_gt_x": round(float(actual["x"]), 3),
+                        "nearest_gt_y": round(float(actual["y"]), 3),
+                        "distance_to_nearest": round(dist, 3),
+                        "outcome": "TP",
+                        "tracking_id": tracking_id,
+                    })
                     self._confirmed_objects[label_key] = {
                         "timestamp": elapsed,
                         "tracking_id": tracking_id,
@@ -345,6 +395,20 @@ class ObjectDetectionTracker:
                     new_tp = True
             else:
                 # Nothing within threshold → false positive (per-message dedup)
+                nearest_gt_x = round(float(self._label_map[label_key]["x"]), 3) if label_key else None
+                nearest_gt_y = round(float(self._label_map[label_key]["y"]), 3) if label_key else None
+                self._submission_log.append({
+                    "timestamp": round(elapsed, 2),
+                    "class_type": class_type,
+                    "submitted_x": round(wx, 3),
+                    "submitted_y": round(wy, 3),
+                    "nearest_gt_key": label_key,
+                    "nearest_gt_x": nearest_gt_x,
+                    "nearest_gt_y": nearest_gt_y,
+                    "distance_to_nearest": round(dist, 3),
+                    "outcome": "FP",
+                    "tracking_id": tracking_id,
+                })
                 if not is_oracle and tracking_id not in _fp_seen_this_msg:
                     self._fp_count += 1
                     _fp_seen_this_msg.add(tracking_id)
@@ -381,6 +445,10 @@ class ObjectDetectionTracker:
         """XY distance errors (metres) for TP detections; empty for oracle-only runs."""
         return list(self._location_errors)
 
+    def get_submission_log(self) -> list[dict]:
+        """All processed detection submissions with position + outcome."""
+        return list(self._submission_log)
+
     def reset(self) -> None:
         self._confirmed_objects = {}
         self._seen_tracking_ids = set()
@@ -388,4 +456,5 @@ class ObjectDetectionTracker:
         self._fp_count = 0
         self._dp_count = 0
         self._location_errors = []
+        self._submission_log = []
         self._start_time = 0.0

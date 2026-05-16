@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from metrics.evaluator import evaluate_condition, evaluate_criteria
 from metrics.detection_metrics import DetectionMetrics
+from metrics.object_detection_tracker import ObjectDetectionTracker
 from metrics.meters_traveled import MetersTraveled
 from metrics.collision_count import CollisionCount
 from metrics.revisit_ratio import RevisitRatio
@@ -86,6 +87,39 @@ def test_detection_metrics_all_found():
     assert result["found_ratio"] == 1.0
     assert result["precision"] == 1.0
     assert result["time_to_all_detections"] == 90.0
+
+
+def test_detection_metrics_submission_log_in_result():
+    label_map = {
+        "1": {"type": "fire_extinguisher", "instance": 0, "x": 1.0, "y": 2.0, "mission_target": True},
+        "2": {"type": "first_aid_kit", "instance": 0, "x": 3.0, "y": 4.0, "mission_target": True},
+    }
+    dm = DetectionMetrics("/test/detections", node=None, total_targets=2, label_map=label_map)
+    dm._tracker.get_submission_log = lambda: [
+        {"timestamp": 10.0, "class_type": "fire_extinguisher", "submitted_x": 1.1, "submitted_y": 2.1,
+         "nearest_gt_key": "1", "nearest_gt_x": 1.0, "nearest_gt_y": 2.0, "distance_to_nearest": 0.14,
+         "outcome": "TP", "tracking_id": "t1"},
+        {"timestamp": 20.0, "class_type": "fire_extinguisher", "submitted_x": 1.5, "submitted_y": 2.5,
+         "nearest_gt_key": "1", "nearest_gt_x": 1.0, "nearest_gt_y": 2.0, "distance_to_nearest": 0.71,
+         "outcome": "DP", "tracking_id": "t2"},
+        {"timestamp": 30.0, "class_type": "mouse", "submitted_x": 5.0, "submitted_y": 5.0,
+         "nearest_gt_key": None, "nearest_gt_x": None, "nearest_gt_y": None, "distance_to_nearest": None,
+         "outcome": "IGN", "tracking_id": ""},
+        {"timestamp": 40.0, "class_type": "first_aid_kit", "submitted_x": 10.0, "submitted_y": 10.0,
+         "nearest_gt_key": "2", "nearest_gt_x": 3.0, "nearest_gt_y": 4.0, "distance_to_nearest": 9.22,
+         "outcome": "FP", "tracking_id": "t3"},
+    ]
+    result = dm.get_result()
+    assert "submission_log" in result
+    assert len(result["submission_log"]) == 4
+    assert result["submission_log"][0]["outcome"] == "TP"
+    assert result["submission_log"][1]["outcome"] == "DP"
+    assert result["submission_log"][2]["outcome"] == "IGN"
+    assert result["submission_log"][3]["outcome"] == "FP"
+    assert "ground_truth_objects" in result
+    assert "1" in result["ground_truth_objects"]
+    assert result["ground_truth_objects"]["1"]["type"] == "fire_extinguisher"
+    assert result["ground_truth_objects"]["2"]["x"] == 3.0
 
 
 # --- meters traveled ---
@@ -250,3 +284,61 @@ def test_meters_first_message_no_distance():
     mt = MetersTraveled(min_delta=0.0)
     mt._on_odom(make_odom(5.0, 5.0))
     assert mt.get_result()["meters_traveled"] == 0.0
+
+
+# ── ObjectDetectionTracker — submission_log ─────────────────────────────────
+
+def test_tracker_submission_log_records_all_outcomes():
+    label_map = {
+        "1": {"type": "fire_extinguisher", "instance": 0, "x": 1.0, "y": 2.0},
+        "2": {"type": "first_aid_kit", "instance": 0, "x": 5.0, "y": 5.0},
+    }
+    tracker = ObjectDetectionTracker("/test/detections", node=None, label_map=label_map, match_threshold=1.5)
+    tracker._start_time = 0.0
+    tracker._robot_pose = (0.0, 0.0)
+
+    def _det(class_id, x, y, tracking_id=""):
+        det = types.SimpleNamespace()
+        hyp = types.SimpleNamespace()
+        hyp.hypothesis = types.SimpleNamespace(class_id=class_id)
+        hyp.pose = types.SimpleNamespace()
+        hyp.pose.pose = types.SimpleNamespace()
+        hyp.pose.pose.position = types.SimpleNamespace(x=float(x), y=float(y))
+        det.results = [hyp]
+        det.id = tracking_id
+        return det
+
+    msg = types.SimpleNamespace(detections=[
+        _det("fire_extinguisher", 1.1, 2.1, "track_ok"),
+        _det("fire_extinguisher", 1.2, 2.2, "track_dup"),
+        _det("fire_extinguisher", 8.0, 8.0, "track_fp"),
+        _det("mouse", 3.0, 3.0, "track_ign"),
+    ])
+
+    with patch("metrics.object_detection_tracker.time.monotonic", return_value=10.0):
+        tracker._on_detections(msg)
+
+    log = tracker.get_submission_log()
+    outcomes = [e["outcome"] for e in log]
+    assert "TP" in outcomes
+    assert "DP" in outcomes
+    assert "FP" in outcomes
+    assert "IGN" in outcomes
+
+    tp_entry = next(e for e in log if e["outcome"] == "TP")
+    assert tp_entry["nearest_gt_key"] == "1"
+    assert tp_entry["nearest_gt_x"] == 1.0
+    assert tp_entry["nearest_gt_y"] == 2.0
+    assert tp_entry["tracking_id"] == "track_ok"
+
+    fp_entry = next(e for e in log if e["outcome"] == "FP")
+    assert fp_entry["distance_to_nearest"] > 1.5
+
+    ign_entry = next(e for e in log if e["outcome"] == "IGN")
+    assert ign_entry["class_type"] == "mouse"
+
+def test_tracker_reset_clears_submission_log():
+    tracker = ObjectDetectionTracker("/test/detections", node=None, label_map={}, match_threshold=1.5)
+    tracker._submission_log.append({"outcome": "TP"})
+    tracker.reset()
+    assert tracker.get_submission_log() == []

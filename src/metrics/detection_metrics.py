@@ -23,6 +23,8 @@ class DetectionMetrics(BaseMetric):
       detection_count          – number of confirmed TPs
       detection_events         – list of TP event dicts
       detection_by_type        – {type: {detected, total}}
+      submission_log           – all processed detections with position + outcome (TP/DP/FP/FP_LOS/IGN)
+      ground_truth_objects      – label_map snapshot {key: {type, instance, x, y, mission_target}}
 
     Parameters
     ----------
@@ -88,6 +90,8 @@ class DetectionMetrics(BaseMetric):
             "detection_count": n_tp,
             "detection_events": events,
             "detection_by_type": self._compute_by_type(events),
+            "submission_log": self._tracker.get_submission_log(),
+            "ground_truth_objects": self._format_gt_objects(),
         }
 
     def _compute_by_type(self, events: list[dict]) -> dict[str, dict]:
@@ -118,6 +122,18 @@ class DetectionMetrics(BaseMetric):
                 "mission_target": t in mission,
             }
             for t, total in sorted(totals.items())
+        }
+
+    def _format_gt_objects(self) -> dict[str, dict]:
+        return {
+            key: {
+                "type": entry["type"],
+                "instance": entry["instance"],
+                "x": float(entry["x"]),
+                "y": float(entry["y"]),
+                "mission_target": entry.get("mission_target", False),
+            }
+            for key, entry in sorted(self._label_map.items())
         }
 
     def reset(self) -> None:

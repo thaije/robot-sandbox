@@ -84,6 +84,8 @@ def render_scorecard(sc: Scorecard) -> str:
         "detection_count",
         "detection_by_type",
         "detection_events",
+        "submission_log",
+        "ground_truth_objects",
         # Safety
         "collision_count",
         "collision_events",
