@@ -130,10 +130,11 @@ def render_scorecard(sc: Scorecard) -> str:
 
 
 def write_results(scorecard: Scorecard, output_dir: Path) -> Path:
+    from dataclasses import asdict  # noqa: PLC0415
     from datetime import datetime  # noqa: PLC0415
     output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%dT%H%M%S")
     out_file = output_dir / f"{scorecard.scenario_name}_{ts}.json"
     with open(out_file, "w") as f:
-        json.dump(scorecard.__dict__, f, indent=2, default=str)
+        json.dump(asdict(scorecard), f, indent=2, default=str)
     return out_file
