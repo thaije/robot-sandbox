@@ -71,14 +71,14 @@ def test_accuracy_perfect_detection():
     assert engine._accuracy_score(metrics) == pytest.approx(100.0, abs=0.01)
 
 def test_accuracy_no_detections():
-    # found_ratio missing → 0 (0.55 weight); precision missing → default 1.0 (0.45 weight) → 45
+    # found_ratio missing → 0 (0.60 weight); precision missing → 0 (0.40 weight) → 0
     metrics = {}
-    assert engine._accuracy_score(metrics) == pytest.approx(45.0, abs=0.01)
+    assert engine._accuracy_score(metrics) == pytest.approx(0.0, abs=0.01)
 
 def test_accuracy_partial():
-    # found_ratio=0.5 → 50*0.55=27.5; precision=0.8 → 80*0.45=36 → 63.5
+    # found_ratio=0.5 → 50*0.60=30; precision=0.8 → 80*0.40=32 → 62
     metrics = {"found_ratio": 0.5, "precision": 0.8}
-    expected = 0.55 * 50.0 + 0.45 * 80.0
+    expected = 0.60 * 50.0 + 0.40 * 80.0
     assert engine._accuracy_score(metrics) == pytest.approx(expected, abs=0.01)
 
 
