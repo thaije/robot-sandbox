@@ -45,6 +45,14 @@ DEFAULT_PNG = REPO_ROOT / "detections.png"
 
 _SCALE = 40  # px per metre (matches world_state.py)
 
+TYPE_ABBR = {
+    "fire_extinguisher": "FE",
+    "first_aid_kit": "FA",
+    "hazard_sign": "HS",
+    "person": "P",
+    "exit_sign": "ES",
+}
+
 TYPE_COLOR = {
     "fire_extinguisher": (50, 50, 220),
     "first_aid_kit": (50, 180, 50),
@@ -175,10 +183,16 @@ def render(
             cv2.line(img, d3, d4, col, 2)
             if gt_pos and outcome == "FP_LOS":
                 cv2.line(img, (six, siy), gt_pos, col, 1, cv2.LINE_AA)
+            class_type = entry.get("class_type", "")
+            type_label = TYPE_ABBR.get(class_type, class_type[:3]) if class_type else ""
             dist = entry.get("distance_to_nearest")
+            parts = []
+            if type_label:
+                parts.append(type_label)
             if dist is not None and dist <= match_threshold * 2:
-                ann = f"{dist:.1f}m"
-                cv2.putText(img, ann, (six + 6, siy - 4),
+                parts.append(f"{dist:.1f}m")
+            if parts:
+                cv2.putText(img, " ".join(parts), (six + 6, siy - 4),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.3, col, 1)
         elif outcome == "IGN":
             d = int(six - 3), int(siy - 3)
