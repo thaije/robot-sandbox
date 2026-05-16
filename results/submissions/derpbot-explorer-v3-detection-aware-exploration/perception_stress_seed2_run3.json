@@ -1,0 +1,209 @@
+{
+  "scenario_name": "office_perception_stress_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 600.528,
+  "timeout_seconds": 600.0,
+  "random_seed": 2,
+  "categories": [
+    "CategoryScore(name='speed', score=20.53, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=50.0, grade='D', grade_label='Poor', weight=0.35)",
+    "CategoryScore(name='safety', score=26.0, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='efficiency', score=98.56, grade='S', grade_label='Outstanding', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=33.94, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 41.8,
+  "overall_grade": "D",
+  "overall_grade_label": "Poor",
+  "raw_metrics": {
+    "collision_count": 25.0,
+    "exploration_coverage": 59.82,
+    "near_miss_count": 9.0,
+    "meters_traveled": 23.969,
+    "found_ratio": 0.1667,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.12,
+    "time_to_all_detections": 63.25,
+    "average_time_per_detection": 63.25,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 1.0,
+    "collision_events": [
+      {
+        "t": 206.97,
+        "count": 1
+      },
+      {
+        "t": 214.39,
+        "count": 2
+      },
+      {
+        "t": 230.26,
+        "count": 3
+      },
+      {
+        "t": 232.37,
+        "count": 4
+      },
+      {
+        "t": 233.79,
+        "count": 5
+      },
+      {
+        "t": 238.04,
+        "count": 6
+      },
+      {
+        "t": 239.48,
+        "count": 7
+      },
+      {
+        "t": 241.25,
+        "count": 8
+      },
+      {
+        "t": 245.06,
+        "count": 9
+      },
+      {
+        "t": 249.27,
+        "count": 10
+      },
+      {
+        "t": 252.31,
+        "count": 11
+      },
+      {
+        "t": 254.12,
+        "count": 12
+      },
+      {
+        "t": 259.54,
+        "count": 13
+      },
+      {
+        "t": 262.16,
+        "count": 14
+      },
+      {
+        "t": 264.37,
+        "count": 15
+      },
+      {
+        "t": 266.58,
+        "count": 16
+      },
+      {
+        "t": 268.7,
+        "count": 17
+      },
+      {
+        "t": 270.14,
+        "count": 18
+      },
+      {
+        "t": 275.14,
+        "count": 19
+      },
+      {
+        "t": 279.35,
+        "count": 20
+      },
+      {
+        "t": 281.16,
+        "count": 21
+      },
+      {
+        "t": 283.37,
+        "count": 22
+      },
+      {
+        "t": 285.98,
+        "count": 23
+      },
+      {
+        "t": 289.81,
+        "count": 24
+      },
+      {
+        "t": 303.26,
+        "count": 25
+      }
+    ],
+    "near_miss_events": [
+      {
+        "t": 119.86,
+        "count": 1,
+        "min_range": 0.193
+      },
+      {
+        "t": 122.32,
+        "count": 2,
+        "min_range": 0.199
+      },
+      {
+        "t": 126.2,
+        "count": 3,
+        "min_range": 0.196
+      },
+      {
+        "t": 128.64,
+        "count": 4,
+        "min_range": 0.195
+      },
+      {
+        "t": 196.3,
+        "count": 5,
+        "min_range": 0.181
+      },
+      {
+        "t": 197.56,
+        "count": 6,
+        "min_range": 0.174
+      },
+      {
+        "t": 200.52,
+        "count": 7,
+        "min_range": 0.182
+      },
+      {
+        "t": 203.53,
+        "count": 8,
+        "min_range": 0.197
+      },
+      {
+        "t": 206.29,
+        "count": 9,
+        "min_range": 0.156
+      }
+    ],
+    "detection_events": [
+      {
+        "label_key": "11",
+        "class_type": "person",
+        "class_name": "person #1",
+        "timestamp": 63.25,
+        "location_error": 0.12
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 1,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 600.53,
+    "avg_speed_kmh": 0.144
+  }
+}

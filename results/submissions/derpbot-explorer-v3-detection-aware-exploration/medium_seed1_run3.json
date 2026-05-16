@@ -1,0 +1,62 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.1360000000001,
+  "timeout_seconds": 600.0,
+  "random_seed": 1,
+  "categories": [
+    "CategoryScore(name='speed', score=18.62, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=50.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.25)",
+    "CategoryScore(name='efficiency', score=75.16, grade='B', grade_label='Good', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=33.4, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 56.2,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "near_miss_count": 0.0,
+    "meters_traveled": 31.825,
+    "collision_count": 0.0,
+    "exploration_coverage": 58.28,
+    "found_ratio": 0.1667,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.026,
+    "time_to_all_detections": 45.66,
+    "average_time_per_detection": 45.66,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 1.0,
+    "near_miss_events": [],
+    "collision_events": [],
+    "detection_events": [
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 45.66,
+        "location_error": 0.026
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 1,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 602.14,
+    "avg_speed_kmh": 0.19
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.176,
+  "timeout_seconds": 600.0,
+  "random_seed": 3,
+  "categories": [
+    "CategoryScore(name='speed', score=18.62, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=60.0, grade='C', grade_label='Adequate', weight=0.3)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.25)",
+    "CategoryScore(name='efficiency', score=57.69, grade='C', grade_label='Adequate', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=43.0, grade='D', grade_label='Poor', weight=0.15)"
+  ],
+  "overall_score": 58.9,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "exploration_coverage": 48.57,
+    "collision_count": 0.0,
+    "near_miss_count": 0.0,
+    "meters_traveled": 38.098,
+    "found_ratio": 0.3333,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.354,
+    "time_to_all_detections": 265.09,
+    "average_time_per_detection": 132.54,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 2.0,
+    "collision_events": [],
+    "near_miss_events": [],
+    "detection_events": [
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 234.43,
+        "location_error": 0.215
+      },
+      {
+        "label_key": "12",
+        "class_type": "person",
+        "class_name": "person #1",
+        "timestamp": 265.09,
+        "location_error": 0.494
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 1,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 1,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 602.18,
+    "avg_speed_kmh": 0.228
+  }
+}

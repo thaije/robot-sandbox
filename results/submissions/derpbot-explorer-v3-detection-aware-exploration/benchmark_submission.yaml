@@ -1,0 +1,16 @@
+stack_name: "DerpBot Explorer — derpbot-explorer-v3-detection-aware-exploration"
+repo_url: "https://github.com/thaije/derpbot-explorer"
+code_url: "https://github.com/thaije/derpbot-explorer/releases/tag/derpbot-explorer-v3-detection-aware-exploration"
+sandbox_version: "v1.0.1"
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+  - medium
+  - hard
+  - brutal
+  - perception_stress
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 3
+submitted: "2026-05-15"
+results_dir: "results/submissions/derpbot-explorer-v3-detection-aware-exploration/"
+description: "Classical pipeline: slam_toolbox + Nav2 MPPI + frontier explorer + OWLv2 detector."

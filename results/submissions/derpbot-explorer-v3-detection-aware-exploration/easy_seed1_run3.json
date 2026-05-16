@@ -1,0 +1,177 @@
+{
+  "scenario_name": "office_easy_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 903.24,
+  "timeout_seconds": 900.0,
+  "random_seed": 1,
+  "categories": [
+    "CategoryScore(name='speed', score=12.95, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=62.86, grade='C', grade_label='Adequate', weight=0.3)",
+    "CategoryScore(name='safety', score=48.0, grade='D', grade_label='Poor', weight=0.25)",
+    "CategoryScore(name='efficiency', score=49.61, grade='D', grade_label='Poor', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=67.13, grade='C', grade_label='Adequate', weight=0.15)"
+  ],
+  "overall_score": 48.5,
+  "overall_grade": "D",
+  "overall_grade_label": "Poor",
+  "raw_metrics": {
+    "collision_count": 3.0,
+    "exploration_coverage": 67.99,
+    "near_miss_count": 16.0,
+    "meters_traveled": 46.857,
+    "found_ratio": 0.6667,
+    "precision": 0.5714,
+    "duplicate_rate": 0.2,
+    "mean_localization_error": 0.232,
+    "time_to_all_detections": 419.41,
+    "average_time_per_detection": 104.85,
+    "false_positive_count": 3.0,
+    "duplicate_count": 1.0,
+    "detection_count": 4.0,
+    "collision_events": [
+      {
+        "t": 405.52,
+        "count": 1
+      },
+      {
+        "t": 421.75,
+        "count": 2
+      },
+      {
+        "t": 426.99,
+        "count": 3
+      }
+    ],
+    "near_miss_events": [
+      {
+        "t": 406.33,
+        "count": 1,
+        "min_range": 0.197
+      },
+      {
+        "t": 407.43,
+        "count": 2,
+        "min_range": 0.198
+      },
+      {
+        "t": 408.53,
+        "count": 3,
+        "min_range": 0.199
+      },
+      {
+        "t": 409.59,
+        "count": 4,
+        "min_range": 0.193
+      },
+      {
+        "t": 410.68,
+        "count": 5,
+        "min_range": 0.194
+      },
+      {
+        "t": 411.83,
+        "count": 6,
+        "min_range": 0.198
+      },
+      {
+        "t": 412.98,
+        "count": 7,
+        "min_range": 0.192
+      },
+      {
+        "t": 413.99,
+        "count": 8,
+        "min_range": 0.192
+      },
+      {
+        "t": 415.09,
+        "count": 9,
+        "min_range": 0.195
+      },
+      {
+        "t": 416.14,
+        "count": 10,
+        "min_range": 0.192
+      },
+      {
+        "t": 417.33,
+        "count": 11,
+        "min_range": 0.2
+      },
+      {
+        "t": 418.39,
+        "count": 12,
+        "min_range": 0.195
+      },
+      {
+        "t": 419.53,
+        "count": 13,
+        "min_range": 0.196
+      },
+      {
+        "t": 420.68,
+        "count": 14,
+        "min_range": 0.198
+      },
+      {
+        "t": 421.68,
+        "count": 15,
+        "min_range": 0.196
+      },
+      {
+        "t": 426.03,
+        "count": 16,
+        "min_range": 0.195
+      }
+    ],
+    "detection_events": [
+      {
+        "label_key": "2",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #2",
+        "timestamp": 35.14,
+        "location_error": 0.17
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 44.22,
+        "location_error": 0.175
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 107.05,
+        "location_error": 0.222
+      },
+      {
+        "label_key": "13",
+        "class_type": "person",
+        "class_name": "person #1",
+        "timestamp": 419.41,
+        "location_error": 0.359
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 2,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 1,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 1,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 903.24,
+    "avg_speed_kmh": 0.187
+  }
+}

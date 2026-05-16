@@ -1,0 +1,76 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.3520000000001,
+  "timeout_seconds": 600.0,
+  "random_seed": 4,
+  "categories": [
+    "CategoryScore(name='speed', score=18.62, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=70.0, grade='B', grade_label='Good', weight=0.3)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.25)",
+    "CategoryScore(name='efficiency', score=86.06, grade='A', grade_label='Excellent', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=50.93, grade='D', grade_label='Poor', weight=0.15)"
+  ],
+  "overall_score": 66.0,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "meters_traveled": 20.179,
+    "near_miss_count": 0.0,
+    "exploration_coverage": 46.47,
+    "collision_count": 0.0,
+    "found_ratio": 0.5,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.394,
+    "time_to_all_detections": 315.47,
+    "average_time_per_detection": 105.16,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 3.0,
+    "near_miss_events": [],
+    "collision_events": [],
+    "detection_events": [
+      {
+        "label_key": "5",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #2",
+        "timestamp": 80.65,
+        "location_error": 0.232
+      },
+      {
+        "label_key": "1",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #1",
+        "timestamp": 261.03,
+        "location_error": 0.375
+      },
+      {
+        "label_key": "4",
+        "class_type": "first_aid_kit",
+        "class_name": "first_aid_kit #1",
+        "timestamp": 315.47,
+        "location_error": 0.574
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 1,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 2,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 602.35,
+    "avg_speed_kmh": 0.121
+  }
+}

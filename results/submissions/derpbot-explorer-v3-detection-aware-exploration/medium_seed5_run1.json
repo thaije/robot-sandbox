@@ -1,0 +1,62 @@
+{
+  "scenario_name": "office_medium_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 602.232,
+  "timeout_seconds": 600.0,
+  "random_seed": 5,
+  "categories": [
+    "CategoryScore(name='speed', score=18.62, grade='F', grade_label='Failed', weight=0.2)",
+    "CategoryScore(name='accuracy', score=50.0, grade='D', grade_label='Poor', weight=0.3)",
+    "CategoryScore(name='safety', score=100.0, grade='S', grade_label='Outstanding', weight=0.25)",
+    "CategoryScore(name='efficiency', score=77.59, grade='B', grade_label='Good', weight=0.1)",
+    "CategoryScore(name='effectiveness', score=28.22, grade='F', grade_label='Failed', weight=0.15)"
+  ],
+  "overall_score": 55.7,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "exploration_coverage": 43.49,
+    "collision_count": 0.0,
+    "meters_traveled": 23.141,
+    "near_miss_count": 0.0,
+    "found_ratio": 0.1667,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.45,
+    "time_to_all_detections": 22.75,
+    "average_time_per_detection": 22.75,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 1.0,
+    "collision_events": [],
+    "near_miss_events": [],
+    "detection_events": [
+      {
+        "label_key": "12",
+        "class_type": "person",
+        "class_name": "person #1",
+        "timestamp": 22.75,
+        "location_error": 0.45
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 1,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 602.23,
+    "avg_speed_kmh": 0.138
+  }
+}
