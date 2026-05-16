@@ -24,7 +24,7 @@ world:
       count: 1
       placement: "random"
       target_pool: true
-    - type: "person"
+    - type: "mouse"
       count: 1
       placement: "cornered"
       target_pool: true
