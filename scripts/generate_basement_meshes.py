@@ -57,47 +57,62 @@ def _box_mesh(
     uvs = []
     triangles = []
 
+    def _lerp(a, b, t):
+        return (a[0] + (b[0] - a[0]) * t,
+                a[1] + (b[1] - a[1]) * t,
+                a[2] + (b[2] - a[2]) * t)
+
     for face in faces_def:
         vs = face["verts"]
-        nu = max(1, round(face["u_size"] / face["u_tile"]))
-        nv = max(1, round(face["v_size"] / face["v_tile"]))
         normal = face["normal"]
+        tile_u = face["u_tile"]
+        tile_v = face["v_tile"]
 
-        # Face corner 3D positions
         c0 = corners[vs[0]]
         c1 = corners[vs[1]]
         c2 = corners[vs[2]]
         c3 = corners[vs[3]]
 
-        # World-space UV scaling: each tile_* unit of world distance = 1 UV unit
-        us = face["u_size"] / face["u_tile"]
-        vs = face["v_size"] / face["v_tile"]
+        u_size = face["u_size"]
+        v_size = face["v_size"]
 
-        # Subdivide into nu×nv grid of quads
+        n_u_full = int(u_size // tile_u)
+        rem_u = u_size - n_u_full * tile_u
+        n_v_full = int(v_size // tile_v)
+        rem_v = v_size - n_v_full * tile_v
+
+        nu = n_u_full + (1 if rem_u > 0.001 else 0)
+        nv = n_v_full + (1 if rem_v > 0.001 else 0)
+
         for j in range(nv):
             for i in range(nu):
-                # Bilinear interpolation for 4 corners of sub-quad
-                u0, u1 = i / nu, (i + 1) / nu
-                v0, v1 = j / nv, (j + 1) / nv
+                is_partial_u = (rem_u > 0.001 and i == n_u_full)
+                is_partial_v = (rem_v > 0.001 and j == n_v_full)
+                quad_u_size = rem_u if is_partial_u else tile_u
+                quad_v_size = rem_v if is_partial_v else tile_v
 
-                def _lerp(a, b, t):
-                    return (a[0] + (b[0] - a[0]) * t,
-                            a[1] + (b[1] - a[1]) * t,
-                            a[2] + (b[2] - a[2]) * t)
+                u_start = i * tile_u
+                v_start = j * tile_v
 
-                bl = _lerp(_lerp(c0, c1, u0), _lerp(c3, c2, u0), v0)
-                br = _lerp(_lerp(c0, c1, u1), _lerp(c3, c2, u1), v0)
-                tr = _lerp(_lerp(c0, c1, u1), _lerp(c3, c2, u1), v1)
-                tl = _lerp(_lerp(c0, c1, u0), _lerp(c3, c2, u0), v1)
+                world_u0 = u_start / u_size
+                world_u1 = (u_start + quad_u_size) / u_size
+                world_v0 = v_start / v_size
+                world_v1 = (v_start + quad_v_size) / v_size
+
+                bl = _lerp(_lerp(c0, c1, world_u0), _lerp(c3, c2, world_u0), world_v0)
+                br = _lerp(_lerp(c0, c1, world_u1), _lerp(c3, c2, world_u1), world_v0)
+                tr = _lerp(_lerp(c0, c1, world_u1), _lerp(c3, c2, world_u1), world_v1)
+                tl = _lerp(_lerp(c0, c1, world_u0), _lerp(c3, c2, world_u0), world_v1)
 
                 base = len(positions) // 3
                 for p in (bl, br, tr, tl):
                     positions.extend(p)
                     normals.extend(normal)
-                uvs.extend([u0 * us, v0 * vs,
-                            u1 * us, v0 * vs,
-                            u1 * us, v1 * vs,
-                            u0 * us, v1 * vs])
+
+                uv_u1_partial = quad_u_size / tile_u
+                uv_v1_partial = quad_v_size / tile_v
+                uvs.extend([0, 0, uv_u1_partial, 0,
+                            uv_u1_partial, uv_v1_partial, 0, uv_v1_partial])
 
                 triangles.append([base, base + 1, base + 2])
                 triangles.append([base, base + 2, base + 3])
@@ -144,7 +159,6 @@ def _cylinder_mesh(name: str, radius: float, height: float,
             uv_u1 = u1_frac * uv_span_u
 
             base = len(positions) // 3
-            # 4 corners: bottom-left, bottom-right, top-right, top-left
             for (ct, st, z, uv_u, uv_v) in [
                 (c0, s0, z0, uv_u0, uv_v0), (c1, s1, z0, uv_u1, uv_v0),
                 (c1, s1, z1, uv_u1, uv_v1), (c0, s0, z1, uv_u0, uv_v1),
@@ -156,21 +170,21 @@ def _cylinder_mesh(name: str, radius: float, height: float,
             triangles.append([base, base + 1, base + 2])
             triangles.append([base, base + 2, base + 3])
 
-    cap_scale_u = radius / u_tile
-    cap_scale_v = radius / v_tile
+    cap_scale_u = min(1.0, radius / u_tile)
+    cap_scale_v = min(1.0, radius / v_tile)
 
     # Top cap — fan from centre
     center_top = len(positions) // 3
     positions.extend([0.0, 0.0, hz])
     normals.extend([0.0, 0.0, 1.0])
-    uvs.extend([cap_scale_u * 0.5, cap_scale_v * 0.5])
+    uvs.extend([0.5, 0.5])
     for i in range(n_u):
         theta = i / n_u * 2 * math.pi
         ct, st = math.cos(theta), math.sin(theta)
         positions.extend([radius * ct, radius * st, hz])
         normals.extend([0.0, 0.0, 1.0])
-        uvs.extend([cap_scale_u * (0.5 + 0.5 * ct),
-                     cap_scale_v * (0.5 + 0.5 * st)])
+        uvs.extend([0.5 + 0.5 * ct * cap_scale_u,
+                     0.5 + 0.5 * st * cap_scale_v])
     for i in range(n_u):
         i_next = (i + 1) % n_u
         triangles.append([center_top, center_top + 1 + i, center_top + 1 + i_next])
@@ -179,14 +193,14 @@ def _cylinder_mesh(name: str, radius: float, height: float,
     center_bot = len(positions) // 3
     positions.extend([0.0, 0.0, -hz])
     normals.extend([0.0, 0.0, -1.0])
-    uvs.extend([cap_scale_u * 0.5, cap_scale_v * 0.5])
+    uvs.extend([0.5, 0.5])
     for i in range(n_u):
         theta = i / n_u * 2 * math.pi
         ct, st = math.cos(theta), math.sin(theta)
         positions.extend([radius * ct, radius * st, -hz])
         normals.extend([0.0, 0.0, -1.0])
-        uvs.extend([cap_scale_u * (0.5 - 0.5 * ct),
-                     cap_scale_v * (0.5 + 0.5 * st)])
+        uvs.extend([0.5 - 0.5 * ct * cap_scale_u,
+                     0.5 + 0.5 * st * cap_scale_v])
     for i in range(n_u):
         i_next = (i + 1) % n_u
         triangles.append([center_bot, center_bot + 1 + i_next, center_bot + 1 + i])
