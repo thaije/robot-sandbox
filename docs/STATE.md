@@ -113,6 +113,9 @@ python3.12 -m pytest tests/
 
 # Integration test (requires live sim + ROS 2)
 pytest -m integration tests/test_integration.py
+
+# Post-run detection visualisation (requires results JSON + world_state.json)
+python3.12 scripts/detection_viz.py --results results/<run>.json
 ```
 
 Navigation: invoke the `arst-nav` skill — full docs inside.

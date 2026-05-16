@@ -4,17 +4,20 @@
 Reads a results JSON (with submission_log + ground_truth_objects) and renders
 a PNG showing every submitted detection on the occupancy-grid map.
 
-Visual encoding
----------------
-- Coloured filled circles = ground-truth objects (mission targets)
+Map legend
+----------
+- Coloured filled circles = ground-truth mission-target objects
     fire_extinguisher = red, first_aid_kit = green, hazard_sign = cyan,
     person = yellow, exit_sign = purple, other = magenta
-- White-grey filled circles = non-mission objects
-- TP  = green ring + dashed line to matched GT
-- DP  = blue ring
-- FP  = red ✕ + distance annotation to nearest GT
-- FP_LOS = orange ✕ + dashed line to nearest GT
-- IGN = grey ✕ (faint)
+- Grey filled circles = non-mission environmental objects
+- Green ring + line to GT = TP (true positive)
+- Yellow ring = DP (duplicate positive)
+- Red ✕ + distance annotation = FP (false positive, outside threshold)
+- Orange ✕ + line to GT = FP_LOS (within threshold but no line of sight)
+- Grey ✕ (faint) = IGN (unknown type, not penalised)
+
+Companion to world_state.py: that script renders robot + live view; this one
+renders completed-run detections for post-hoc analysis.
 
 Usage
 -----
@@ -22,6 +25,7 @@ Usage
     python3.12 scripts/detection_viz.py --results results/run.json --png /tmp/viz.png
     python3.12 scripts/detection_viz.py --results results/run.json --state /tmp/arst_worlds/world_state.json
 
+Default PNG output: detections.png in the repo root (next to arst_world_map.png).
 If --state is omitted, defaults to /tmp/arst_worlds/world_state.json (must exist
 or be explicitly provided for completed runs where the sim has been torn down).
 """
@@ -36,6 +40,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 WORLD_STATE = Path("/tmp/arst_worlds/world_state.json")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_PNG = REPO_ROOT / "detections.png"
 
 _SCALE = 40  # px per metre (matches world_state.py)
 
@@ -214,7 +220,7 @@ def main() -> None:
     )
     parser.add_argument("--results", required=True, help="Results JSON with submission_log")
     parser.add_argument("--state", default=str(WORLD_STATE), help="world_state.json path (for PGM map)")
-    parser.add_argument("--png", default=None, help="Output PNG path (default: <results_stem>_detections.png)")
+    parser.add_argument("--png", default=None, help="Output PNG path (default: repo-root/detections.png)")
     parser.add_argument("--match-threshold", type=float, default=1.5, help="Near-miss annotation threshold (m)")
     args = parser.parse_args()
 
@@ -251,7 +257,7 @@ def main() -> None:
 
     pixels, W, H = _read_pgm(pgm_path)
 
-    out_path = args.png or str(results_path.with_name(results_path.stem + "_detections.png"))
+    out_path = args.png or str(DEFAULT_PNG)
 
     render(pixels, W, H, res, gt_objects, obstacles, submission_log,
            args.match_threshold, out_path)
