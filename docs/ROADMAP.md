@@ -26,7 +26,6 @@ Known issues not currently prioritised. Full details in the linked issues.
 - [#1](https://github.com/thaije/robot-sandbox/issues/1) — Add sound to simulation
 - [#2](https://github.com/thaije/robot-sandbox/issues/2) — Add sensor jitter
 - [#5](https://github.com/thaije/robot-sandbox/issues/5) — Multiple simulator instances (SIM-12, parallel runs via Docker + GZ_PARTITION)
-- [#12](https://github.com/thaije/robot-sandbox/issues/12) — Record all submitted detections (position + outcome) in results JSON
 
 Run `gh issue list --state open --label backlog` for the live list.
 
