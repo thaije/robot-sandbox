@@ -22,7 +22,7 @@ ScenarioRunner — scripts/run_scenario.sh config/scenarios/<scenario>/<tier>.ya
 worlds/templates/indoor_office/   20×15 m, 4 rooms, PGM ground-truth map
 worlds/templates/basement/       6×8 m (E-W × N-S), 3 rooms (main 4×8m + SE 2×3m + NE 2×5m, two arched passages), 0.8 m ceiling, PGM ground-truth map
 scenario types                    explore_detect (find all targets) / proximity (reach target)
-objects                           fire_extinguisher, first_aid_kit, hazard_sign, exit_sign, person, drink_can, mouse, conduit_yellow, pipe_sewer, pipe_water — unique per-instance labels
+objects                           fire_extinguisher, first_aid_kit, hazard_sign, exit_sign, person, drink_can, drill, mouse, conduit_yellow, pipe_sewer, pipe_sewer_floor, pipe_water, suitcase, suitcase_static — unique per-instance labels
 difficulty tiers                  easy / medium / hard / brutal / perception_stress (office)
                                    easy / medium (basement_find — proximity-goal)
                                    lighting, door states, dynamic obstacles, timeout — all YAML-driven
@@ -63,6 +63,7 @@ Anything in committed config/code is omitted. Only things a fresh agent would re
 - **Leaderboard `detection_by_type` includes `mission_target`**: per-object-type boolean marking whether that type counts toward `found_ratio`. Leaderboard generator falls back to scenario YAML config for legacy JSONs lacking this field.
 - **Easy timeout is 900s** (not 300s). `easy_900s.yaml` has been merged into `easy.yaml`.
 - **Proximity-goal scenarios**: `goal_type: proximity` in scenario YAML switches scoring from 5-category explore-detect to 4-category (Success/Time/Safety/Efficiency). ProximityTracker uses ground-truth positions from `world_state.json` + robot odom. Success requires BOTH `proximity_reached == true` AND `found_ratio >= 1.0` — the robot must reach within `proximity_radius` metres of the target AND publish a valid Detection2DArray for it. Proximity radius changed from 2.0 m to 1.0 m.
+- **`target_pool` randomization**: object specs with `target_pool: true` form a candidate pool; WorldGenerator randomly picks ONE type (seed-deterministic via `rng(seed + 5555)`) as the mission target. Chosen type gets `mission_target: true`, others in pool get `false`. `scenario.target_object` is set automatically. Non-pool objects keep their existing `mission_target` value.
 - **Basement is 6 m × 8 m** (E-W × N-S). Three rooms: R1 (west, 4×8 m), R2 (SE, 2×3 m), R3 (NE, 2×5 m). Two arched passages connect R1↔R2 (at y≈1.5) and R1↔R3 (at y≈5.5). Ceiling 0.8 m — DerpBot camera at z=0.18 m, only 0.62 m clearance above camera.
 
 ### Gazebo / SDF

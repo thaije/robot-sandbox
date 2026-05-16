@@ -100,6 +100,13 @@ class WorldGenerator:
         robots_cfg = scenario_config.get("robots", [])
         self._resolve_spawn_poses(robots_cfg, template_cfg, seed)
 
+        # ── Resolve target_pool → mission_target ──────────────────────────────
+        # If any object specs carry ``target_pool: true``, exactly one type
+        # is randomly chosen (seed-deterministic) as the mission target.  All
+        # pool members get mission_target set appropriately; non-pool members
+        # keep their existing value (or default false).
+        self._resolve_target_pool(scenario_config, seed)
+
         # ── Place objects ──────────────────────────────────────────────────────
         objects = world_cfg.get("objects", [])
         robot_spawns: list[tuple[float, float]] = [
@@ -175,7 +182,7 @@ class WorldGenerator:
         self._inject_dynamic_obstacles(world_elem, dynamic_obstacles)
 
         # Embed robots — convert each URDF to SDF and add as <model>
-        self._save_world_state(template_name, robots_cfg, template_cfg)
+        self._save_world_state(template_name, robots_cfg, template_cfg, scenario_config)
         self._embed_robots(world_elem, robots_cfg)
 
         # ── Write output ───────────────────────────────────────────────────────
@@ -307,6 +314,41 @@ class WorldGenerator:
                 "z":   0.0,
                 "yaw": float(chosen.get("yaw", 0.0)),
             }
+
+    def _resolve_target_pool(
+        self,
+        scenario_config: dict,
+        seed: int,
+    ) -> None:
+        """Resolve ``target_pool`` flags to concrete ``mission_target`` values.
+
+        When object specs carry ``target_pool: true``, exactly one type from
+        the pool is randomly chosen (seed-deterministic) as the mission
+        target.  All pool members are updated: the chosen type gets
+        ``mission_target: true``, all others get ``mission_target: false``.
+        ``scenario.target_object`` is also set so proximity-goal logic works.
+
+        Objects without ``target_pool`` keep their existing ``mission_target``
+        value (or default false).  If no objects use ``target_pool``, this
+        is a no-op.
+        """
+        objects = scenario_config.get("world", {}).get("objects", [])
+        pool_types = list(dict.fromkeys(
+            obj["type"] for obj in objects if obj.get("target_pool", False)
+        ))
+        if not pool_types:
+            return
+
+        import random as _random
+        rng = _random.Random(seed + 5555)
+
+        chosen_type = rng.choice(pool_types)
+
+        for obj in objects:
+            if obj.get("target_pool", False):
+                obj["mission_target"] = (obj["type"] == chosen_type)
+
+        scenario_config["scenario"]["target_object"] = chosen_type
 
     def _apply_door_states(
         self,
@@ -614,7 +656,8 @@ class WorldGenerator:
             world_elem.append(model_elem)
 
     def _save_world_state(
-        self, template_name: str, robots_cfg: list, template_cfg: dict
+        self, template_name: str, robots_cfg: list, template_cfg: dict,
+        scenario_config: dict | None = None,
     ) -> None:
         """Write /tmp/arst_worlds/world_state.json for agent navigation tools."""
         import json
@@ -635,6 +678,10 @@ class WorldGenerator:
             "obstacles": template_cfg.get("obstacles", []),
             "world_name": template_name,
         }
+        if scenario_config:
+            target = scenario_config.get("scenario", {}).get("target_object")
+            if target:
+                state["target_object"] = target
         self._output_dir.mkdir(parents=True, exist_ok=True)
         out = self._output_dir / "world_state.json"
         out.write_text(json.dumps(state, indent=2))

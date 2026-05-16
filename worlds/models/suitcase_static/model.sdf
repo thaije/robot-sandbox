@@ -1,0 +1,72 @@
+<?xml version='1.0' ?>
+<sdf version="1.6">
+    <model name="suitcase_static">
+        <static>true</static>
+        <link name="link">
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://suitcase/meshes/SmallCase.dae</uri>
+                    </mesh>
+                </geometry>
+                <material>
+                    <diffuse>1.0 1.0 1.0</diffuse>
+                    <specular>1.0 1.0 1.0</specular>
+                    <pbr>
+                        <metal>
+                            <albedo_map>model://suitcase/materials/textures/SmallCase_Albedo.jpg</albedo_map>
+                            <normal_map>model://suitcase/materials/textures/SmallCase_Normal.jpg</normal_map>
+                            <roughness_map>model://suitcase/materials/textures/SmallCase_Roughness.jpg</roughness_map>
+                            <metalness_map>model://suitcase/materials/textures/SmallCase_Metalness.png</metalness_map>
+                        </metal>
+                    </pbr>
+                </material>
+            </visual>
+            <collision name="Box004">
+                <pose>0.0 -0.00514981 0.064262 1.5708 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.190361 0.129459 0.0103708</size>
+                    </box>
+                </geometry>
+            </collision>
+            <collision name="Box005">
+                <pose>0.0 -0.00356354 0.126202 0.0 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.142795 0.0291594 0.0156732</size>
+                    </box>
+                </geometry>
+            </collision>
+            <collision name="Cylinder007">
+                <pose>-0.0449782 -0.005139 -0.0015085 1.5708 0.0 -1.5708</pose>
+                <geometry>
+                    <cylinder>
+                        <length>0.0498479</length>
+                        <radius>0.00290607</radius>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <collision name="Cylinder008">
+                <pose>0.044978 -0.005139 -0.0015085 1.5708 0.0 1.5708</pose>
+                <geometry>
+                    <cylinder>
+                        <length>0.0498479</length>
+                        <radius>0.00290607</radius>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <collision name="Box003">
+                <pose>0.0 -9.18023e-05 0.064262 1.5708 0.0 0.0</pose>
+                <geometry>
+                    <box>
+                        <size>0.177553 0.116038 0.0543985</size>
+                    </box>
+                </geometry>
+            </collision>
+        </link>
+  <plugin name="gz::sim::systems::Label" filename="gz-sim-label-system">
+    <label>1</label>
+  </plugin>
+    </model>
+</sdf>

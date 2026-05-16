@@ -1,9 +1,8 @@
 scenario:
   name: "basement_find_easy"
-  description: "Easy basement proximity — bright lighting, find and detect the drink can"
+  description: "Easy basement proximity — bright lighting, find and detect the target object"
   timeout_seconds: 300
   goal_type: "proximity"
-  target_object: "drink_can"
   proximity_radius: 1.0
 
 world:
@@ -12,15 +11,31 @@ world:
     lighting: "bright"
     door_states: "open"
   objects:
-    # ── Primary target (mission) ────────────────────────────────────────
+    # ── Target pool — one is randomly chosen as mission target per seed ──
     - type: "drink_can"
       count: 1
-      placement: "cornered"
-      mission_target: true
-    # ── Clutter (positions shuffle with seed) ───────────────────────────
-    - type: "mouse"
+      placement: "random"
+      target_pool: true
+    - type: "fire_extinguisher"
       count: 1
       placement: "cornered"
+      target_pool: true
+    - type: "drill"
+      count: 1
+      placement: "random"
+      target_pool: true
+    - type: "person"
+      count: 1
+      placement: "cornered"
+      target_pool: true
+    - type: "pipe_sewer_floor"
+      count: 1
+      placement: "cornered"
+      target_pool: true
+    - type: "suitcase_static"
+      count: 1
+      placement: "random"
+      target_pool: true
 
 robots:
   - platform: "derpbot"
@@ -47,7 +62,7 @@ success_criteria:
     - metric: "proximity_reached"
       operator: "=="
       value: true
-      description: "Robot must reach within 1m of the drink can"
+      description: "Robot must reach within 1m of the target object"
     - metric: "found_ratio"
       operator: ">="
       value: 1.0
