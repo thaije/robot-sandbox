@@ -42,9 +42,9 @@ def _box_mesh(
         {"verts": [0, 1, 5, 4], "normal": (0, -1, 0),
          "u_size": sx, "v_size": sz, "u_tile": tile_u, "v_tile": tile_side},
         {"verts": [5, 1, 2, 6], "normal": (1, 0, 0),
-         "u_size": sy, "v_size": sz, "u_tile": tile_v, "v_tile": tile_side},
+         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v},
         {"verts": [0, 4, 7, 3], "normal": (-1, 0, 0),
-         "u_size": sy, "v_size": sz, "u_tile": tile_v, "v_tile": tile_side},
+         "u_size": sz, "v_size": sy, "u_tile": tile_side, "v_tile": tile_v},
     ]
 
     corners = [
