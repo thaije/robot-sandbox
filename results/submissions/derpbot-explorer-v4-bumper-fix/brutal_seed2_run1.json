@@ -1,0 +1,178 @@
+{
+  "scenario_name": "office_brutal_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 182.336,
+  "timeout_seconds": 180.0,
+  "random_seed": 2,
+  "categories": [
+    {
+      "name": "speed",
+      "score": 69.98,
+      "grade": "C",
+      "grade_label": "Adequate",
+      "weight": 0.3
+    },
+    {
+      "name": "accuracy",
+      "score": 40.0,
+      "grade": "D",
+      "grade_label": "Poor",
+      "weight": 0.25
+    },
+    {
+      "name": "safety",
+      "score": 66.0,
+      "grade": "C",
+      "grade_label": "Adequate",
+      "weight": 0.2
+    },
+    {
+      "name": "efficiency",
+      "score": 100.0,
+      "grade": "S",
+      "grade_label": "Outstanding",
+      "weight": 0.1
+    },
+    {
+      "name": "effectiveness",
+      "score": 17.42,
+      "grade": "F",
+      "grade_label": "Failed",
+      "weight": 0.15
+    }
+  ],
+  "overall_score": 56.8,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "meters_traveled": 6.388,
+    "exploration_coverage": 49.78,
+    "near_miss_count": 1.0,
+    "collision_count": 2.0,
+    "found_ratio": 0.0,
+    "precision": 1.0,
+    "duplicate_rate": 0.0,
+    "time_to_all_detections": 0.0,
+    "average_time_per_detection": 0.0,
+    "false_positive_count": 0.0,
+    "duplicate_count": 0.0,
+    "detection_count": 0.0,
+    "near_miss_events": [
+      {
+        "t": 57.65,
+        "count": 1,
+        "min_range": 0.176
+      }
+    ],
+    "collision_events": [
+      {
+        "t": 57.6,
+        "count": 1
+      },
+      {
+        "t": 63.76,
+        "count": 2
+      }
+    ],
+    "detection_events": [],
+    "submission_log": [],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 0,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "ground_truth_objects": {
+      "1": {
+        "type": "fire_extinguisher",
+        "instance": 0,
+        "x": 6.833,
+        "y": 4.335,
+        "mission_target": true
+      },
+      "10": {
+        "type": "drink_can",
+        "instance": 0,
+        "x": 4.264,
+        "y": 1.65,
+        "mission_target": false
+      },
+      "11": {
+        "type": "drill",
+        "instance": 0,
+        "x": 11.663,
+        "y": 3.559,
+        "mission_target": false
+      },
+      "2": {
+        "type": "fire_extinguisher",
+        "instance": 1,
+        "x": 7.594,
+        "y": 4.725,
+        "mission_target": true
+      },
+      "3": {
+        "type": "fire_extinguisher",
+        "instance": 2,
+        "x": 17.073,
+        "y": 1.822,
+        "mission_target": true
+      },
+      "4": {
+        "type": "first_aid_kit",
+        "instance": 0,
+        "x": 19.119,
+        "y": 5.719,
+        "mission_target": true
+      },
+      "5": {
+        "type": "first_aid_kit",
+        "instance": 1,
+        "x": 11.61,
+        "y": 13.626,
+        "mission_target": true
+      },
+      "6": {
+        "type": "exit_sign",
+        "instance": 0,
+        "x": 15.2,
+        "y": 6.65,
+        "mission_target": false
+      },
+      "7": {
+        "type": "exit_sign",
+        "instance": 1,
+        "x": 9.15,
+        "y": 3.7,
+        "mission_target": false
+      },
+      "8": {
+        "type": "trash_can",
+        "instance": 0,
+        "x": 14.123,
+        "y": 4.981,
+        "mission_target": false
+      },
+      "9": {
+        "type": "person",
+        "instance": 0,
+        "x": 3.273,
+        "y": 4.498,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 182.34,
+    "avg_speed_kmh": 0.126
+  }
+}

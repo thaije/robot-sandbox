@@ -780,6 +780,266 @@
     }
   },
   {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v4-bumper-fix",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "",
+    "sandbox_version": "v1.0.2",
+    "scenario": "office_explore_detect",
+    "difficulty": "easy",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-05-17",
+    "timeout_seconds": 900.0,
+    "difficulty_description": "Easy office exploration \u2014 bright lighting, open doors, comfortable timeout",
+    "total_score": {
+      "mean": 0.4445,
+      "std": 0.2413
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 2.6667,
+        "std": 1.4475,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.2073,
+        "std": 0.1009
+      },
+      "collision_count": {
+        "mean": 0.8,
+        "std": 1.6987
+      },
+      "path_length_m": {
+        "mean": 51.9436,
+        "std": 25.3203
+      },
+      "exploration_coverage_pct": {
+        "mean": 76.3507,
+        "std": 24.4917
+      },
+      "elapsed_s": {
+        "mean": 901.9621,
+        "std": 1.3468
+      }
+    }
+  },
+  {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v4-bumper-fix",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "",
+    "sandbox_version": "v1.0.2",
+    "scenario": "office_explore_detect",
+    "difficulty": "medium",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-05-17",
+    "timeout_seconds": 600.0,
+    "difficulty_description": "Medium office exploration \u2014 calibrated baseline, normal lighting, random doors",
+    "total_score": {
+      "mean": 0.3889,
+      "std": 0.2329
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 2.3333,
+        "std": 1.3973,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.2355,
+        "std": 0.1071
+      },
+      "collision_count": {
+        "mean": 10.2,
+        "std": 39.5044
+      },
+      "path_length_m": {
+        "mean": 39.4126,
+        "std": 17.962
+      },
+      "exploration_coverage_pct": {
+        "mean": 61.714,
+        "std": 24.6845
+      },
+      "elapsed_s": {
+        "mean": 602.4203,
+        "std": 0.9563
+      }
+    }
+  },
+  {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v4-bumper-fix",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "",
+    "sandbox_version": "v1.0.2",
+    "scenario": "office_explore_detect",
+    "difficulty": "hard",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-05-17",
+    "timeout_seconds": 300.0,
+    "difficulty_description": "Hard office exploration \u2014 dim localized lighting, closed doors, vertical objects, far spawn",
+    "total_score": {
+      "mean": 0.0889,
+      "std": 0.139
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.5333,
+        "std": 0.8338,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.2401,
+        "std": 0.1174
+      },
+      "collision_count": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "path_length_m": {
+        "mean": 20.165,
+        "std": 9.8499
+      },
+      "exploration_coverage_pct": {
+        "mean": 45.5713,
+        "std": 16.5528
+      },
+      "elapsed_s": {
+        "mean": 302.2933,
+        "std": 0.7571
+      }
+    }
+  },
+  {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v4-bumper-fix",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "",
+    "sandbox_version": "v1.0.2",
+    "scenario": "office_explore_detect",
+    "difficulty": "brutal",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-05-17",
+    "timeout_seconds": 180.0,
+    "difficulty_description": "Brutal office exploration \u2014 flickering dim lights, closed doors, patrol bot, vertical objects, tight timeout",
+    "total_score": {
+      "mean": 0.1,
+      "std": 0.1228
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 0.6,
+        "std": 0.7368,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.2403,
+        "std": 0.1194
+      },
+      "collision_count": {
+        "mean": 0.8667,
+        "std": 1.4573
+      },
+      "path_length_m": {
+        "mean": 12.1423,
+        "std": 6.0389
+      },
+      "exploration_coverage_pct": {
+        "mean": 42.722,
+        "std": 9.7168
+      },
+      "elapsed_s": {
+        "mean": 181.9867,
+        "std": 1.0998
+      }
+    }
+  },
+  {
+    "stack_name": "DerpBot Explorer \u2014 derpbot-explorer-v4-bumper-fix",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "",
+    "sandbox_version": "v1.0.2",
+    "scenario": "office_explore_detect",
+    "difficulty": "perception_stress",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-05-17",
+    "timeout_seconds": 600.0,
+    "difficulty_description": "Perception stress test \u2014 flicker red emergency lighting, smoke, fast patrol bot, cornered exit signs",
+    "total_score": {
+      "mean": 0.2,
+      "std": 0.2374
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 1.2,
+        "std": 1.4243,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.1873,
+        "std": 0.0982
+      },
+      "collision_count": {
+        "mean": 10.8,
+        "std": 17.4118
+      },
+      "path_length_m": {
+        "mean": 31.2854,
+        "std": 16.4104
+      },
+      "exploration_coverage_pct": {
+        "mean": 68.4107,
+        "std": 16.9663
+      },
+      "elapsed_s": {
+        "mean": 601.8576,
+        "std": 1.3419
+      }
+    }
+  },
+  {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
     "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",

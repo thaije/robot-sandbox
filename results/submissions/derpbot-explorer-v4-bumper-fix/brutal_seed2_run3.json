@@ -1,0 +1,221 @@
+{
+  "scenario_name": "office_brutal_001",
+  "status": "TIME_LIMIT",
+  "elapsed_seconds": 180.104,
+  "timeout_seconds": 180.0,
+  "random_seed": 2,
+  "categories": [
+    {
+      "name": "speed",
+      "score": 70.86,
+      "grade": "B",
+      "grade_label": "Good",
+      "weight": 0.3
+    },
+    {
+      "name": "accuracy",
+      "score": 20.0,
+      "grade": "F",
+      "grade_label": "Failed",
+      "weight": 0.25
+    },
+    {
+      "name": "safety",
+      "score": 100.0,
+      "grade": "S",
+      "grade_label": "Outstanding",
+      "weight": 0.2
+    },
+    {
+      "name": "efficiency",
+      "score": 100.0,
+      "grade": "S",
+      "grade_label": "Outstanding",
+      "weight": 0.1
+    },
+    {
+      "name": "effectiveness",
+      "score": 19.64,
+      "grade": "F",
+      "grade_label": "Failed",
+      "weight": 0.15
+    }
+  ],
+  "overall_score": 59.2,
+  "overall_grade": "C",
+  "overall_grade_label": "Adequate",
+  "raw_metrics": {
+    "exploration_coverage": 31.35,
+    "collision_count": 0.0,
+    "meters_traveled": 13.088,
+    "near_miss_count": 0.0,
+    "found_ratio": 0.1667,
+    "precision": 0.25,
+    "duplicate_rate": 0.0,
+    "mean_localization_error": 0.18,
+    "time_to_all_detections": 75.46,
+    "average_time_per_detection": 75.46,
+    "false_positive_count": 3.0,
+    "duplicate_count": 0.0,
+    "detection_count": 1.0,
+    "collision_events": [],
+    "near_miss_events": [],
+    "detection_events": [
+      {
+        "label_key": "3",
+        "class_type": "fire_extinguisher",
+        "class_name": "fire_extinguisher #3",
+        "timestamp": 75.46,
+        "location_error": 0.18
+      }
+    ],
+    "submission_log": [
+      {
+        "timestamp": 55.73,
+        "class_type": "fire_extinguisher",
+        "submitted_x": 11.353,
+        "submitted_y": 2.781,
+        "nearest_gt_key": "2",
+        "nearest_gt_x": 7.594,
+        "nearest_gt_y": 4.725,
+        "distance_to_nearest": 4.232,
+        "outcome": "FP",
+        "tracking_id": "track_3"
+      },
+      {
+        "timestamp": 75.46,
+        "class_type": "fire_extinguisher",
+        "submitted_x": 16.898,
+        "submitted_y": 1.78,
+        "nearest_gt_key": "3",
+        "nearest_gt_x": 17.073,
+        "nearest_gt_y": 1.822,
+        "distance_to_nearest": 0.18,
+        "outcome": "TP",
+        "tracking_id": "track_2"
+      },
+      {
+        "timestamp": 87.78,
+        "class_type": "fire_extinguisher",
+        "submitted_x": 19.677,
+        "submitted_y": 0.58,
+        "nearest_gt_key": "3",
+        "nearest_gt_x": 17.073,
+        "nearest_gt_y": 1.822,
+        "distance_to_nearest": 2.885,
+        "outcome": "FP",
+        "tracking_id": "track_1"
+      },
+      {
+        "timestamp": 92.38,
+        "class_type": "fire_extinguisher",
+        "submitted_x": 19.753,
+        "submitted_y": 1.081,
+        "nearest_gt_key": "3",
+        "nearest_gt_x": 17.073,
+        "nearest_gt_y": 1.822,
+        "distance_to_nearest": 2.781,
+        "outcome": "FP",
+        "tracking_id": "track_1"
+      }
+    ],
+    "detection_by_type": {
+      "fire_extinguisher": {
+        "detected": 1,
+        "total": 3,
+        "mission_target": true
+      },
+      "first_aid_kit": {
+        "detected": 0,
+        "total": 2,
+        "mission_target": true
+      },
+      "person": {
+        "detected": 0,
+        "total": 1,
+        "mission_target": true
+      }
+    },
+    "ground_truth_objects": {
+      "1": {
+        "type": "fire_extinguisher",
+        "instance": 0,
+        "x": 6.833,
+        "y": 4.335,
+        "mission_target": true
+      },
+      "10": {
+        "type": "drink_can",
+        "instance": 0,
+        "x": 4.264,
+        "y": 1.65,
+        "mission_target": false
+      },
+      "11": {
+        "type": "drill",
+        "instance": 0,
+        "x": 11.663,
+        "y": 3.559,
+        "mission_target": false
+      },
+      "2": {
+        "type": "fire_extinguisher",
+        "instance": 1,
+        "x": 7.594,
+        "y": 4.725,
+        "mission_target": true
+      },
+      "3": {
+        "type": "fire_extinguisher",
+        "instance": 2,
+        "x": 17.073,
+        "y": 1.822,
+        "mission_target": true
+      },
+      "4": {
+        "type": "first_aid_kit",
+        "instance": 0,
+        "x": 19.119,
+        "y": 5.719,
+        "mission_target": true
+      },
+      "5": {
+        "type": "first_aid_kit",
+        "instance": 1,
+        "x": 11.61,
+        "y": 13.626,
+        "mission_target": true
+      },
+      "6": {
+        "type": "exit_sign",
+        "instance": 0,
+        "x": 15.2,
+        "y": 6.65,
+        "mission_target": false
+      },
+      "7": {
+        "type": "exit_sign",
+        "instance": 1,
+        "x": 9.15,
+        "y": 3.7,
+        "mission_target": false
+      },
+      "8": {
+        "type": "trash_can",
+        "instance": 0,
+        "x": 14.123,
+        "y": 4.981,
+        "mission_target": false
+      },
+      "9": {
+        "type": "person",
+        "instance": 0,
+        "x": 3.273,
+        "y": 4.498,
+        "mission_target": true
+      }
+    },
+    "task_completion_time": 180.1,
+    "avg_speed_kmh": 0.262
+  }
+}
