@@ -12,7 +12,7 @@ world:
     door_states: "open"
   objects:
     # ── Target pool — one is randomly chosen as mission target per seed ──
-    - type: "drink_can"
+    - type: "drink_can_on_box"
       count: 1
       placement: "random"
       target_pool: true

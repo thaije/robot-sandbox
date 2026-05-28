@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <!--
   Grey sewer pipe — horizontal PVC-style pipe segment, floor-mounted.
-  Cylinder: 0.10 m diameter × 1.0 m long, lying along x-axis on the floor.
+  Cylinder: 0.20 m diameter × 1.0 m long, lying along x-axis on the floor.
+  Top at z=0.20 m — above 0.17 m lidar scan plane.
   Grey color with slight gloss.
 -->
 <sdf version="1.9">
@@ -13,10 +14,10 @@
     </plugin>
 
     <link name="pipe">
-      <pose>0 0 0.05 0 1.5708 0</pose>
+      <pose>0 0 0.10 0 1.5708 0</pose>
       <visual name="vis">
         <geometry>
-          <cylinder><radius>0.05</radius><length>1.0</length></cylinder>
+          <cylinder><radius>0.10</radius><length>1.0</length></cylinder>
         </geometry>
         <material>
           <ambient>0.45 0.45 0.42 1</ambient>
@@ -26,7 +27,7 @@
       </visual>
       <collision name="col">
         <geometry>
-          <cylinder><radius>0.05</radius><length>1.0</length></cylinder>
+          <cylinder><radius>0.10</radius><length>1.0</length></cylinder>
         </geometry>
       </collision>
     </link>
