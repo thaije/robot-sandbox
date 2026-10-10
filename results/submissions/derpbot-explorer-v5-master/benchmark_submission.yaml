@@ -1,0 +1,12 @@
+stack_name: "DerpBot Explorer v5 (clean master)"
+repo_url: "https://github.com/thaije/derpbot-explorer"
+code_url: "https://github.com/thaije/derpbot-explorer/commit/24f7658"
+sandbox_version: "v1.0.3"
+scenario: "office_explore_detect"
+difficulties:
+  - easy
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 3
+submitted: "2026-10-10"
+results_dir: "results/submissions/derpbot-explorer-v5-master/"
+description: "Clean master parity run: classical pipeline (slam_toolbox + Nav2 MPPI + frontier explorer + OWLv2 detector), derpbot-explorer @ 24f7658 (pre-gate master = v4-bumper-fix era tip, commit-identical agent code). sandbox_version v1.0.3 is a local tag = commit a53295a; office scenario is identical to v1.0.2 (empty diff), drift is basement-only + tests."

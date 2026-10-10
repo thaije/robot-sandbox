@@ -1040,6 +1040,58 @@
     }
   },
   {
+    "stack_name": "DerpBot Explorer v5 (clean master)",
+    "repo_url": "https://github.com/thaije/derpbot-explorer",
+    "code_url": "https://github.com/thaije/derpbot-explorer/commit/24f7658",
+    "sandbox_version": "v1.0.3",
+    "scenario": "office_explore_detect",
+    "difficulty": "easy",
+    "is_baseline": false,
+    "n_runs": 15,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_seed": 3,
+    "submitted": "2026-10-10",
+    "timeout_seconds": 900.0,
+    "difficulty_description": "Easy office exploration \u2014 bright lighting, open doors, comfortable timeout",
+    "total_score": {
+      "mean": 0.8111,
+      "std": 0.1651
+    },
+    "raw_metrics": {
+      "objects_found": {
+        "mean": 4.8667,
+        "std": 0.9904,
+        "of_total": 6
+      },
+      "avg_speed_kmh": {
+        "mean": 0.3435,
+        "std": 0.0697
+      },
+      "collision_count": {
+        "mean": 0.8667,
+        "std": 1.8848
+      },
+      "path_length_m": {
+        "mean": 76.5882,
+        "std": 22.4678
+      },
+      "exploration_coverage_pct": {
+        "mean": 88.596,
+        "std": 15.8684
+      },
+      "elapsed_s": {
+        "mean": 810.9861,
+        "std": 188.4574
+      }
+    }
+  },
+  {
     "stack_name": "Human Teleop (perception)",
     "repo_url": "https://github.com/thaije/robot-sandbox",
     "code_url": "https://github.com/thaije/robot-sandbox/blob/main/readme.md#perception-mode--navigation--manual-detections",
