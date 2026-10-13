@@ -1,0 +1,12 @@
+stack_name: "DerpBot Explorer — derpbot-explorer-v5-master-perception_stress"
+repo_url: "https://github.com/thaije/derpbot-explorer"
+code_url: "https://github.com/thaije/derpbot-explorer/commit/24f7658"
+sandbox_version: "v1.0.3"
+scenario: "office_explore_detect"
+difficulties:
+  - perception_stress
+seeds: [1, 2, 3, 4, 5]
+runs_per_seed: 2
+submitted: "2026-10-13"
+results_dir: "results/submissions/derpbot-explorer-v5-master-perception_stress/"
+description: "Clean master @ derpbot-explorer 24f7658 on perception_stress tier, 5x2 batch (operator-specced reduced protocol for hard tiers). sandbox v1.0.3 (local tag = a53295a)."
